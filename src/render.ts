@@ -120,30 +120,48 @@ const renderAgenda = (document: OrgizeDocumentView, agendaMode: AgendaModeKey): 
     return `<div class="empty">No agenda rows in ${escapeHtml(workspace.rangeLabel)}.</div>`;
   }
   return `
-    <section class="super-agenda">
-      <header class="agenda-hero">
-        <div>
-          <p class="eyebrow">Agenda Intelligence</p>
-          <h2>${escapeHtml(workspace.rangeLabel)}</h2>
+    <section class="super-agenda agenda-cockpit">
+      <header class="agenda-command-center">
+        <div class="agenda-command-copy">
+          <p class="eyebrow">AI x Super Agenda</p>
+          <h2>${escapeHtml(workspace.aiBrief.headline)}</h2>
           <p>${escapeHtml(workspace.modeDescription)}</p>
+          <div class="agenda-command-badges">
+            <span>parser-owned</span>
+            <span>selector pipeline</span>
+            <span>LLM context pack</span>
+          </div>
         </div>
-        <dl class="agenda-metrics">
-          <div><dt>Visible</dt><dd>${workspace.visibleCount}</dd></div>
-          <div><dt>Total</dt><dd>${workspace.totalCandidates}</dd></div>
-          <div><dt>Limit</dt><dd>${workspace.limit ?? "none"}</dd></div>
+        <dl class="agenda-metrics agenda-metrics--cockpit">
+          ${workspace.metrics.map(renderAgendaMetric).join("")}
         </dl>
       </header>
       ${renderAgendaModeControls(workspace.mode)}
-      <div class="agenda-insights">
+      <div class="agenda-insights agenda-insights--dense">
+        <strong>${escapeHtml(workspace.rangeLabel)}</strong>
         ${workspace.insights.map((insight) => `<span>${escapeHtml(insight)}</span>`).join("")}
       </div>
-      <div class="agenda-groups">
-        ${workspace.groups.map(renderSuperAgendaGroup).join("")}
+      <div class="agenda-cockpit-grid">
+        <div class="agenda-mainframe">
+          ${renderSelectorPipeline(workspace)}
+          <div class="agenda-groups">
+            ${workspace.groups.map(renderSuperAgendaGroup).join("")}
+          </div>
+          ${renderSkippedAgenda(workspace)}
+        </div>
+        ${renderAgendaAiPanel(workspace)}
       </div>
-      ${renderSkippedAgenda(workspace)}
     </section>
   `;
 };
+
+const renderAgendaMetric = (metric: SuperAgendaWorkspace["metrics"][number]): string => `
+  <div class="agenda-metric agenda-metric--${metric.tone}">
+    <dt>${escapeHtml(metric.label)}</dt>
+    <dd>${escapeHtml(metric.value)}</dd>
+    <small>${escapeHtml(metric.detail)}</small>
+  </div>
+`;
 
 const renderAgendaModeControls = (activeMode: AgendaModeKey): string => `
   <div class="agenda-mode-bar" role="group" aria-label="Agenda mode">
@@ -162,6 +180,32 @@ const renderAgendaModeControls = (activeMode: AgendaModeKey): string => `
       )
       .join("")}
   </div>
+`;
+
+const renderSelectorPipeline = (workspace: SuperAgendaWorkspace): string => `
+  <section class="agenda-selector-pipeline">
+    <div class="agenda-section-heading">
+      <span>Super-agenda selector pipeline</span>
+      <strong>${workspace.selectorRules.length} active groups</strong>
+    </div>
+    <ol>
+      ${workspace.selectorRules
+        .map(
+          (rule, index) => `
+            <li class="selector-rule selector-rule--${rule.tone}">
+              <span class="selector-index">${index + 1}</span>
+              <code>${escapeHtml(rule.selector)}</code>
+              <div>
+                <strong>${escapeHtml(rule.label)}</strong>
+                <small>${escapeHtml(rule.description)}</small>
+              </div>
+              <b>${rule.count}</b>
+            </li>
+          `,
+        )
+        .join("")}
+    </ol>
+  </section>
 `;
 
 const renderAgendaFallback = (items: AgendaItem[]): string => {
@@ -188,11 +232,15 @@ const renderFallbackAgendaItem = (item: AgendaItem): string => `
 const renderSuperAgendaGroup = (group: SuperAgendaGroup): string => `
   <details class="agenda-group agenda-group--${group.tone}" open>
     <summary>
-      <span>
+      <span class="agenda-group-title">
+        <code>${escapeHtml(group.selector)}</code>
         <strong>${escapeHtml(group.title)}</strong>
         <small>${escapeHtml(group.subtitle)}</small>
       </span>
-      <b>${group.cards.length}</b>
+      <span class="agenda-group-count">
+        <b>${group.cards.length}</b>
+        <small>consumed</small>
+      </span>
     </summary>
     <div class="agenda-card-stack">
       ${group.cards.map(renderAgendaCard).join("")}
@@ -202,13 +250,17 @@ const renderSuperAgendaGroup = (group: SuperAgendaGroup): string => `
 
 const renderAgendaCard = (card: AgendaCardView): string => `
   <article class="agenda-card agenda-card--${card.pressure}">
-    <div class="agenda-card-main">
-      <span class="agenda-kind ${escapeHtml(card.kind)}">${escapeHtml(card.kind)}</span>
+    <header class="agenda-card-main">
+      <div class="agenda-kind-stack">
+        <span class="agenda-kind ${escapeHtml(card.kind)}">${escapeHtml(card.kind)}</span>
+        <small>${escapeHtml(card.aiState)}</small>
+      </div>
       <div>
         <h3>${escapeHtml(card.title)}</h3>
         <p>${escapeHtml(card.displayDate)}${card.time ? ` at ${escapeHtml(card.time)}` : ""}</p>
       </div>
-    </div>
+      <span class="agenda-card-position">#${card.sortedPosition}</span>
+    </header>
     <div class="agenda-signal-row">
       ${card.signals
         .slice(0, 8)
@@ -216,18 +268,44 @@ const renderAgendaCard = (card: AgendaCardView): string => `
         .join("")}
     </div>
     ${renderBlockers(card)}
-    <details class="agenda-receipts">
-      <summary>Why this card is here</summary>
-      <ul>
-        ${card.receipts.map((receipt) => `<li>${escapeHtml(receipt.message)}</li>`).join("")}
-      </ul>
-      <p>Source line ${card.source.start.line}, sorted #${card.sortedPosition}</p>
-      <p>${card.sortKeys
-        .map((key) => `${key.key}: ${key.value}`)
-        .map(escapeHtml)
-        .join(" / ")}</p>
-    </details>
+    <div class="agenda-evidence-grid">
+      ${renderReceiptRail(card)}
+      ${renderMemoryRail(card)}
+    </div>
   </article>
+`;
+
+const renderReceiptRail = (card: AgendaCardView): string => `
+  <section class="agenda-receipt-rail">
+    <div class="agenda-mini-heading">
+      <strong>Receipts</strong>
+      <span>${card.receipts.length}</span>
+    </div>
+    <ul>
+      ${card.receipts
+        .slice(0, 3)
+        .map((receipt) => `<li>${escapeHtml(receipt.message)}</li>`)
+        .join("")}
+    </ul>
+  </section>
+`;
+
+const renderMemoryRail = (card: AgendaCardView): string => `
+  <section class="agenda-memory-rail">
+    <div class="agenda-mini-heading">
+      <strong>Context</strong>
+      <span>${card.memorySignals.length}</span>
+    </div>
+    <p>Source line ${card.source.start.line}</p>
+    <div class="agenda-signal-row agenda-signal-row--compact">
+      ${[
+        ...card.memorySignals,
+        ...card.sortKeys.slice(0, 4).map((key) => `${key.key}: ${key.value}`),
+      ]
+        .map((signal) => `<span>${escapeHtml(signal)}</span>`)
+        .join("")}
+    </div>
+  </section>
 `;
 
 const renderBlockers = (card: AgendaCardView): string => {
@@ -241,6 +319,68 @@ const renderBlockers = (card: AgendaCardView): string => {
     )
     .join("")}</div>`;
 };
+
+const renderAgendaAiPanel = (workspace: SuperAgendaWorkspace): string => `
+  <aside class="agenda-ai-panel">
+    <section class="agenda-ai-brief">
+      <div class="agenda-section-heading">
+        <span>AI agenda brief</span>
+        <strong>${escapeHtml(workspace.modeLabel)}</strong>
+      </div>
+      <h3>${escapeHtml(workspace.aiBrief.headline)}</h3>
+      <p>${escapeHtml(workspace.aiBrief.summary)}</p>
+      <ol class="agenda-ai-actions">
+        ${workspace.aiBrief.recommendations
+          .map((recommendation) => `<li>${escapeHtml(recommendation)}</li>`)
+          .join("")}
+      </ol>
+    </section>
+    <section class="agenda-context-pack">
+      <div class="agenda-section-heading">
+        <span>Prompt pack</span>
+        <strong>${workspace.aiBrief.prompts.length}</strong>
+      </div>
+      ${workspace.aiBrief.prompts.map((prompt) => `<p>${escapeHtml(prompt)}</p>`).join("")}
+    </section>
+    <section class="agenda-sort-stack">
+      <div class="agenda-section-heading">
+        <span>Sort strategy</span>
+        <strong>${workspace.sortSteps.length}</strong>
+      </div>
+      <ol>
+        ${workspace.sortSteps
+          .map(
+            (step) => `
+              <li>
+                <strong>${escapeHtml(step.label)}</strong>
+                <span>${escapeHtml(step.direction)} / ${escapeHtml(step.detail)}</span>
+              </li>
+            `,
+          )
+          .join("")}
+      </ol>
+    </section>
+    <section class="agenda-capture-log">
+      <div class="agenda-section-heading">
+        <span>Record trail</span>
+        <strong>${workspace.aiBrief.captureLog.length}</strong>
+      </div>
+      <ol>
+        ${workspace.aiBrief.captureLog
+          .map(
+            (entry) => `
+              <li class="capture-entry capture-entry--${entry.tone}">
+                <strong>${escapeHtml(entry.title)}</strong>
+                <span>${escapeHtml(entry.label)}</span>
+                <small>${escapeHtml(entry.detail)}</small>
+              </li>
+            `,
+          )
+          .join("")}
+      </ol>
+    </section>
+  </aside>
+`;
 
 const renderSkippedAgenda = (workspace: SuperAgendaWorkspace): string => {
   if (workspace.skipped.length === 0) {
