@@ -1,0 +1,45 @@
+[site]
+title = "Org Zhixing"
+locale = "zh-CN"
+
+[content]
+root = "blog"
+default_source = "demo"
+
+[[content.sources]]
+id = "demo"
+title = "Org Zhixing Demo"
+file = "org-zhixing-demo.org"
+
+[ui]
+default_view = "agenda"
+show_timings = true
+
+[[ui.views]]
+id = "blog"
+label = "Blog"
+weight = 10
+
+[[ui.views]]
+id = "records"
+label = "Records"
+weight = 20
+
+[[ui.views]]
+id = "agenda"
+label = "Agenda"
+weight = 30
+
+[[ui.views]]
+id = "diagnostics"
+label = "Diagnostics"
+weight = 40
+
+[behavior]
+lazy_lint = true
+
+[agenda]
+start = "2026-05-15"
+days = 7
+limit = 32
+mode = "focus"
