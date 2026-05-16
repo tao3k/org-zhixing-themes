@@ -1179,6 +1179,7 @@ code {
   }
 
   .agenda-ai-panel {
+    order: -1;
     position: static;
   }
 

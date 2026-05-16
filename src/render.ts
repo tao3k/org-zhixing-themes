@@ -3,16 +3,11 @@ import type {
   OrgizeLintFindingDto,
   OrgizeViewIndexRecordDto,
 } from "orgize/dto";
-import type {
-  AgendaCardView,
-  AgendaItem,
-  OrgizeDocumentView,
-  SuperAgendaGroup,
-  SuperAgendaWorkspace,
-  ViewKey,
-} from "./model";
+import type { AgendaItem, OrgizeDocumentView, ViewKey } from "./model";
+import type { AgendaCardView, SuperAgendaGroup, SuperAgendaWorkspace } from "./agendaTypes";
 import type { AgendaModeKey } from "./config";
-import { agendaItems, agendaModeDefinitions, superAgendaWorkspace, taggedRecords } from "./model";
+import { agendaItems, taggedRecords } from "./model";
+import { agendaModeDefinitions, superAgendaWorkspace } from "./agendaModel";
 
 type TimingStats = {
   parseMs?: number;
