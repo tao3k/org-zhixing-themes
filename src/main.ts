@@ -1,5 +1,5 @@
 import { mountOrgZhixingApp } from "./app";
-import { createOrgizeWorker } from "./viteWorker";
+import { createOrgizeWorker } from "./workerFactory";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 

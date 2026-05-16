@@ -1,0 +1,99 @@
+#+TITLE: Literate Systems Lab
+#+AUTHOR: Tao 3000
+#+DATE: <2026-05-14 Thu>
+#+CATEGORY: literate-lab
+#+FILETAGS: :zhixing:literate:code:
+#+TODO: NEXT(n) TODO(t) REVIEW(r) WAIT(w) | DONE(d)
+#+PROPERTY: header-args:typescript :exports both :results output
+
+* REVIEW Literate Org can explain the frontend boundary :blog:literate:
+SCHEDULED: <2026-05-16 Sat 13:00> DEADLINE: <2026-05-19 Tue>
+:PROPERTIES:
+:ID: literate-frontend-boundary
+:SLUG: literate-frontend-boundary
+:AREA: architecture
+:EFFORT: 90m
+:END:
+This file represents the technical writing shape: prose around code, tables,
+receipts, and action items.
+
+#+BEGIN_SRC typescript
+type ParserBoundary = {
+  nativeSyntax: "org";
+  projection: "viewIndex" | "agendaView" | "capturePlan";
+  host: "browser";
+};
+
+const boundary: ParserBoundary = {
+  nativeSyntax: "org",
+  projection: "agendaView",
+  host: "browser",
+};
+
+console.log(boundary);
+#+END_SRC
+
+** Decision table
+
+| Layer       | Owns                         | Must not own                  |
+|-------------+------------------------------+-------------------------------|
+| Rust/WASM   | native Org parse projections | browser layout                |
+| TypeScript  | interaction and rendering    | ad hoc Org syntax parsing     |
+| Rspack      | dev watch and bundle output  | product-facing status widgets |
+| Org source  | writing and planning truth   | generated frontend state      |
+
+* DONE Rspack belongs in package.json :blog:devlog:
+CLOSED: [2026-05-16 Sat 01:40]
+:PROPERTIES:
+:ID: rspack-package-json-devlog
+:SLUG: rspack-package-json-devlog
+:AREA: tooling
+:KIND: devlog
+:END:
+The local frontend now uses Rspack scripts from =package.json=.  Nix or direnv
+may provide the shell, but the browser demo should clearly own its bundler
+contract.
+
+#+BEGIN_EXAMPLE
+npm run dev -- --port 5173
+npm run build
+#+END_EXAMPLE
+
+* Records
+** NEXT [#A] Source block overflow contract :record:ui:
+SCHEDULED: <2026-05-17 Sun 09:00>
+:PROPERTIES:
+:ID: source-block-overflow-contract
+:AREA: frontend
+:EFFORT: 1h
+:END:
+Long code blocks need horizontal scrolling, readable font sizing, and no layout
+shift when toggling Zen mode.
+
+** WAIT [#B] Capture Babel result rendering policy :record:
+SCHEDULED: <2026-05-20 Wed>
+:PROPERTIES:
+:ID: babel-result-policy
+:AREA: parser
+:EFFORT: 2h
+:END:
+The demo includes source blocks, but executing them is out of scope for this
+browser surface.
+
+* Agenda
+** NEXT [#A] Verify code block rendering in Blog view :agenda:focus:
+SCHEDULED: <2026-05-16 Sat 17:00>
+:PROPERTIES:
+:AREA: frontend
+:EFFORT: 30m
+:END:
+The selected article should keep code indentation and avoid visual overflow.
+
+** TODO [#B] Add syntax-specific visual regression notes :agenda:
+SCHEDULED: <2026-05-21 Thu>
+:PROPERTIES:
+:AREA: testing
+:EFFORT: 1h
+:END:
+Tables, source blocks, quotes, drawers, and links deserve explicit screenshot
+checks.

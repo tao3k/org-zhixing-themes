@@ -1,6 +1,8 @@
 import type {
   OrgizeAgendaViewJsonRequestDto,
   OrgizeAgendaViewResponseDto,
+  OrgizeAgentCapturePlanResponseDto,
+  OrgizeAgentCaptureRequestDto,
   OrgizeLintResponseDto,
   OrgizeProjectionName,
   OrgizeViewIndexResponseDto,
@@ -19,6 +21,7 @@ type WorkerRequestInput = {
   projection?: OrgizeProjectionName;
   format?: OrgizeRenderFormat;
   agendaView?: OrgizeAgendaViewJsonRequestDto;
+  capturePlan?: OrgizeAgentCaptureRequestDto;
 };
 
 export type TimedResult<T> = {
@@ -104,6 +107,16 @@ export class OrgizeSession {
     });
   }
 
+  capturePlan(
+    request: OrgizeAgentCaptureRequestDto,
+  ): Promise<TimedResult<OrgizeAgentCapturePlanResponseDto>> {
+    return this.#requestTimed<OrgizeAgentCapturePlanResponseDto>({
+      command: "projection",
+      projection: "capturePlan",
+      capturePlan: request,
+    });
+  }
+
   render(format: "html" | "markdown" | "latex" | "org"): Promise<string> {
     return this.#request<string>({
       command: "render",
@@ -142,12 +155,16 @@ export class OrgizeSession {
 
     return new Promise<TimedResult<T>>((resolve, reject) => {
       this.#pending.set(requestId, {
-        resolve: (value) =>
+        resolve: (value) => {
+          const durationMs = performance.now() - startedAt;
           resolve({
             value: value as T,
-            durationMs: performance.now() - startedAt,
-          }),
-        reject,
+            durationMs,
+          });
+        },
+        reject: (reason) => {
+          reject(reason);
+        },
       });
       this.#worker.postMessage(message);
     });

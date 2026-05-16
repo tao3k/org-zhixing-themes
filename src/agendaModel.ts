@@ -6,40 +6,20 @@ import type {
 import type { AgendaModeKey } from "./config";
 import type {
   AgendaCardView,
-  SuperAgendaAiBrief,
+  SuperAgendaAgentBrief,
+  SuperAgendaCapabilitySummary,
   SuperAgendaCaptureEntry,
-  SuperAgendaGroup,
   SuperAgendaMetric,
-  SuperAgendaSelectorRule,
+  SuperAgendaSelectorCapability,
   SuperAgendaSortStep,
   SuperAgendaTone,
   SuperAgendaWorkspace,
 } from "./agendaTypes";
+import { executeProgram, type ProgramExecution } from "./agendaEngine";
+import { agendaModeDefinitions, agendaPrograms, selectorCapabilityViews } from "./agendaPrograms";
 import type { OrgizeDocumentView } from "./model";
 
-type AgendaGroupSpec = Omit<SuperAgendaGroup, "cards"> & {
-  match: (card: AgendaCardView) => boolean;
-};
-
-type AgendaModeDefinition = {
-  label: string;
-  description: string;
-};
-
-export const agendaModeDefinitions: Record<AgendaModeKey, AgendaModeDefinition> = {
-  focus: {
-    label: "Focus",
-    description: "Prioritize the next concrete execution surfaces.",
-  },
-  pressure: {
-    label: "Pressure",
-    description: "Surface deadline, blocker, and waiting risk first.",
-  },
-  flow: {
-    label: "Flow",
-    description: "Read the week as a dated operational stream.",
-  },
-};
+export { agendaModeDefinitions, agendaPrograms };
 
 export const superAgendaWorkspace = (
   document: OrgizeDocumentView | null,
@@ -49,37 +29,44 @@ export const superAgendaWorkspace = (
     return null;
   }
 
+  const program = agendaPrograms[mode] ?? agendaPrograms.classic;
   const cards = document.agendaView.cards.map((card) =>
     agendaCardView(card, document.recordsByRangeStart),
   );
-  const groups = groupAgendaCards(cards, mode).filter((group) => group.cards.length > 0);
+  const execution = executeProgram(cards, program);
   const blockedCount = cards.filter((card) => card.blockers.length > 0).length;
   const timedCount = cards.filter((card) => Boolean(card.time)).length;
   const deadlineCount = cards.filter((card) => card.kind === "deadline").length;
   const receiptCount = cards.reduce((sum, card) => sum + card.receipts.length, 0);
   const memoryCount = cards.filter((card) => card.memorySignals.length > 0).length;
   const propertyCount = cards.reduce((sum, card) => sum + (card.record?.properties.length ?? 0), 0);
-  const modeDefinition = agendaModeDefinitions[mode];
+  const capabilities = selectorCapabilityViews(program);
+  const capabilitySummary = summarizeCapabilities(capabilities);
 
   return {
     mode,
-    modeLabel: modeDefinition.label,
-    modeDescription: modeDefinition.description,
+    program,
     rangeLabel: document.agendaRange.label,
     totalCandidates: document.agendaView.totalCandidates,
     visibleCount: cards.length,
     skippedCount: document.agendaView.skipped.length,
     limit: document.agendaView.limit ?? null,
+    consumedCount: execution.consumedCount,
+    discardedCount: execution.discardedCount,
+    unmatchedCount: execution.unmatchedCount,
     insights: agendaInsights(
       cards,
       deadlineCount,
       timedCount,
       blockedCount,
       receiptCount,
+      execution,
       document,
     ),
     metrics: agendaMetrics(
       cards,
+      execution,
+      capabilitySummary,
       blockedCount,
       deadlineCount,
       receiptCount,
@@ -87,8 +74,10 @@ export const superAgendaWorkspace = (
       memoryCount,
       document,
     ),
-    selectorRules: groups.map(selectorRule),
-    aiBrief: agendaAiBrief(cards, {
+    capabilitySummary,
+    selectorCapabilities: capabilities,
+    trace: execution.trace,
+    agentBrief: agendaAgentBrief(cards, execution.groups, {
       blockedCount,
       deadlineCount,
       timedCount,
@@ -96,7 +85,7 @@ export const superAgendaWorkspace = (
       memoryCount,
     }),
     sortSteps: effectiveSortSteps(document.agendaView),
-    groups,
+    groups: execution.groups,
     skipped: document.agendaView.skipped,
   };
 };
@@ -107,20 +96,26 @@ const agendaInsights = (
   timedCount: number,
   blockedCount: number,
   receiptCount: number,
+  execution: ProgramExecution,
   document: OrgizeDocumentView,
 ): string[] => [
   `${cards.length} visible`,
+  `${execution.consumedCount} consumed`,
+  `${execution.discardedCount} discarded`,
+  `${execution.unmatchedCount} unmatched`,
   `${deadlineCount} deadlines`,
   `${timedCount} timed`,
   `${blockedCount} blocked`,
   `${receiptCount} receipts`,
   document.agendaView?.skipped.length
     ? `${document.agendaView.skipped.length} skipped by limit`
-    : "no hidden candidates",
+    : "no limit skips",
 ];
 
 const agendaMetrics = (
   cards: AgendaCardView[],
+  execution: ProgramExecution,
+  capabilitySummary: SuperAgendaCapabilitySummary,
   blockedCount: number,
   deadlineCount: number,
   receiptCount: number,
@@ -129,10 +124,16 @@ const agendaMetrics = (
   document: OrgizeDocumentView,
 ): SuperAgendaMetric[] => [
   {
-    label: "Agenda rows",
+    label: "Input rows",
     value: String(cards.length),
     detail: `${document.agendaView?.totalCandidates ?? cards.length} parsed candidates`,
     tone: "steady",
+  },
+  {
+    label: "Sections",
+    value: String(execution.groups.length),
+    detail: `${execution.consumedCount} consumed / ${execution.unmatchedCount} unmatched`,
+    tone: "focus",
   },
   {
     label: "Risk edges",
@@ -141,26 +142,26 @@ const agendaMetrics = (
     tone: blockedCount > 0 ? "critical" : deadlineCount > 0 ? "deadline" : "steady",
   },
   {
-    label: "AI context",
-    value: String(receiptCount + propertyCount),
-    detail: `${receiptCount} receipts / ${propertyCount} properties`,
-    tone: "focus",
+    label: "Selectors",
+    value: `${capabilitySummary.implemented}/${capabilitySummary.total}`,
+    detail: `${capabilitySummary.active} active / ${capabilitySummary.planned} planned`,
+    tone: "steady",
   },
   {
-    label: "Memory rows",
-    value: String(memoryCount),
-    detail: "record, blog, attach, or ID signals",
-    tone: memoryCount > 0 ? "waiting" : "muted",
+    label: "Agent context",
+    value: String(receiptCount + propertyCount + memoryCount),
+    detail: `${receiptCount} receipts / ${propertyCount} properties / ${memoryCount} memory`,
+    tone: "waiting",
   },
 ];
 
-const selectorRule = (group: SuperAgendaGroup): SuperAgendaSelectorRule => ({
-  id: group.id,
-  label: group.title,
-  selector: group.selector,
-  description: group.subtitle,
-  count: group.cards.length,
-  tone: group.tone,
+const summarizeCapabilities = (
+  capabilities: SuperAgendaSelectorCapability[],
+): SuperAgendaCapabilitySummary => ({
+  total: capabilities.length,
+  implemented: capabilities.filter((capability) => capability.status !== "planned").length,
+  active: capabilities.filter((capability) => capability.active).length,
+  planned: capabilities.filter((capability) => capability.status === "planned").length,
 });
 
 const agendaCardView = (
@@ -173,148 +174,10 @@ const agendaCardView = (
     record,
     signals: agendaSignals(card, record),
     pressure: agendaPressure(card),
-    aiState: agendaAiState(card, record),
+    agentState: agendaAgentState(card, record),
     memorySignals: agendaMemorySignals(card, record),
   };
 };
-
-const groupAgendaCards = (cards: AgendaCardView[], mode: AgendaModeKey): SuperAgendaGroup[] => {
-  if (mode === "flow") {
-    return groupAgendaCardsByDate(cards);
-  }
-  const remaining = new Set(cards);
-  return agendaGroupSpecsFor(mode).map((spec) => {
-    const grouped: AgendaCardView[] = [];
-    for (const card of cards) {
-      if (remaining.has(card) && spec.match(card)) {
-        grouped.push(card);
-        remaining.delete(card);
-      }
-    }
-    return { ...spec, cards: grouped };
-  });
-};
-
-const agendaGroupSpecsFor = (mode: Exclude<AgendaModeKey, "flow">): AgendaGroupSpec[] => {
-  const specs = {
-    focus: [
-      blockedGroupSpec(),
-      timedGroupSpec(),
-      deadlineGroupSpec(),
-      waitingGroupSpec(),
-      doneGroupSpec(),
-      scheduledGroupSpec(),
-      otherGroupSpec(),
-    ],
-    pressure: [
-      deadlineGroupSpec(),
-      blockedGroupSpec(),
-      waitingGroupSpec(),
-      timedGroupSpec(),
-      scheduledGroupSpec(),
-      doneGroupSpec(),
-      otherGroupSpec(),
-    ],
-  } satisfies Record<Exclude<AgendaModeKey, "flow">, AgendaGroupSpec[]>;
-  return specs[mode];
-};
-
-const groupAgendaCardsByDate = (cards: AgendaCardView[]): SuperAgendaGroup[] => {
-  const groups = new Map<string, AgendaCardView[]>();
-  for (const card of cards) {
-    groups.set(card.displayDate, [...(groups.get(card.displayDate) ?? []), card]);
-  }
-  return [...groups.entries()].map(([date, groupCards]) => ({
-    id: `date-${date}`,
-    title: date,
-    subtitle: flowSubtitle(groupCards),
-    selector: ":auto-planning",
-    tone: dominantTone(groupCards),
-    cards: groupCards,
-  }));
-};
-
-const flowSubtitle = (cards: AgendaCardView[]): string => {
-  const timed = cards.filter((card) => card.time).length;
-  const deadlines = cards.filter((card) => card.kind === "deadline").length;
-  const blockers = cards.filter((card) => card.blockers.length > 0).length;
-  return [
-    `${cards.length} rows`,
-    timed > 0 ? `${timed} timed` : null,
-    deadlines > 0 ? `${deadlines} deadline` : null,
-    blockers > 0 ? `${blockers} blocked` : null,
-  ]
-    .filter(Boolean)
-    .join(" / ");
-};
-
-const dominantTone = (cards: AgendaCardView[]): SuperAgendaTone => {
-  const tones: SuperAgendaTone[] = ["critical", "deadline", "focus", "waiting", "done"];
-  return tones.find((tone) => cards.some((card) => card.pressure === tone)) ?? "steady";
-};
-
-const blockedGroupSpec = (): AgendaGroupSpec => ({
-  id: "blocked",
-  title: "Blocked Flow",
-  subtitle: "Parser-owned ORDERED edges or dependency receipts need attention.",
-  selector: ":and (:children todo :property ORDERED)",
-  tone: "critical",
-  match: (card) => card.blockers.length > 0,
-});
-
-const timedGroupSpec = (): AgendaGroupSpec => ({
-  id: "focus",
-  title: "Timed Focus",
-  subtitle: "Items with concrete time windows that shape the day.",
-  selector: ":time-grid",
-  tone: "focus",
-  match: (card) => Boolean(card.time),
-});
-
-const deadlineGroupSpec = (): AgendaGroupSpec => ({
-  id: "deadline",
-  title: "Deadline Pressure",
-  subtitle: "Deadline rows and due-date warnings from the agenda projection.",
-  selector: ":deadline",
-  tone: "deadline",
-  match: (card) => card.kind === "deadline",
-});
-
-const waitingGroupSpec = (): AgendaGroupSpec => ({
-  id: "waiting",
-  title: "Waiting State",
-  subtitle: "Work that is visible, but intentionally parked.",
-  selector: ":todo WAIT",
-  tone: "waiting",
-  match: (card) => card.todo === "WAIT" || card.todo === "WAITING",
-});
-
-const doneGroupSpec = (): AgendaGroupSpec => ({
-  id: "done",
-  title: "Completed Signal",
-  subtitle: "Closed or done rows kept visible for recent operational context.",
-  selector: ":log closed",
-  tone: "done",
-  match: (card) => card.kind === "closed" || card.todoState === "done",
-});
-
-const scheduledGroupSpec = (): AgendaGroupSpec => ({
-  id: "scheduled",
-  title: "Scheduled Flow",
-  subtitle: "Planned work without a tighter attention signal.",
-  selector: ":scheduled",
-  tone: "steady",
-  match: (card) => card.kind === "scheduled",
-});
-
-const otherGroupSpec = (): AgendaGroupSpec => ({
-  id: "other",
-  title: "Other Candidates",
-  subtitle: "Remaining parser-visible rows, preserved instead of dropped.",
-  selector: ":anything",
-  tone: "muted",
-  match: () => true,
-});
 
 const agendaSignals = (
   card: OrgizeAgendaViewCardDto,
@@ -326,7 +189,7 @@ const agendaSignals = (
     card.time ? `${card.time}${card.endTime ? `-${card.endTime}` : ""}` : null,
     ...card.effectiveTags.map((tag) => `#${tag}`),
     ...(record?.properties ?? [])
-      .filter((property) => ["AREA", "EFFORT", "KIND", "ID"].includes(property.key))
+      .filter((property) => ["AREA", "EFFORT", "KIND", "ID", "DIR"].includes(property.key))
       .map((property) => `${property.key}: ${property.value}`),
   ];
   return signals.filter((signal): signal is string => Boolean(signal));
@@ -354,22 +217,24 @@ const agendaPressure = (card: OrgizeAgendaViewCardDto): SuperAgendaTone => {
   if (card.kind === "deadline") return "deadline";
   if (card.time) return "focus";
   if (card.kind === "closed" || card.todoState === "done") return "done";
+  if (card.todo === "WAIT" || card.todo === "WAITING") return "waiting";
   return "steady";
 };
 
-const agendaAiState = (
+const agendaAgentState = (
   card: OrgizeAgendaViewCardDto,
   record: OrgizeViewIndexRecordDto | null,
 ): string => {
-  if (card.blockers.length > 0) return "needs unblock brief";
-  if (card.kind === "deadline") return "risk summary ready";
-  if (card.time) return "execution slot ready";
-  if (agendaMemorySignals(card, record).length > 0) return "memory context ready";
-  return "agenda context ready";
+  if (card.blockers.length > 0) return "unblock brief";
+  if (card.kind === "deadline") return "risk brief";
+  if (card.time) return "execution brief";
+  if (agendaMemorySignals(card, record).length > 0) return "memory context";
+  return "agenda context";
 };
 
-const agendaAiBrief = (
+const agendaAgentBrief = (
   cards: AgendaCardView[],
+  groups: SuperAgendaWorkspace["groups"],
   stats: {
     blockedCount: number;
     deadlineCount: number;
@@ -377,13 +242,13 @@ const agendaAiBrief = (
     receiptCount: number;
     memoryCount: number;
   },
-): SuperAgendaAiBrief => {
+): SuperAgendaAgentBrief => {
   const firstBlocked = cards.find((card) => card.blockers.length > 0);
   const firstDeadline = cards.find((card) => card.kind === "deadline");
   const firstTimed = cards.find((card) => Boolean(card.time));
   const firstMemory = cards.find((card) => card.memorySignals.length > 0);
   const recommendations = [
-    firstBlocked ? `Ask the agent to explain the blocker chain for "${firstBlocked.title}".` : null,
+    firstBlocked ? `Explain the blocker chain for "${firstBlocked.title}".` : null,
     firstDeadline ? `Generate a deadline-risk note for "${firstDeadline.title}".` : null,
     firstTimed ? `Turn "${firstTimed.title}" into the next execution brief.` : null,
     firstMemory ? `Promote "${firstMemory.title}" into the running agenda record.` : null,
@@ -391,7 +256,8 @@ const agendaAiBrief = (
   return {
     headline: agendaHeadline(firstBlocked, firstDeadline, firstTimed),
     summary: [
-      `${cards.length} visible agenda rows`,
+      `${groups.length} visible sections`,
+      `${cards.length} agenda rows`,
       `${stats.receiptCount} parser receipts`,
       `${stats.memoryCount} memory-linked rows`,
       `${stats.blockedCount} blockers`,
@@ -401,9 +267,9 @@ const agendaAiBrief = (
     recommendations:
       recommendations.length > 0
         ? recommendations
-        : ["Ask the agent to summarize the visible agenda into a daily operating note."],
+        : ["Summarize the visible agenda into a daily operating note."],
     prompts: [
-      "Explain today's agenda using receipts and blockers.",
+      "Explain this agenda by selector rule, using receipts and blockers as evidence.",
       "Draft a progress log from DONE, record, and memory rows.",
       "Turn deadline pressure into a concrete next-action queue.",
     ],
@@ -430,10 +296,10 @@ const agendaCaptureLog = (cards: AgendaCardView[]): SuperAgendaCaptureEntry[] =>
       (card) =>
         card.memorySignals.length > 0 || card.receipts.length > 0 || card.blockers.length > 0,
     )
-    .slice(0, 6)
+    .slice(0, 8)
     .map((card) => ({
       title: card.title,
-      label: card.memorySignals.length > 0 ? card.memorySignals.join(" / ") : card.aiState,
+      label: card.memorySignals.length > 0 ? card.memorySignals.join(" / ") : card.agentState,
       detail: card.receipts[0]?.message ?? `${card.kind} on ${card.displayDate}`,
       tone: card.pressure,
     }));

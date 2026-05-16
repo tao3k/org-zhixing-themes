@@ -1,0 +1,152 @@
+#+TITLE: Org Syntax Atlas
+#+SUBTITLE: A richer front-end corpus for Org Zhixing
+#+AUTHOR: Tao 3000
+#+DATE: <2026-05-16 Sat>
+#+CATEGORY: syntax-atlas
+#+FILETAGS: :zhixing:syntax:atlas:
+#+TODO: IDEA(i) NEXT(n) WAIT(w@/!) TODO(t) REVIEW(r) | DONE(d!) CANCELED(c@)
+#+OPTIONS: toc:2 num:nil ^:{}
+#+PROPERTY: header-args :results output :exports both
+
+* DONE Why this syntax atlas exists :blog:essay:
+CLOSED: [2026-05-16 Sat 08:20]
+:PROPERTIES:
+:ID: syntax-atlas-purpose
+:SLUG: syntax-atlas-purpose
+:AREA: frontend
+:KIND: article
+:END:
+The public demo should prove that a personal site can read serious Org, not only
+three TODO rows.  This source intentionally mixes prose, tables, links, drawers,
+timestamps, source blocks, lists, footnotes, and planning metadata.
+
+The key rule is simple: TypeScript may arrange the experience, but native Org
+syntax remains the source of truth.[fn:native-org]
+
+** What the reader should notice
+
+- *Blog* headings still become articles when tagged =:blog:=.
+- /Italic/, *bold*, _underline_, +strike-through+, =verbatim=, and ~code~ should
+  survive rendering.
+- Links can point to [[https://orgmode.org/][Org mode]], [[id:syntax-table-record][stable records]],
+  and [[attachment:syntax-map.png][attachment-like evidence]].
+- Footnotes, tables, drawers, and source blocks should not flatten into plain
+  text.
+
+#+BEGIN_QUOTE
+Knowledge is useful only when it can be revisited, re-ranked, and acted on.
+#+END_QUOTE
+
+[fn:native-org] In this demo that means property drawers, planning lines,
+headline tags, source blocks, and rendered HTML all come through the WASM parser
+boundary instead of a TypeScript approximation.
+
+* REVIEW [#A] Syntax rendering checklist :blog:agenda:focus:
+SCHEDULED: <2026-05-16 Sat 11:00-12:00> DEADLINE: <2026-05-17 Sun>
+:PROPERTIES:
+:ID: syntax-rendering-checklist
+:AREA: frontend
+:EFFORT: 1h
+:END:
+This article doubles as an agenda item.  The same heading must appear in the
+Blog reader, the Notes list, and the Agenda workbench.
+
+** Inline and block syntax
+
+1. Inline emphasis: *bold*, /italic/, _underline_, +deleted+, =verbatim=,
+   ~inline-code~.
+2. Nested list:
+   - Parser-owned facts
+     - TODO keyword
+     - priority cookie
+     - planning line
+   - Frontend-owned presentation
+     - source cards
+     - article library
+     - agenda panels
+3. Checkbox state:
+   - [X] render checked task
+   - [-] render partial task
+   - [ ] render open task
+
+#+BEGIN_EXAMPLE
+This example block should remain monospaced.
+It is useful for command transcripts and raw Org fragments.
+#+END_EXAMPLE
+
+#+BEGIN_SRC typescript
+type AgendaSurface = {
+  source: "org";
+  parser: "wasm";
+  frontend: "typescript";
+};
+
+console.log("native Org first", {
+  parser: "orgize",
+  watch: "rspack",
+});
+#+END_SRC
+
+** A compact table
+:PROPERTIES:
+:ID: syntax-table-record
+:KIND: evidence-table
+:END:
+
+| Syntax family | Example                    | Frontend risk                  |
+|---------------+----------------------------+--------------------------------|
+| Planning      | DEADLINE / SCHEDULED       | hidden from agenda grouping    |
+| Properties    | =:AREA:=, =:EFFORT:=, =:ID:= | collapsed into plain text      |
+| Links         | web, id, attachment        | lost labels or wrong target    |
+| Blocks        | quote, example, source     | broken spacing or overflow     |
+| Tables        | org table                  | unreadable in Zen mode         |
+
+* Records
+** NEXT [#B] Property drawer coverage :record:memory:
+SCHEDULED: <2026-05-16 Sat 14:30>
+:PROPERTIES:
+:ID: property-drawer-coverage
+:AREA: parser
+:KIND: syntax-contract
+:EFFORT: 45m
+:OWNER: frontend
+:END:
+This record exists to verify drawer preservation and display.  It should expose
+multiple key-value pairs without requiring the user to inspect raw Org.
+
+** WAIT [#C] Attachment and ID link follow-up :record:ATTACH:
+SCHEDULED: <2026-05-18 Mon>
+:PROPERTIES:
+:ID: attachment-id-follow-up
+:DIR: assets/syntax
+:AREA: content
+:EFFORT: 30m
+:END:
+The body carries both an attachment link and an ID link:
+[[attachment:syntax-map.png][syntax map]] and [[id:syntax-rendering-checklist][rendering checklist]].
+
+* Agenda
+** NEXT [#A] Audit table overflow in Zen reading :agenda:ui:
+SCHEDULED: <2026-05-16 Sat 16:00> DEADLINE: <2026-05-18 Mon>
+:PROPERTIES:
+:AREA: reading
+:EFFORT: 1h
+:END:
+Tables, source blocks, and long links must stay readable on desktop and mobile.
+
+** TODO [#B] Add visual fixtures for attachment cards :agenda:research:
+SCHEDULED: <2026-05-19 Tue>
+:PROPERTIES:
+:AREA: media
+:EFFORT: 2h
+:END:
+The demo currently uses attachment links as semantic placeholders.  A later
+slice can add real images under public assets.
+
+** DONE Capture baseline syntax corpus :agenda:
+CLOSED: [2026-05-15 Fri 19:10]
+:LOGBOOK:
+CLOCK: [2026-05-15 Fri 18:30]--[2026-05-15 Fri 19:10] =>  0:40
+:END:
+The first version of this corpus was added after the UI stopped showing
+development-only compiler state.

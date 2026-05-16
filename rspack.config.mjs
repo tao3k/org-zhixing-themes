@@ -1,0 +1,98 @@
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import rspack from "@rspack/core";
+
+const projectRoot = dirname(fileURLToPath(import.meta.url));
+const orgizeRoot = resolve(projectRoot, "../..");
+const orgizeWasmRoot = resolve(orgizeRoot, "wasm");
+const publicRoot = resolve(projectRoot, "public");
+
+export default (_env, argv) => {
+  const mode = argv.mode === "production" ? "production" : "development";
+  const isProduction = mode === "production";
+
+  return {
+    context: projectRoot,
+    mode,
+    devtool: isProduction ? "source-map" : "eval-cheap-module-source-map",
+    entry: {
+      app: [resolve(projectRoot, "src/styles.css"), resolve(projectRoot, "src/main.ts")],
+    },
+    output: {
+      path: resolve(projectRoot, "dist"),
+      filename: "assets/[name].[contenthash:8].js",
+      chunkFilename: "assets/[name].[contenthash:8].js",
+      assetModuleFilename: "assets/[name].[contenthash:8][ext]",
+      publicPath: "auto",
+      clean: true,
+    },
+    resolve: {
+      extensions: [".ts", ".tsx", ".js", ".mjs", ".json"],
+    },
+    module: {
+      rules: [
+        {
+          test: /\.tsx?$/i,
+          exclude: /node_modules/,
+          loader: "builtin:swc-loader",
+          options: {
+            jsc: {
+              parser: {
+                syntax: "typescript",
+              },
+              target: "es2022",
+            },
+          },
+          type: "javascript/auto",
+        },
+        {
+          test: /\.css$/i,
+          type: "css/auto",
+        },
+        {
+          test: /\.wasm$/i,
+          type: "asset/resource",
+        },
+      ],
+    },
+    plugins: [
+      new rspack.HtmlRspackPlugin({
+        template: resolve(projectRoot, "index.html"),
+        scriptLoading: "module",
+        minify: isProduction,
+      }),
+      new rspack.CopyRspackPlugin({
+        patterns: [{ from: publicRoot, to: "." }],
+      }),
+    ],
+    optimization: {
+      runtimeChunk: "single",
+      splitChunks: {
+        chunks: "all",
+      },
+    },
+    devServer: {
+      host: "127.0.0.1",
+      port: 5173,
+      hot: !isProduction,
+      liveReload: true,
+      historyApiFallback: true,
+      static: {
+        directory: publicRoot,
+        publicPath: "/",
+        watch: true,
+      },
+      watchFiles: [
+        resolve(publicRoot, "**/*.{org,toml}"),
+        resolve(orgizeWasmRoot, "worker.js"),
+        resolve(orgizeWasmRoot, "dto.js"),
+        resolve(orgizeWasmRoot, "package.json"),
+        resolve(orgizeWasmRoot, "dist/**/*"),
+      ],
+      client: {
+        overlay: true,
+        progress: true,
+      },
+    },
+  };
+};

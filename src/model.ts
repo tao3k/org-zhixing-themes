@@ -1,11 +1,14 @@
 import type {
+  OrgizeAgentCapturePlanResponseDto,
+  OrgizeAgentCaptureRequestDto,
   OrgizeAgendaViewResponseDto,
   OrgizeLintFindingDto,
   OrgizeViewIndexRecordDto,
 } from "orgize/dto";
 import type { AgendaSettings } from "./config";
+import type { CaptureApplyPreview } from "./captureApplyPreview";
 
-export type ViewKey = "blog" | "records" | "agenda" | "diagnostics";
+export type ViewKey = "blog" | "records" | "agenda" | "capture" | "diagnostics";
 
 export type OrgizeDocumentView = {
   sectionIndex: OrgizeViewIndexRecordDto[];
@@ -14,6 +17,9 @@ export type OrgizeDocumentView = {
   agenda: AgendaItem[];
   agendaView: OrgizeAgendaViewResponseDto | null;
   agendaRange: AgendaSettings | null;
+  capturePlan: OrgizeAgentCapturePlanResponseDto | null;
+  captureRequest: OrgizeAgentCaptureRequestDto | null;
+  captureApplyPreview: CaptureApplyPreview | null;
   counts: {
     blog: number;
     records: number;
@@ -44,6 +50,9 @@ export const createDocumentView = (
     agenda,
     agendaView: null,
     agendaRange: null,
+    capturePlan: null,
+    captureRequest: null,
+    captureApplyPreview: null,
     counts: {
       blog: recordsByTag.get("blog")?.length ?? 0,
       records: recordsByTag.get("record")?.length ?? 0,
@@ -67,6 +76,18 @@ export const withAgendaView = (
   },
 });
 
+export const withCapturePlan = (
+  document: OrgizeDocumentView,
+  capturePlan: OrgizeAgentCapturePlanResponseDto,
+  captureRequest: OrgizeAgentCaptureRequestDto,
+  captureApplyPreview: CaptureApplyPreview,
+): OrgizeDocumentView => ({
+  ...document,
+  capturePlan,
+  captureRequest,
+  captureApplyPreview,
+});
+
 export const withLint = (
   document: OrgizeDocumentView,
   lint: OrgizeLintFindingDto[],
@@ -80,8 +101,24 @@ export const taggedRecords = (
   tag: string,
 ): OrgizeViewIndexRecordDto[] => document?.recordsByTag.get(normalizeTag(tag)) ?? [];
 
+export const blogArticles = (document: OrgizeDocumentView | null): OrgizeViewIndexRecordDto[] =>
+  articleRoots(taggedRecords(document, "blog"));
+
 export const agendaItems = (document: OrgizeDocumentView | null): AgendaItem[] =>
   document?.agenda ?? [];
+
+const articleRoots = (records: OrgizeViewIndexRecordDto[]): OrgizeViewIndexRecordDto[] => {
+  const roots: OrgizeViewIndexRecordDto[] = [];
+  let currentRoot: OrgizeViewIndexRecordDto | null = null;
+  for (const record of records) {
+    if (currentRoot && record.level > currentRoot.level) {
+      continue;
+    }
+    roots.push(record);
+    currentRoot = record;
+  }
+  return roots;
+};
 
 const indexRecordsByTag = (
   records: OrgizeViewIndexRecordDto[],

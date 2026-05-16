@@ -1,4 +1,14 @@
 import {
+  blogArticleFromEvent,
+  blogCacheKey,
+  blogZenModeFromEvent,
+  clearBlogCache,
+  initialBlogReaderState,
+  readerModeFor,
+  syncBlogArticleSelection,
+  type BlogReaderState,
+} from "./blogState";
+import {
   agendaViewRequest,
   loadSiteConfig,
   resolveInitialAgendaMode,
@@ -10,16 +20,33 @@ import {
   type SiteConfig,
   type SourceItem,
 } from "./config";
-import { createDocumentView, withAgendaView, withLint, type OrgizeDocumentView } from "./model";
+import type { AgendaPanelKey } from "./agendaTypes";
+import {
+  isAgendaMode,
+  isAgendaPanel,
+  resolveInitialAgendaPanel,
+  resolveInitialAgendaRuleId,
+} from "./agendaState";
+import { createTabButtons } from "./appChrome";
+import { bindAppDom, type AppDomNodes } from "./appDom";
+import { createCaptureApplyPreview } from "./captureApplyPreview";
+import { createAgentCaptureRequest } from "./captureModel";
+import {
+  createDocumentView,
+  withAgendaView,
+  withCapturePlan,
+  withLint,
+  type OrgizeDocumentView,
+} from "./model";
 import { OrgizeSession, type OrgizeSessionOptions } from "./orgizeClient";
+import { renderAppShell } from "./appShell";
 import { renderStats, renderView } from "./render";
+import { renderSourceBlocks } from "./sourceBlocks";
+import { writeAppUrlState } from "./urlState";
 import type { ViewKey } from "./model";
 
 export type OrgZhixingAppOptions = Pick<OrgizeSessionOptions, "createWorker">;
-
-export type OrgZhixingAppHandle = {
-  dispose: () => void;
-};
+export type OrgZhixingAppHandle = { dispose: () => void };
 
 export const mountOrgZhixingApp = (
   app: HTMLElement,
@@ -34,14 +61,12 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
   readonly #root: HTMLElement;
   readonly #session: OrgizeSession;
   #abortController = new AbortController();
-  #articlePane!: HTMLDivElement;
-  #statusOutput!: HTMLOutputElement;
-  #titleHeading!: HTMLHeadingElement;
-  #sourceSelector!: HTMLSelectElement;
-  #tabsNav!: HTMLElement;
-  #viewPane!: HTMLDivElement;
+  #dom!: AppDomNodes;
   #currentView: ViewKey = "blog";
-  #agendaMode: AgendaModeKey = "focus";
+  #agendaMode: AgendaModeKey = "classic";
+  #agendaPanel: AgendaPanelKey = "trace";
+  #agendaRuleId: string | null = null;
+  #blog: BlogReaderState = initialBlogReaderState();
   #siteConfig: SiteConfig | null = null;
   #sourceItem: SourceItem | null = null;
   #documentView: OrgizeDocumentView | null = null;
@@ -56,9 +81,7 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
 
   constructor(root: HTMLElement, options: OrgZhixingAppOptions) {
     this.#root = root;
-    this.#session = new OrgizeSession({
-      createWorker: options.createWorker,
-    });
+    this.#session = new OrgizeSession({ createWorker: options.createWorker });
   }
 
   dispose(): void {
@@ -67,59 +90,16 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
   }
 
   mount(): void {
-    this.#root.innerHTML = `
-      <main class="shell">
-        <section class="article-pane">
-          <header>
-            <div>
-              <p class="eyebrow">Org Zhixing</p>
-              <h1 id="site-title">Blog, records, and agenda from one Org source</h1>
-            </div>
-            <output id="status">Loading Org parser...</output>
-          </header>
-          <div id="article" class="article-surface"></div>
-        </section>
-        <section class="viewer-pane">
-          <div class="config-bar">
-            <label for="source-select">Source</label>
-            <select id="source-select"></select>
-          </div>
-          <nav id="tabs" aria-label="Views"></nav>
-          <div id="view"></div>
-        </section>
-      </main>
-    `;
-
-    this.#bindDom();
+    this.#root.innerHTML = renderAppShell();
+    this.#dom = bindAppDom(this.#root);
     this.#bindEvents();
     this.#render();
-    this.#renderArticle();
     void this.#boot();
-  }
-
-  #bindDom(): void {
-    const article = this.#root.querySelector<HTMLDivElement>("#article");
-    const status = this.#root.querySelector<HTMLOutputElement>("#status");
-    const siteTitle = this.#root.querySelector<HTMLHeadingElement>("#site-title");
-    const sourceSelect = this.#root.querySelector<HTMLSelectElement>("#source-select");
-    const tabs = this.#root.querySelector<HTMLElement>("#tabs");
-    const view = this.#root.querySelector<HTMLDivElement>("#view");
-
-    if (!article || !status || !siteTitle || !sourceSelect || !tabs || !view) {
-      throw new Error("missing demo DOM nodes");
-    }
-
-    this.#articlePane = article;
-    this.#statusOutput = status;
-    this.#titleHeading = siteTitle;
-    this.#sourceSelector = sourceSelect;
-    this.#tabsNav = tabs;
-    this.#viewPane = view;
   }
 
   #bindEvents(): void {
     const listenerOptions = { signal: this.#abortController.signal };
-    this.#tabsNav.addEventListener(
+    this.#dom.tabs.addEventListener(
       "click",
       (event) => {
         const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
@@ -136,20 +116,38 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
       listenerOptions,
     );
 
-    this.#sourceSelector.addEventListener(
+    this.#dom.sourceSelect.addEventListener(
       "change",
       () => {
         if (!this.#siteConfig) {
           return;
         }
-        const nextSource = sourceFromUserPath(this.#siteConfig, this.#sourceSelector.value);
+        const nextSource = sourceFromUserPath(this.#siteConfig, this.#dom.sourceSelect.value);
+        this.#blog.articleRangeStart = null;
         this.#writeUrlState(nextSource.file);
         void this.#loadSource(nextSource);
       },
       listenerOptions,
     );
 
-    this.#viewPane.addEventListener(
+    this.#dom.sourceFeed.addEventListener(
+      "click",
+      (event) => {
+        if (!this.#siteConfig) return;
+        const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
+          "button[data-source-id]",
+        );
+        if (!target?.dataset.sourceId) return;
+        const nextSource = sourceFromUserPath(this.#siteConfig, target.dataset.sourceId);
+        this.#agendaRuleId = null;
+        this.#blog.articleRangeStart = null;
+        this.#writeUrlState(nextSource.file);
+        void this.#loadSource(nextSource);
+      },
+      listenerOptions,
+    );
+
+    this.#dom.view.addEventListener(
       "click",
       (event) => {
         const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
@@ -160,7 +158,75 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
           return;
         }
         this.#agendaMode = mode;
+        this.#agendaRuleId = null;
         this.#clearAgendaCache();
+        this.#writeUrlState();
+        this.#render();
+      },
+      listenerOptions,
+    );
+
+    this.#dom.view.addEventListener(
+      "click",
+      (event) => {
+        const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
+          "button[data-agenda-panel]",
+        );
+        const panel = target?.dataset.agendaPanel;
+        if (!isAgendaPanel(panel)) {
+          return;
+        }
+        this.#agendaPanel = panel;
+        this.#clearAgendaCache();
+        this.#writeUrlState();
+        this.#render();
+      },
+      listenerOptions,
+    );
+
+    this.#dom.view.addEventListener(
+      "click",
+      (event) => {
+        const target = (event.target as HTMLElement).closest<HTMLElement>(
+          "[data-agenda-rule-select]",
+        );
+        const ruleId = target?.dataset.agendaRuleSelect;
+        if (!ruleId) {
+          return;
+        }
+        this.#agendaRuleId = ruleId;
+        this.#clearAgendaCache();
+        this.#writeUrlState();
+        this.#render();
+        this.#scrollAgendaRuleIntoView(ruleId);
+      },
+      listenerOptions,
+    );
+
+    this.#dom.view.addEventListener(
+      "click",
+      (event) => {
+        const rangeStart = blogArticleFromEvent(event);
+        if (rangeStart === null) {
+          return;
+        }
+        this.#blog.articleRangeStart = rangeStart;
+        clearBlogCache(this.#viewCache);
+        this.#writeUrlState();
+        this.#render();
+      },
+      listenerOptions,
+    );
+
+    this.#dom.view.addEventListener(
+      "click",
+      (event) => {
+        const zenMode = blogZenModeFromEvent(event);
+        if (zenMode === null) {
+          return;
+        }
+        this.#blog.zenMode = zenMode;
+        clearBlogCache(this.#viewCache);
         this.#writeUrlState();
         this.#render();
       },
@@ -176,6 +242,8 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
       this.#showPerformance = showPerformanceFromUrl(this.#siteConfig.behavior.showPerformance);
       this.#currentView = resolveInitialView(this.#siteConfig);
       this.#agendaMode = resolveInitialAgendaMode(this.#siteConfig);
+      this.#agendaPanel = resolveInitialAgendaPanel();
+      this.#agendaRuleId = resolveInitialAgendaRuleId();
       this.#configureChrome(this.#siteConfig);
       await this.#loadSource(resolveInitialSource(this.#siteConfig));
     } catch (error) {
@@ -189,7 +257,7 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     if (this.#siteConfig) {
       this.#renderSourceOptions(this.#siteConfig);
     }
-    this.#sourceSelector.value = nextSource.file;
+    this.#dom.sourceSelect.value = nextSource.file;
     this.#sourceOrg = "";
     this.#documentView = null;
     this.#renderedHtml = "";
@@ -198,13 +266,11 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     this.#pendingMessage = "Loading Org source...";
     this.#articleMessage = "Loading Org source...";
     this.#render();
-    this.#renderArticle();
 
     this.#sourceOrg = await this.#loadOrgSource(nextSource.sourceFile);
     this.#pendingMessage = "Parsing view index...";
     this.#articleMessage = "Parsing Org source...";
     this.#render();
-    this.#renderArticle();
 
     const parsed = await this.#session.parseViewIndex(this.#sourceOrg, nextSource.sourceFile);
     if (version !== this.#documentVersion) {
@@ -212,6 +278,7 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     }
     this.#timings = { parseMs: parsed.durationMs };
     this.#documentView = createDocumentView(parsed.value.records);
+    syncBlogArticleSelection(this.#documentView, this.#blog);
     this.#pendingMessage = "";
     this.#viewCache.clear();
 
@@ -221,18 +288,13 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     if (this.#currentView === "agenda") {
       await this.#refreshAgendaIfNeeded();
     }
-    this.#statusOutput.value = renderStats(
-      this.#documentView,
-      this.#timings,
-      this.#showPerformance,
-    );
+    if (this.#currentView === "capture") {
+      await this.#refreshCaptureIfNeeded();
+    }
+    this.#updateStatus();
     this.#render();
     await this.#refreshArticleHtml(version);
-    this.#statusOutput.value = renderStats(
-      this.#documentView,
-      this.#timings,
-      this.#showPerformance,
-    );
+    this.#updateStatus();
   }
 
   async #loadOrgSource(sourceFile: string): Promise<string> {
@@ -254,11 +316,10 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     if (this.#currentView === "agenda") {
       await this.#refreshAgendaIfNeeded();
     }
-    this.#statusOutput.value = renderStats(
-      this.#documentView,
-      this.#timings,
-      this.#showPerformance,
-    );
+    if (this.#currentView === "capture") {
+      await this.#refreshCaptureIfNeeded();
+    }
+    this.#updateStatus();
     this.#render();
   }
 
@@ -304,12 +365,36 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     this.#pendingMessage = "";
   }
 
+  async #refreshCaptureIfNeeded(): Promise<void> {
+    if (this.#documentView?.capturePlan || !this.#documentView || !this.#sourceItem) {
+      return;
+    }
+    const version = this.#documentVersion;
+    const request = createAgentCaptureRequest(this.#documentView, this.#sourceItem);
+    this.#pendingMessage = "Projecting Agent capture plan...";
+    this.#render();
+    const capture = await this.#session.capturePlan(request);
+    if (version !== this.#documentVersion) {
+      return;
+    }
+    this.#timings = { ...this.#timings, captureMs: capture.durationMs };
+    if (this.#documentView) {
+      this.#documentView = withCapturePlan(
+        this.#documentView,
+        capture.value,
+        request,
+        createCaptureApplyPreview(capture.value, this.#sourceItem, this.#sourceOrg),
+      );
+    }
+    this.#viewCache.delete("capture");
+    this.#pendingMessage = "";
+  }
+
   async #refreshArticleHtml(version: number): Promise<void> {
     if (this.#renderedHtml) {
       return;
     }
     this.#articleMessage = "Rendering article...";
-    this.#renderArticle();
     const html = await this.#session.renderTimed("html");
     if (version !== this.#documentVersion) {
       return;
@@ -317,30 +402,48 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     this.#timings = { ...this.#timings, htmlMs: html.durationMs };
     this.#renderedHtml = html.value;
     this.#articleMessage = "";
-    this.#renderArticle();
+    clearBlogCache(this.#viewCache);
+    if (this.#currentView === "blog") {
+      this.#render();
+    }
   }
 
   #render(): void {
+    this.#root.dataset.view = this.#currentView;
+    this.#root.dataset.readerMode = readerModeFor(this.#currentView, this.#blog);
     if (this.#pendingMessage || !this.#documentView) {
-      this.#viewPane.innerHTML = renderView(
-        this.#currentView,
-        this.#documentView,
-        this.#pendingMessage,
-      );
+      this.#dom.view.innerHTML = renderView({
+        view: this.#currentView,
+        document: this.#documentView,
+        pendingMessage: this.#pendingMessage,
+      });
       return;
     }
     const cacheKey = this.#viewCacheKey();
     let html = this.#viewCache.get(cacheKey);
     if (!html) {
-      html = renderView(this.#currentView, this.#documentView, "", this.#agendaMode);
+      html = renderView({
+        view: this.#currentView,
+        document: this.#documentView,
+        articleHtml: this.#renderedHtml,
+        articleMessage: this.#articleMessage,
+        blogArticleRangeStart: this.#blog.articleRangeStart,
+        blogZenMode: this.#blog.zenMode,
+        agendaMode: this.#agendaMode,
+        agendaPanel: this.#agendaPanel,
+        agendaRuleId: this.#agendaRuleId,
+      });
       this.#viewCache.set(cacheKey, html);
     }
-    this.#viewPane.innerHTML = html;
+    this.#dom.view.innerHTML = html;
   }
 
   #viewCacheKey(): string {
+    if (this.#currentView === "blog") {
+      return blogCacheKey(this.#blog);
+    }
     return this.#currentView === "agenda"
-      ? `${this.#currentView}:${this.#agendaMode}`
+      ? `${this.#currentView}:${this.#agendaMode}:${this.#agendaPanel}:${this.#agendaRuleId ?? ""}`
       : this.#currentView;
   }
 
@@ -352,74 +455,62 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     }
   }
 
-  #renderArticle(): void {
-    if (this.#articleMessage) {
-      this.#articlePane.innerHTML = `<div class="empty">${this.#articleMessage}</div>`;
-      return;
-    }
-    this.#articlePane.innerHTML = `<article class="rendered-html">${this.#renderedHtml}</article>`;
+  #updateStatus(): void {
+    this.#dom.status.value = renderStats(this.#documentView, this.#timings, this.#showPerformance);
   }
 
   #configureChrome(config: SiteConfig): void {
     document.documentElement.lang = config.locale;
     document.title = config.title;
-    this.#titleHeading.textContent = config.title;
+    this.#dom.siteTitle.textContent = config.title;
     this.#renderSourceOptions(config);
     this.#renderTabs(config);
   }
 
   #renderSourceOptions(config: SiteConfig): void {
     const selected = this.#sourceItem?.file;
-    const sources = [...config.sources];
-    if (this.#sourceItem && !sources.some((source) => source.file === this.#sourceItem?.file)) {
-      sources.unshift(this.#sourceItem);
-    }
-    const options = sources.map((source) => {
-      const option = document.createElement("option");
-      option.value = source.file;
-      option.textContent = source.name;
-      option.selected = source.file === selected;
-      return option;
-    });
-    this.#sourceSelector.replaceChildren(...options);
+    const { active, blocks, options } = renderSourceBlocks(config, selected, this.#sourceItem);
+    this.#dom.sourceSelect.replaceChildren(...options);
+    this.#dom.sourceFeed.replaceChildren(...blocks);
+    this.#dom.activeSourceTitle.textContent = active?.name ?? config.title;
+    this.#dom.activeSourcePath.textContent = active
+      ? `${active.file} / blog source`
+      : "No Org source";
   }
 
   #renderTabs(config: SiteConfig): void {
-    const buttons = config.menu.map((item) => {
-      const button = document.createElement("button");
-      button.dataset.view = item.view;
-      button.textContent = item.name;
-      button.classList.toggle("active", item.view === this.#currentView);
-      return button;
-    });
-    this.#tabsNav.replaceChildren(...buttons);
+    this.#dom.tabs.replaceChildren(...createTabButtons(config, this.#currentView));
   }
 
   #updateActiveTab(): void {
-    for (const button of this.#tabsNav.querySelectorAll("button")) {
+    for (const button of this.#dom.tabs.querySelectorAll("button")) {
       button.classList.toggle("active", button.dataset.view === this.#currentView);
     }
   }
 
   #writeUrlState(nextSource = this.#sourceItem?.file): void {
-    const url = new URL(window.location.href);
-    if (nextSource) {
-      url.searchParams.set("source", nextSource);
-    }
-    url.searchParams.set("view", this.#currentView);
-    if (this.#currentView === "agenda") {
-      url.searchParams.set("agenda", this.#agendaMode);
-    }
-    window.history.replaceState(null, "", url);
+    writeAppUrlState({
+      source: nextSource,
+      view: this.#currentView,
+      agendaMode: this.#agendaMode,
+      agendaPanel: this.#agendaPanel,
+      agendaRuleId: this.#agendaRuleId,
+      blog: this.#blog,
+    });
+  }
+
+  #scrollAgendaRuleIntoView(ruleId: string): void {
+    requestAnimationFrame(() => {
+      const target = this.#dom.view.querySelector<HTMLElement>(
+        `[data-agenda-group-rule="${CSS.escape(ruleId)}"]`,
+      );
+      target?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
   }
 
   #reportError(error: unknown): void {
     const message = error instanceof Error ? error.message : String(error);
-    this.#statusOutput.value = "WASM worker failed";
-    this.#viewPane.innerHTML = `<div class="error">${message}</div>`;
-    this.#articlePane.innerHTML = `<div class="error">${message}</div>`;
+    this.#dom.status.value = "WASM worker failed";
+    this.#dom.view.innerHTML = `<div class="error">${message}</div>`;
   }
 }
-
-const isAgendaMode = (value: unknown): value is AgendaModeKey =>
-  value === "focus" || value === "pressure" || value === "flow";

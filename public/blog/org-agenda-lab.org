@@ -1,0 +1,61 @@
+#+TITLE: Agenda Lab Notes
+#+AUTHOR: Tao 3000
+#+CATEGORY: agenda-lab
+#+FILETAGS: :zhixing:lab:
+#+TODO: NEXT(n) WAIT(w@/!) TODO(t) | DONE(d) CANCELED(c)
+
+* NEXT [#A] Prototype source block navigation :blog:agenda:focus:
+SCHEDULED: <2026-05-16 Sat 10:00> DEADLINE: <2026-05-18 Mon>
+:PROPERTIES:
+:ID: agenda-lab-source-blocks
+:AREA: frontend
+:EFFORT: 1h
+:END:
+Multiple Org files should feel like a blog index first, then become records,
+agenda groups, and AI handoff context once selected.
+
+* Blog
+** TODO [#B] Explain source blocks as the primary IA :blog:record:
+SCHEDULED: <2026-05-17 Sun>
+:PROPERTIES:
+:SLUG: source-blocks-primary-ia
+:AREA: writing
+:EFFORT: 45m
+:END:
+The left rail is not a settings drawer. It is the reader-facing entry point for
+Org documents.
+
+* Records
+** NEXT [#A] Capture feedback on sidebar density :record:memory:
+SCHEDULED: <2026-05-16 Sat 14:00>
+:PROPERTIES:
+:ID: sidebar-density-feedback
+:KIND: design-note
+:EFFORT: 30m
+:END:
+The source switcher needs enough metadata to be understood without stealing the
+agenda workbench's main space.
+
+** WAIT [#C] Collect future content metadata fields :record:
+SCHEDULED: <2026-05-18 Mon>
+:PROPERTIES:
+:AREA: content-model
+:EFFORT: 2h
+:END:
+Future config can add description, cover, series, and publication state for each
+Org source block.
+
+* Agenda
+** TODO [#B] Add richer source cards :agenda:ui:
+SCHEDULED: <2026-05-17 Sun 09:30>
+:PROPERTIES:
+:ID: richer-source-cards
+:AREA: frontend
+:EFFORT: 2h
+:END:
+Cards can later expose parsed title, tags, todo count, and last modified data.
+
+** DONE [#C] Keep selector workspace independent :agenda:
+CLOSED: [2026-05-15 Fri 18:30]
+The agenda workbench should survive source switching without losing its current
+program mode.

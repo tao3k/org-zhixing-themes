@@ -1,27 +1,54 @@
-import type {
-  OrgizeAgendaViewSkipDto,
-  OrgizeLintFindingDto,
-  OrgizeViewIndexRecordDto,
-} from "orgize/dto";
-import type { AgendaItem, OrgizeDocumentView, ViewKey } from "./model";
-import type { AgendaCardView, SuperAgendaGroup, SuperAgendaWorkspace } from "./agendaTypes";
+import type { OrgizeLintFindingDto, OrgizeViewIndexRecordDto } from "orgize/dto";
+import type { AgendaPanelKey } from "./agendaTypes";
 import type { AgendaModeKey } from "./config";
-import { agendaItems, taggedRecords } from "./model";
-import { agendaModeDefinitions, superAgendaWorkspace } from "./agendaModel";
+import { renderAgenda } from "./agendaRender";
+import { renderAgentCapture } from "./captureRender";
+import { blogArticles, taggedRecords, type OrgizeDocumentView, type ViewKey } from "./model";
 
 type TimingStats = {
   parseMs?: number;
   agendaMs?: number;
+  captureMs?: number;
   lintMs?: number;
   htmlMs?: number;
 };
 
-export const renderView = (
-  view: ViewKey,
-  document: OrgizeDocumentView | null,
+type RenderViewOptions = {
+  view: ViewKey;
+  document: OrgizeDocumentView | null;
+  pendingMessage?: string;
+  agendaMode?: AgendaModeKey;
+  agendaPanel?: AgendaPanelKey;
+  agendaRuleId?: string | null;
+  articleHtml?: string;
+  articleMessage?: string;
+  blogArticleRangeStart?: number | null;
+  blogZenMode?: boolean;
+};
+
+type ArticleTocItem = {
+  id: string;
+  level: number;
+  title: string;
+};
+
+type PreparedArticle = {
+  html: string;
+  toc: ArticleTocItem[];
+};
+
+export const renderView = ({
+  view,
+  document,
   pendingMessage = "",
-  agendaMode: AgendaModeKey = "focus",
-): string => {
+  agendaMode = "classic",
+  agendaPanel = "trace",
+  agendaRuleId = null,
+  articleHtml = "",
+  articleMessage = "",
+  blogArticleRangeStart = null,
+  blogZenMode = false,
+}: RenderViewOptions): string => {
   if (pendingMessage) {
     return `<div class="empty">${escapeHtml(pendingMessage)}</div>`;
   }
@@ -31,16 +58,182 @@ export const renderView = (
 
   switch (view) {
     case "blog":
-      return renderRecords(taggedRecords(document, "blog"), "Blog");
+      return renderBlogReader(
+        document,
+        articleHtml,
+        articleMessage,
+        blogArticleRangeStart,
+        blogZenMode,
+      );
     case "records":
       return renderRecords(taggedRecords(document, "record"), "Records");
     case "agenda":
-      return renderAgenda(document, agendaMode);
+      return renderAgenda(document, agendaMode, agendaPanel, agendaRuleId);
+    case "capture":
+      return renderAgentCapture(document);
     case "diagnostics":
       return document.lint
         ? renderDiagnostics(document.lint)
         : `<div class="empty">Loading lint...</div>`;
   }
+};
+
+const renderBlogReader = (
+  document: OrgizeDocumentView,
+  articleHtml: string,
+  articleMessage: string,
+  selectedRangeStart: number | null,
+  zenMode: boolean,
+): string => {
+  const articles = blogArticles(document);
+  const selected =
+    articles.find((article) => article.rangeStart === selectedRangeStart) ?? articles[0];
+  const selectedArticle = selected
+    ? prepareRenderedArticle(articleHtml, selected)
+    : prepareArticleHtml(articleHtml);
+  const emptyMessage =
+    articleMessage ||
+    (articles.length === 0
+      ? "No :blog: articles found in this Org source."
+      : "Rendering article...");
+
+  return `
+    <section class="blog-reader${zenMode ? " is-zen" : ""}" aria-label="Blog reader">
+      <header class="blog-reader-bar">
+        <div>
+          <p class="eyebrow">Blog library</p>
+          <h2>${escapeHtml(selected?.title ?? "Org articles")}</h2>
+          <p>${escapeHtml(readerSummary(articles.length, document.counts.records, document.counts.agenda))}</p>
+        </div>
+        <button type="button" class="reader-mode-button" data-blog-zen="${zenMode ? "0" : "1"}" aria-pressed="${zenMode}">
+          ${zenMode ? "Library" : "Zen"}
+        </button>
+      </header>
+      <div class="zen-toolbar" aria-label="Zen reader toolbar">
+        <span>${escapeHtml(selected?.title ?? "Zen reader")}</span>
+        <button type="button" class="reader-mode-button" data-blog-zen="0" aria-pressed="true">Library</button>
+      </div>
+      ${renderArticleSwitcher(articles, selected?.rangeStart ?? null)}
+      <div class="blog-reader-layout">
+        ${renderArticleToc(selectedArticle.toc)}
+        ${
+          selectedArticle.html
+            ? `<article class="rendered-html blog-article">${selectedArticle.html}</article>`
+            : `<div class="empty blog-article-empty">${escapeHtml(emptyMessage)}</div>`
+        }
+      </div>
+    </section>
+  `;
+};
+
+const renderArticleSwitcher = (
+  articles: OrgizeViewIndexRecordDto[],
+  selectedRangeStart: number | null,
+): string => {
+  if (articles.length === 0) {
+    return "";
+  }
+  return `
+    <nav class="article-switcher" aria-label="Articles in this Org source">
+      ${articles.map((article) => renderArticleTab(article, article.rangeStart === selectedRangeStart)).join("")}
+    </nav>
+  `;
+};
+
+const renderArticleTab = (article: OrgizeViewIndexRecordDto, active: boolean): string => `
+  <button
+    type="button"
+    class="article-tab${active ? " active" : ""}"
+    data-blog-article="${article.rangeStart}"
+  >
+    <span>${escapeHtml(articleDateLabel(article))}</span>
+    <strong>${escapeHtml(article.title)}</strong>
+  </button>
+`;
+
+const renderArticleToc = (items: ArticleTocItem[]): string => `
+  <aside class="blog-toc" aria-label="Table of contents">
+    <div class="blog-toc-summary">
+      <span>Table of contents</span>
+      <strong>${items.length}</strong>
+    </div>
+    ${
+      items.length > 0
+        ? `<ol>${items.map(renderTocItem).join("")}</ol>`
+        : `<div class="empty blog-toc-empty">This article has no nested headings yet.</div>`
+    }
+  </aside>
+`;
+
+const renderTocItem = (item: ArticleTocItem): string => `
+  <li class="toc-level-${Math.min(Math.max(item.level, 1), 6)}">
+    <a href="#${escapeHtml(item.id)}">${escapeHtml(item.title)}</a>
+  </li>
+`;
+
+const readerSummary = (articleCount: number, recordCount: number, agendaCount: number): string =>
+  `${articleCount} posts from the current Org source, with ${recordCount} records and ${agendaCount} agenda signals still available.`;
+
+const articleDateLabel = (article: OrgizeViewIndexRecordDto): string =>
+  propertyValue(article, "CLOSED") ??
+  propertyValue(article, "DATE") ??
+  propertyValue(article, "SCHEDULED") ??
+  "Article";
+
+const propertyValue = (record: OrgizeViewIndexRecordDto, key: string): string | null =>
+  record.properties.find((property) => property.key.toUpperCase() === key)?.value ?? null;
+
+const prepareRenderedArticle = (
+  articleHtml: string,
+  article: OrgizeViewIndexRecordDto,
+): PreparedArticle => {
+  if (!articleHtml) {
+    return { html: "", toc: [] };
+  }
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(articleHtml, "text/html");
+  const root = parsed.querySelector("main") ?? parsed.body;
+  const heading = [...root.querySelectorAll("h1,h2,h3,h4,h5,h6")].find(
+    (candidate) => normalizeHeading(candidate.textContent) === normalizeHeading(article.title),
+  );
+  if (!heading) {
+    return prepareArticleHtml(articleHtml);
+  }
+  const level = headingLevel(heading);
+  const container = parsed.createElement("div");
+  container.append(heading.cloneNode(true));
+  let next = heading.nextElementSibling;
+  while (next && !(isHeading(next) && headingLevel(next) <= level)) {
+    container.append(next.cloneNode(true));
+    next = next.nextElementSibling;
+  }
+  return prepareArticleHtml(container.innerHTML);
+};
+
+const prepareArticleHtml = (html: string): PreparedArticle => {
+  if (!html) {
+    return { html: "", toc: [] };
+  }
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(html, "text/html");
+  const body = parsed.body;
+  const headings = [...body.querySelectorAll("h1,h2,h3,h4,h5,h6")];
+  const firstHeading = headings[0] ?? null;
+  const toc: ArticleTocItem[] = [];
+  const usedIds = new Set<string>();
+
+  for (const heading of headings) {
+    const title = normalizeHeading(heading.textContent);
+    if (!title) {
+      continue;
+    }
+    const id = uniqueHeadingId(title, usedIds);
+    heading.id = id;
+    if (heading !== firstHeading) {
+      toc.push({ id, title, level: headingLevel(heading) });
+    }
+  }
+  return { html: body.innerHTML, toc };
 };
 
 export const renderStats = (
@@ -56,6 +249,7 @@ export const renderStats = (
     ? [
         timings.parseMs === undefined ? null : `parse ${formatMs(timings.parseMs)}`,
         timings.agendaMs === undefined ? null : `agenda ${formatMs(timings.agendaMs)}`,
+        timings.captureMs === undefined ? null : `capture ${formatMs(timings.captureMs)}`,
         timings.lintMs === undefined ? null : `lint ${formatMs(timings.lintMs)}`,
         timings.htmlMs === undefined ? null : `html ${formatMs(timings.htmlMs)}`,
       ]
@@ -106,299 +300,6 @@ const renderProperties = (record: OrgizeViewIndexRecordDto): string => {
     .join("")}</dl>`;
 };
 
-const renderAgenda = (document: OrgizeDocumentView, agendaMode: AgendaModeKey): string => {
-  const workspace = superAgendaWorkspace(document, agendaMode);
-  if (!workspace) {
-    return renderAgendaFallback(agendaItems(document));
-  }
-  if (workspace.totalCandidates === 0) {
-    return `<div class="empty">No agenda rows in ${escapeHtml(workspace.rangeLabel)}.</div>`;
-  }
-  return `
-    <section class="super-agenda agenda-cockpit">
-      <header class="agenda-command-center">
-        <div class="agenda-command-copy">
-          <p class="eyebrow">AI x Super Agenda</p>
-          <h2>${escapeHtml(workspace.aiBrief.headline)}</h2>
-          <p>${escapeHtml(workspace.modeDescription)}</p>
-          <div class="agenda-command-badges">
-            <span>parser-owned</span>
-            <span>selector pipeline</span>
-            <span>LLM context pack</span>
-          </div>
-        </div>
-        <dl class="agenda-metrics agenda-metrics--cockpit">
-          ${workspace.metrics.map(renderAgendaMetric).join("")}
-        </dl>
-      </header>
-      ${renderAgendaModeControls(workspace.mode)}
-      <div class="agenda-insights agenda-insights--dense">
-        <strong>${escapeHtml(workspace.rangeLabel)}</strong>
-        ${workspace.insights.map((insight) => `<span>${escapeHtml(insight)}</span>`).join("")}
-      </div>
-      <div class="agenda-cockpit-grid">
-        <div class="agenda-mainframe">
-          ${renderSelectorPipeline(workspace)}
-          <div class="agenda-groups">
-            ${workspace.groups.map(renderSuperAgendaGroup).join("")}
-          </div>
-          ${renderSkippedAgenda(workspace)}
-        </div>
-        ${renderAgendaAiPanel(workspace)}
-      </div>
-    </section>
-  `;
-};
-
-const renderAgendaMetric = (metric: SuperAgendaWorkspace["metrics"][number]): string => `
-  <div class="agenda-metric agenda-metric--${metric.tone}">
-    <dt>${escapeHtml(metric.label)}</dt>
-    <dd>${escapeHtml(metric.value)}</dd>
-    <small>${escapeHtml(metric.detail)}</small>
-  </div>
-`;
-
-const renderAgendaModeControls = (activeMode: AgendaModeKey): string => `
-  <div class="agenda-mode-bar" role="group" aria-label="Agenda mode">
-    ${Object.entries(agendaModeDefinitions)
-      .map(
-        ([mode, definition]) => `
-          <button
-            type="button"
-            data-agenda-mode="${escapeHtml(mode)}"
-            class="${mode === activeMode ? "active" : ""}"
-          >
-            <strong>${escapeHtml(definition.label)}</strong>
-            <span>${escapeHtml(definition.description)}</span>
-          </button>
-        `,
-      )
-      .join("")}
-  </div>
-`;
-
-const renderSelectorPipeline = (workspace: SuperAgendaWorkspace): string => `
-  <section class="agenda-selector-pipeline">
-    <div class="agenda-section-heading">
-      <span>Super-agenda selector pipeline</span>
-      <strong>${workspace.selectorRules.length} active groups</strong>
-    </div>
-    <ol>
-      ${workspace.selectorRules
-        .map(
-          (rule, index) => `
-            <li class="selector-rule selector-rule--${rule.tone}">
-              <span class="selector-index">${index + 1}</span>
-              <code>${escapeHtml(rule.selector)}</code>
-              <div>
-                <strong>${escapeHtml(rule.label)}</strong>
-                <small>${escapeHtml(rule.description)}</small>
-              </div>
-              <b>${rule.count}</b>
-            </li>
-          `,
-        )
-        .join("")}
-    </ol>
-  </section>
-`;
-
-const renderAgendaFallback = (items: AgendaItem[]): string => {
-  if (items.length === 0) {
-    return `<div class="empty">No scheduled, deadline, or closed planning data found.</div>`;
-  }
-  return `
-    <section class="agenda-loading">
-      <div class="empty">Projecting parser-owned agenda intelligence...</div>
-      <ol class="agenda-list">${items.map(renderFallbackAgendaItem).join("")}</ol>
-    </section>
-  `;
-};
-
-const renderFallbackAgendaItem = (item: AgendaItem): string => `
-  <li>
-    <span class="agenda-kind ${item.kind}">${item.kind}</span>
-    <strong>${escapeHtml(item.title)}</strong>
-    <code>${escapeHtml(item.value)}</code>
-    <small>${item.tags.map(escapeHtml).join(" ")}</small>
-  </li>
-`;
-
-const renderSuperAgendaGroup = (group: SuperAgendaGroup): string => `
-  <details class="agenda-group agenda-group--${group.tone}" open>
-    <summary>
-      <span class="agenda-group-title">
-        <code>${escapeHtml(group.selector)}</code>
-        <strong>${escapeHtml(group.title)}</strong>
-        <small>${escapeHtml(group.subtitle)}</small>
-      </span>
-      <span class="agenda-group-count">
-        <b>${group.cards.length}</b>
-        <small>consumed</small>
-      </span>
-    </summary>
-    <div class="agenda-card-stack">
-      ${group.cards.map(renderAgendaCard).join("")}
-    </div>
-  </details>
-`;
-
-const renderAgendaCard = (card: AgendaCardView): string => `
-  <article class="agenda-card agenda-card--${card.pressure}">
-    <header class="agenda-card-main">
-      <div class="agenda-kind-stack">
-        <span class="agenda-kind ${escapeHtml(card.kind)}">${escapeHtml(card.kind)}</span>
-        <small>${escapeHtml(card.aiState)}</small>
-      </div>
-      <div>
-        <h3>${escapeHtml(card.title)}</h3>
-        <p>${escapeHtml(card.displayDate)}${card.time ? ` at ${escapeHtml(card.time)}` : ""}</p>
-      </div>
-      <span class="agenda-card-position">#${card.sortedPosition}</span>
-    </header>
-    <div class="agenda-signal-row">
-      ${card.signals
-        .slice(0, 8)
-        .map((signal) => `<span>${escapeHtml(signal)}</span>`)
-        .join("")}
-    </div>
-    ${renderBlockers(card)}
-    <div class="agenda-evidence-grid">
-      ${renderReceiptRail(card)}
-      ${renderMemoryRail(card)}
-    </div>
-  </article>
-`;
-
-const renderReceiptRail = (card: AgendaCardView): string => `
-  <section class="agenda-receipt-rail">
-    <div class="agenda-mini-heading">
-      <strong>Receipts</strong>
-      <span>${card.receipts.length}</span>
-    </div>
-    <ul>
-      ${card.receipts
-        .slice(0, 3)
-        .map((receipt) => `<li>${escapeHtml(receipt.message)}</li>`)
-        .join("")}
-    </ul>
-  </section>
-`;
-
-const renderMemoryRail = (card: AgendaCardView): string => `
-  <section class="agenda-memory-rail">
-    <div class="agenda-mini-heading">
-      <strong>Context</strong>
-      <span>${card.memorySignals.length}</span>
-    </div>
-    <p>Source line ${card.source.start.line}</p>
-    <div class="agenda-signal-row agenda-signal-row--compact">
-      ${[
-        ...card.memorySignals,
-        ...card.sortKeys.slice(0, 4).map((key) => `${key.key}: ${key.value}`),
-      ]
-        .map((signal) => `<span>${escapeHtml(signal)}</span>`)
-        .join("")}
-    </div>
-  </section>
-`;
-
-const renderBlockers = (card: AgendaCardView): string => {
-  if (card.blockers.length === 0) {
-    return "";
-  }
-  return `<div class="agenda-blockers">${card.blockers
-    .map(
-      (blocker) =>
-        `<span>${escapeHtml(blocker.message)}: ${escapeHtml(blocker.blocker.title)}</span>`,
-    )
-    .join("")}</div>`;
-};
-
-const renderAgendaAiPanel = (workspace: SuperAgendaWorkspace): string => `
-  <aside class="agenda-ai-panel">
-    <section class="agenda-ai-brief">
-      <div class="agenda-section-heading">
-        <span>AI agenda brief</span>
-        <strong>${escapeHtml(workspace.modeLabel)}</strong>
-      </div>
-      <h3>${escapeHtml(workspace.aiBrief.headline)}</h3>
-      <p>${escapeHtml(workspace.aiBrief.summary)}</p>
-      <ol class="agenda-ai-actions">
-        ${workspace.aiBrief.recommendations
-          .map((recommendation) => `<li>${escapeHtml(recommendation)}</li>`)
-          .join("")}
-      </ol>
-    </section>
-    <section class="agenda-context-pack">
-      <div class="agenda-section-heading">
-        <span>Prompt pack</span>
-        <strong>${workspace.aiBrief.prompts.length}</strong>
-      </div>
-      ${workspace.aiBrief.prompts.map((prompt) => `<p>${escapeHtml(prompt)}</p>`).join("")}
-    </section>
-    <section class="agenda-sort-stack">
-      <div class="agenda-section-heading">
-        <span>Sort strategy</span>
-        <strong>${workspace.sortSteps.length}</strong>
-      </div>
-      <ol>
-        ${workspace.sortSteps
-          .map(
-            (step) => `
-              <li>
-                <strong>${escapeHtml(step.label)}</strong>
-                <span>${escapeHtml(step.direction)} / ${escapeHtml(step.detail)}</span>
-              </li>
-            `,
-          )
-          .join("")}
-      </ol>
-    </section>
-    <section class="agenda-capture-log">
-      <div class="agenda-section-heading">
-        <span>Record trail</span>
-        <strong>${workspace.aiBrief.captureLog.length}</strong>
-      </div>
-      <ol>
-        ${workspace.aiBrief.captureLog
-          .map(
-            (entry) => `
-              <li class="capture-entry capture-entry--${entry.tone}">
-                <strong>${escapeHtml(entry.title)}</strong>
-                <span>${escapeHtml(entry.label)}</span>
-                <small>${escapeHtml(entry.detail)}</small>
-              </li>
-            `,
-          )
-          .join("")}
-      </ol>
-    </section>
-  </aside>
-`;
-
-const renderSkippedAgenda = (workspace: SuperAgendaWorkspace): string => {
-  if (workspace.skipped.length === 0) {
-    return "";
-  }
-  return `
-    <details class="agenda-skipped">
-      <summary>${workspace.skippedCount} skipped candidates</summary>
-      <ol>
-        ${workspace.skipped.map(renderSkippedAgendaItem).join("")}
-      </ol>
-    </details>
-  `;
-};
-
-const renderSkippedAgendaItem = (item: OrgizeAgendaViewSkipDto): string => `
-  <li>
-    <strong>${escapeHtml(item.title)}</strong>
-    <span>${escapeHtml(item.reason)}</span>
-    <small>sorted #${item.sortedPosition}</small>
-  </li>
-`;
-
 const renderDiagnostics = (findings: OrgizeLintFindingDto[]): string => {
   if (findings.length === 0) {
     return `<div class="empty">No lint findings.</div>`;
@@ -415,6 +316,30 @@ const renderDiagnostics = (findings: OrgizeLintFindingDto[]): string => {
     )
     .join("")}</ol>`;
 };
+
+const isHeading = (element: Element): boolean => /^H[1-6]$/.test(element.tagName);
+
+const headingLevel = (element: Element): number => Number(element.tagName.replace("H", "")) || 1;
+
+const normalizeHeading = (value: string | null): string =>
+  (value ?? "").replace(/\s+/g, " ").trim();
+
+const uniqueHeadingId = (title: string, usedIds: Set<string>): string => {
+  const base = slugify(title) || "section";
+  let candidate = base;
+  let suffix = 2;
+  while (usedIds.has(candidate)) {
+    candidate = `${base}-${suffix++}`;
+  }
+  usedIds.add(candidate);
+  return candidate;
+};
+
+const slugify = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const escapeHtml = (value: string | number): string =>
   String(value)

@@ -25,7 +25,7 @@ export type AgendaSettings = {
   mode: AgendaModeKey;
 };
 
-export type AgendaModeKey = "focus" | "pressure" | "flow";
+export type AgendaModeKey = "classic" | "strict" | "auto" | "agent";
 
 export type MenuItem = {
   name: string;
@@ -67,7 +67,7 @@ export const resolveInitialView = (config: SiteConfig): ViewKey => {
 
 export const resolveInitialAgendaMode = (config: SiteConfig): AgendaModeKey => {
   const candidate = new URLSearchParams(window.location.search).get("agenda");
-  return isAgendaModeKey(candidate) ? candidate : config.agenda.mode;
+  return agendaModeAlias(candidate) ?? config.agenda.mode;
 };
 
 export const resolveInitialSource = (config: SiteConfig): SourceItem => {
@@ -151,7 +151,7 @@ const parseAgenda = (raw: TomlRecord | null): AgendaSettings => {
     days,
     limit,
     label: days === 1 ? formatDate(start) : `${formatDate(start)} - ${formatDate(end)}`,
-    mode: readAgendaMode(raw?.mode, "focus"),
+    mode: readAgendaMode(raw?.mode, "classic"),
   };
 };
 
@@ -200,9 +200,8 @@ const sourceFileFor = (contentRoot: string, file: string): string => `${contentR
 
 const defaultMenu = (): MenuItem[] => [
   { name: "Blog", view: "blog", weight: 10 },
-  { name: "Records", view: "records", weight: 20 },
+  { name: "Notes", view: "records", weight: 20 },
   { name: "Agenda", view: "agenda", weight: 30 },
-  { name: "Diagnostics", view: "diagnostics", weight: 40 },
 ];
 
 const configPathFromUrl = (): string => {
@@ -314,13 +313,24 @@ const readView = (value: unknown, fallback: ViewKey): ViewKey =>
   isViewKey(value) ? value : fallback;
 
 const readAgendaMode = (value: unknown, fallback: AgendaModeKey): AgendaModeKey =>
-  isAgendaModeKey(value) ? value : fallback;
+  agendaModeAlias(value) ?? fallback;
 
 const isViewKey = (value: unknown): value is ViewKey =>
-  value === "blog" || value === "records" || value === "agenda" || value === "diagnostics";
+  value === "blog" ||
+  value === "records" ||
+  value === "agenda" ||
+  value === "capture" ||
+  value === "diagnostics";
 
-const isAgendaModeKey = (value: unknown): value is AgendaModeKey =>
-  value === "focus" || value === "pressure" || value === "flow";
+const agendaModeAlias = (value: unknown): AgendaModeKey | null => {
+  if (value === "classic" || value === "strict" || value === "auto" || value === "agent") {
+    return value;
+  }
+  if (value === "focus") return "classic";
+  if (value === "pressure") return "strict";
+  if (value === "flow") return "auto";
+  return null;
+};
 
 const asOptionalRecord = (value: unknown): TomlRecord | null =>
   value && typeof value === "object" && !Array.isArray(value) ? (value as TomlRecord) : null;
