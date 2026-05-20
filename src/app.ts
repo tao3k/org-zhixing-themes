@@ -11,6 +11,7 @@ import {
 import {
   agendaViewRequest,
   loadSiteConfig,
+  publicAssetUrl,
   resolveInitialAgendaMode,
   resolveInitialSource,
   resolveInitialView,
@@ -298,7 +299,7 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
   }
 
   async #loadOrgSource(sourceFile: string): Promise<string> {
-    const response = await fetch(`/${sourceFile}`);
+    const response = await fetch(publicAssetUrl(sourceFile), { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`failed to load ${sourceFile}: HTTP ${response.status}`);
     }

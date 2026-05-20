@@ -53,12 +53,15 @@ const defaultSourceId = "demo";
 
 export const loadSiteConfig = async (): Promise<SiteConfig> => {
   const configPath = configPathFromUrl();
-  const response = await fetch(`/${configPath}`, { cache: "no-store" });
+  const response = await fetch(publicAssetUrl(configPath), { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`failed to load ${configPath}: HTTP ${response.status}`);
   }
   return parseSiteConfig(await response.text());
 };
+
+export const publicAssetUrl = (path: string): URL =>
+  new URL(stripLeadingSlash(path), publicRootUrl());
 
 export const resolveInitialView = (config: SiteConfig): ViewKey => {
   const candidate = new URLSearchParams(window.location.search).get("view");
@@ -197,6 +200,18 @@ const sourceFromPath = (
 });
 
 const sourceFileFor = (contentRoot: string, file: string): string => `${contentRoot}/${file}`;
+
+const publicRootUrl = (): URL => {
+  const assetScript = Array.from(document.scripts).find((script) =>
+    script.src ? new URL(script.src).pathname.includes("/assets/") : false,
+  );
+  if (assetScript?.src) {
+    return new URL("../", assetScript.src);
+  }
+  return new URL(".", document.baseURI);
+};
+
+const stripLeadingSlash = (path: string): string => path.replace(/^\/+/, "");
 
 const defaultMenu = (): MenuItem[] => [
   { name: "Blog", view: "blog", weight: 10 },
