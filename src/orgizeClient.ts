@@ -4,6 +4,7 @@ import type {
   OrgizeAgentCapturePlanResponseDto,
   OrgizeAgentCaptureRequestDto,
   OrgizeLintResponseDto,
+  OrgizeMemoryResponseDto,
   OrgizeProjectionName,
   OrgizeViewIndexResponseDto,
 } from "orgize/dto";
@@ -114,6 +115,13 @@ export class OrgizeSession {
       command: "projection",
       projection: "capturePlan",
       capturePlan: request,
+    });
+  }
+
+  memory(): Promise<TimedResult<OrgizeMemoryResponseDto>> {
+    return this.#requestTimed<OrgizeMemoryResponseDto>({
+      command: "projection",
+      projection: "memory",
     });
   }
 

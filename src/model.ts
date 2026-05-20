@@ -89,7 +89,7 @@ export const withAgentMemory = (
   agentMemory,
   counts: {
     ...document.counts,
-    memory: agentMemory.cards.length,
+    memory: agentMemory.response.stats.totalRecords,
   },
 });
 

@@ -1,124 +1,100 @@
+import type {
+  OrgizeAgentMemoryCardDto,
+  OrgizeMemoryRecordDto,
+  OrgizeMemoryRecordStateDto,
+  OrgizeMemoryResponseDto,
+  OrgizeSourceRangeDto,
+} from "orgize/dto";
+
 export type AgentMemoryView = {
-  rawText: string;
-  cards: AgentMemoryCardView[];
-  stats: AgentMemoryStats;
+  response: OrgizeMemoryResponseDto;
+  groups: MemoryStateGroup[];
+  topEvidence: MemoryFacetView[];
+  topAuthority: MemoryFacetView[];
 };
 
-export type AgentMemoryStats = {
-  cards: number;
-  actionCards: number;
-  evidence: number;
-  authority: number;
-  links: number;
+export type MemoryStateGroup = {
+  state: OrgizeMemoryRecordStateDto;
+  label: string;
+  summary: string;
+  records: OrgizeMemoryRecordDto[];
+  cards: OrgizeAgentMemoryCardDto[];
 };
 
-export type AgentMemoryCardView = {
+export type MemoryFacetView = {
   code: string;
-  severity: string;
-  title: string;
-  source: string;
-  fact: string;
-  state: string | null;
-  tags: string[];
-  evidence: string[];
-  authority: string[];
-  links: string[];
-  next: string | null;
-  contract: string | null;
+  label: string;
+  count: number;
+  weight: number;
 };
 
-type MutableMemoryCard = AgentMemoryCardView;
-
-export const parseAgentMemoryText = (rawText: string): AgentMemoryView => {
-  const cards = rawText
-    .split(/\n{2,}/)
-    .map((block) => parseMemoryCard(block.trim()))
-    .filter((card): card is AgentMemoryCardView => card !== null);
-  return {
-    rawText,
-    cards,
-    stats: memoryStats(cards),
-  };
+type MemoryStateMeta = {
+  label: string;
+  summary: string;
 };
 
-const parseMemoryCard = (block: string): AgentMemoryCardView | null => {
-  if (!block || block.startsWith("[ok]")) {
-    return null;
-  }
-  const lines = block.split("\n").map((line) => line.trim());
-  const header = /^\[([^\]]+)\]\s+([^:]+):\s+(.+)$/.exec(lines[0] ?? "");
-  if (!header) {
-    return null;
-  }
-  const card: MutableMemoryCard = {
-    code: header[1],
-    severity: header[2],
-    title: header[3],
-    source: "",
-    fact: "",
-    state: null,
-    tags: [],
-    evidence: [],
-    authority: [],
-    links: [],
-    next: null,
-    contract: null,
-  };
-  for (const line of lines.slice(1)) {
-    applyMemoryLine(card, line);
-  }
-  return card.fact ? card : null;
+const MEMORY_STATE_ORDER: OrgizeMemoryRecordStateDto[] = [
+  "current",
+  "background",
+  "closed",
+  "archived",
+];
+
+const MEMORY_STATE_META: Record<OrgizeMemoryRecordStateDto, MemoryStateMeta> = {
+  current: {
+    label: "Current",
+    summary: "Active TODO, schedule, deadline, or planning evidence.",
+  },
+  background: {
+    label: "Background",
+    summary: "Stable context without active task lifecycle.",
+  },
+  closed: {
+    label: "Closed",
+    summary: "DONE/CLOSED evidence retained as historical memory.",
+  },
+  archived: {
+    label: "Archived",
+    summary: "Archive metadata preserved but suppressed for active decisions.",
+  },
 };
 
-const applyMemoryLine = (card: MutableMemoryCard, line: string): void => {
-  if (line.startsWith("@ ")) {
-    card.source = line.slice(2).trim();
-    return;
-  }
-  const separator = line.indexOf(":");
-  if (separator < 0) {
-    return;
-  }
-  const key = line.slice(0, separator);
-  const value = line.slice(separator + 1).trim();
-  switch (key) {
-    case "fact":
-      card.fact = value;
-      break;
-    case "state":
-      card.state = value;
-      break;
-    case "tags":
-      card.tags = splitList(value, ":");
-      break;
-    case "evidence":
-      card.evidence = splitList(value, ",");
-      break;
-    case "authority":
-      card.authority = splitList(value, ";");
-      break;
-    case "links":
-      card.links = splitList(value, ",");
-      break;
-    case "next":
-      card.next = value;
-      break;
-    case "contract":
-      card.contract = value;
-      break;
-  }
-};
-
-const splitList = (value: string, separator: string): string[] =>
-  value
-    .split(separator)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const memoryStats = (cards: AgentMemoryCardView[]): AgentMemoryStats => ({
-  cards: cards.length,
-  actionCards: cards.filter((card) => card.severity.toLowerCase() === "action").length,
-  evidence: cards.reduce((total, card) => total + card.evidence.length, 0),
-  authority: cards.reduce((total, card) => total + card.authority.length, 0),
-  links: cards.reduce((total, card) => total + card.links.length, 0),
+export const createAgentMemoryView = (response: OrgizeMemoryResponseDto): AgentMemoryView => ({
+  response,
+  groups: MEMORY_STATE_ORDER.map((state) => memoryGroup(response, state)),
+  topEvidence: facetViews(response.evidenceKinds),
+  topAuthority: facetViews(response.authorityKinds),
 });
+
+export const memoryStateLabel = (state: OrgizeMemoryRecordStateDto): string =>
+  MEMORY_STATE_META[state].label;
+
+export const memorySourceLabel = (source: OrgizeSourceRangeDto): string =>
+  `L${source.start.line}:${source.start.column}`;
+
+export const memoryAnchorId = (source: OrgizeSourceRangeDto): string =>
+  `memory-record-${source.rangeStart}`;
+
+const memoryGroup = (
+  response: OrgizeMemoryResponseDto,
+  state: OrgizeMemoryRecordStateDto,
+): MemoryStateGroup => ({
+  state,
+  label: MEMORY_STATE_META[state].label,
+  summary: MEMORY_STATE_META[state].summary,
+  records: response.records.filter((record) => record.state === state),
+  cards: response.cards.filter((card) => card.decision.kind === state),
+});
+
+const facetViews = (
+  facets: { code: string; label: string; count: number }[],
+): MemoryFacetView[] => {
+  const peak = Math.max(1, ...facets.map((facet) => facet.count));
+  return [...facets]
+    .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
+    .slice(0, 10)
+    .map((facet) => ({
+      ...facet,
+      weight: facet.count / peak,
+    }));
+};

@@ -114,6 +114,47 @@ SCHEDULED: <2026-05-16 Sat 14:30>
 This record exists to verify drawer preservation and display.  It should expose
 multiple key-value pairs without requiring the user to inspect raw Org.
 
+** NEXT [#A] Agent memory promotion contract :record:memory:agent:
+SCHEDULED: <2026-05-20 Wed 09:00 +1w>
+:PROPERTIES:
+:ID: agent-memory-promotion-contract
+:CUSTOM_ID: agent-memory-contract
+:AREA: memory
+:KIND: agent-contract
+:STYLE: habit
+:LAST_REPEAT: [2026-05-13 Wed 09:00]
+:END:
+The frontend should show why this fact is current: TODO state, schedule,
+stable identity, habit cadence, links, and lifecycle notes all remain visible.
+See [[id:property-drawer-coverage][property drawer coverage]] for the source
+record that seeded this contract.
+:LOGBOOK:
+- State "NEXT" from "TODO" [2026-05-19 Tue 21:10]
+CLOCK: [2026-05-19 Tue 21:10]--[2026-05-19 Tue 21:28] =>  0:18
+:END:
+
+** DONE Superseded memory lane sketch :record:memory:
+CLOSED: [2026-05-18 Mon 18:20]
+:PROPERTIES:
+:ID: agent-memory-contract-old
+:CUSTOM_ID: agent-memory-contract
+:AREA: memory
+:KIND: retired-layout
+:END:
+This older layout is intentionally retained as historical evidence so the UI
+can explain stale and superseded candidates instead of hiding them.
+
+** Archived memory import experiment :record:memory:ARCHIVE:
+:PROPERTIES:
+:ID: archived-memory-import-experiment
+:ARCHIVE_FILE: archive/syntax-atlas.org
+:ARCHIVE_OLPATH: Syntax Atlas/Memory
+:AREA: memory
+:KIND: archive-evidence
+:END:
+Archived records should stay inspectable while remaining suppressed for active
+agent decisions.
+
 ** WAIT [#C] Attachment and ID link follow-up :record:ATTACH:
 SCHEDULED: <2026-05-18 Mon>
 :PROPERTIES:

@@ -1,119 +1,275 @@
-import type { AgentMemoryCardView, AgentMemoryView } from "./memoryModel";
+import type {
+  OrgizeAgentMemoryCardDto,
+  OrgizeMemoryAuthorityReasonDto,
+  OrgizeMemoryEvidenceDto,
+  OrgizeMemoryLinkDto,
+  OrgizeMemoryPropertyDto,
+  OrgizeMemoryRecordDto,
+  OrgizeMemoryStatsDto,
+} from "orgize/dto";
+import type { AgentMemoryView, MemoryFacetView, MemoryStateGroup } from "./memoryModel";
+import { memoryAnchorId, memorySourceLabel, memoryStateLabel } from "./memoryModel";
 
 export const renderAgentMemory = (memory: AgentMemoryView | null): string => {
   if (!memory) {
-    return `<div class="empty">Loading agent memory projection...</div>`;
+    return `<div class="empty">Loading memory projection...</div>`;
   }
-  if (memory.cards.length === 0) {
+  if (memory.response.stats.totalRecords === 0) {
     return `
       <section class="memory-workbench">
         <header class="memory-header">
           <div>
-            <p class="eyebrow">Agent memory</p>
-            <h2>No active memory cards</h2>
-            <p>The current Org source has no visible :memory: records for the agent memory profile.</p>
+            <p class="eyebrow">Org memory</p>
+            <h2>No memory records in this source</h2>
+            <p>Headings, properties, planning timestamps, links, drawers, and lifecycle evidence will appear here when present.</p>
           </div>
         </header>
       </section>
     `;
   }
   return `
-    <section class="memory-workbench" aria-label="Agent memory">
+    <section class="memory-workbench" aria-label="Org memory">
       <header class="memory-header">
         <div>
-          <p class="eyebrow">Agent memory</p>
-          <h2>Org-native memory graph</h2>
-          <p>Facts promoted from ordinary Org headings, properties, links, planning timestamps, and lifecycle evidence.</p>
+          <p class="eyebrow">Org memory</p>
+          <h2>Agent memory graph</h2>
+          <p>Orgize projection of records, cards, source evidence, authority rules, links, and historical state.</p>
         </div>
-        ${renderMemoryMetrics(memory)}
+        ${renderMemoryMetrics(memory.response.stats)}
       </header>
       <div class="memory-layout">
-        <section class="memory-stream" aria-label="Memory cards">
-          ${memory.cards.map(renderMemoryCard).join("")}
-        </section>
-        <aside class="memory-inspector" aria-label="Agent memory contract">
-          <div class="memory-inspector-section">
-            <p class="eyebrow">Recall contract</p>
-            <h3>What the agent may use</h3>
-            <p>Each card keeps a fact, its source location, evidence categories, authority reasons, and the next decision rule together.</p>
-          </div>
-          <div class="memory-inspector-section">
-            <p class="eyebrow">Compact prompt view</p>
-            <pre><code>${escapeHtml(memory.rawText)}</code></pre>
-          </div>
+        <main class="memory-stream" aria-label="Memory cards and records">
+          ${memory.groups.map(renderMemoryGroup).join("")}
+          ${renderRecordIndex(memory.groups)}
+        </main>
+        <aside class="memory-inspector" aria-label="Memory facets">
+          ${renderStateMatrix(memory.response.stats)}
+          ${renderFacetPanel("Evidence", memory.topEvidence)}
+          ${renderFacetPanel("Authority", memory.topAuthority)}
         </aside>
       </div>
     </section>
   `;
 };
 
-const renderMemoryMetrics = (memory: AgentMemoryView): string => `
+const renderMemoryMetrics = (stats: OrgizeMemoryStatsDto): string => `
   <dl class="memory-metrics" aria-label="Memory metrics">
-    <div>
-      <dt>cards</dt>
-      <dd>${memory.stats.cards}</dd>
-    </div>
-    <div>
-      <dt>action</dt>
-      <dd>${memory.stats.actionCards}</dd>
-    </div>
-    <div>
-      <dt>evidence</dt>
-      <dd>${memory.stats.evidence}</dd>
-    </div>
-    <div>
-      <dt>authority</dt>
-      <dd>${memory.stats.authority}</dd>
-    </div>
+    ${renderMetric("records", stats.totalRecords)}
+    ${renderMetric("current", stats.currentRecords)}
+    ${renderMetric("background", stats.backgroundRecords)}
+    ${renderMetric("history", stats.closedRecords + stats.archivedRecords)}
+    ${renderMetric("evidence", stats.evidence)}
+    ${renderMetric("authority", stats.authorityReasons)}
   </dl>
 `;
 
-const renderMemoryCard = (card: AgentMemoryCardView): string => `
-  <article class="memory-card memory-card--${memoryTone(card)}">
-    <header>
-      <span>${escapeHtml(card.code)}</span>
-      <strong>${escapeHtml(card.severity)}</strong>
-      <small>${escapeHtml(card.source || "source pending")}</small>
+const renderMetric = (label: string, value: number): string => `
+  <div>
+    <dt>${escapeHtml(label)}</dt>
+    <dd>${value}</dd>
+  </div>
+`;
+
+const renderMemoryGroup = (group: MemoryStateGroup): string => {
+  if (group.cards.length === 0) {
+    return "";
+  }
+  return `
+    <section class="memory-lane memory-lane--${group.state}" aria-label="${escapeAttribute(group.label)} memory">
+      <header class="memory-lane-header">
+        <div>
+          <span>${escapeHtml(group.label)}</span>
+          <h3>${group.cards.length} cards</h3>
+        </div>
+        <p>${escapeHtml(group.summary)}</p>
+      </header>
+      <div class="memory-card-list">
+        ${group.cards.map(renderMemoryCard).join("")}
+      </div>
+    </section>
+  `;
+};
+
+const renderMemoryCard = (card: OrgizeAgentMemoryCardDto): string => `
+  <article class="memory-card memory-card--${card.decision.severity}">
+    <header class="memory-card-topline">
+      <span class="memory-code">${escapeHtml(card.decision.code)}</span>
+      <span class="memory-severity">${escapeHtml(card.decision.severity)}</span>
+      <a class="memory-source-link" href="#${memoryAnchorId(card.source)}">${escapeHtml(memorySourceLabel(card.source))}</a>
     </header>
-    <h3>${escapeHtml(card.fact)}</h3>
-    <p>${escapeHtml(card.title)}</p>
-    ${renderTags(card)}
-    <div class="memory-card-grid">
-      ${renderMemoryList("Evidence", card.evidence)}
-      ${renderMemoryList("Authority", card.authority)}
-      ${renderMemoryList("Links", card.links)}
+    <div class="memory-card-body">
+      <h4>${escapeHtml(card.title)}</h4>
+      <p>${escapeHtml(card.decision.title)}</p>
+      ${renderTags([card.todo, ...card.effectiveTags])}
     </div>
-    ${
-      card.next
-        ? `<div class="memory-next"><span>next</span><p>${escapeHtml(card.next)}</p></div>`
-        : ""
-    }
+    <div class="memory-card-grid">
+      ${renderEvidenceList(card.evidence)}
+      ${renderAuthorityList(card.authority)}
+      ${renderLinkList(card.links)}
+    </div>
+    <div class="memory-next"><span>next</span><p>${escapeHtml(card.decision.nextAction)}</p></div>
   </article>
 `;
 
-const renderTags = (card: AgentMemoryCardView): string => {
-  const tags = [card.state, ...card.tags].filter((tag): tag is string => Boolean(tag));
-  return tags.length > 0
-    ? `<div class="memory-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>`
-    : "";
+const renderRecordIndex = (groups: MemoryStateGroup[]): string => `
+  <section class="memory-record-index" aria-label="Memory record index">
+    <header class="memory-section-heading">
+      <p class="eyebrow">Record index</p>
+      <h3>Source-backed memory records</h3>
+    </header>
+    ${groups.map(renderRecordGroup).join("")}
+  </section>
+`;
+
+const renderRecordGroup = (group: MemoryStateGroup): string => {
+  if (group.records.length === 0) {
+    return "";
+  }
+  return `
+    <details class="memory-record-group" ${group.state === "current" ? "open" : ""}>
+      <summary>
+        <span>${escapeHtml(group.label)}</span>
+        <strong>${group.records.length}</strong>
+      </summary>
+      <div class="memory-record-list">
+        ${group.records.map(renderMemoryRecord).join("")}
+      </div>
+    </details>
+  `;
 };
 
-const renderMemoryList = (label: string, items: string[]): string => `
+const renderMemoryRecord = (record: OrgizeMemoryRecordDto): string => `
+  <article class="memory-record" id="${memoryAnchorId(record.source)}">
+    <header>
+      <div>
+        <span>${escapeHtml(memoryStateLabel(record.state))}</span>
+        <h4>${escapeHtml(record.title)}</h4>
+      </div>
+      <code>${escapeHtml(memorySourceLabel(record.source))}</code>
+    </header>
+    ${renderTags([record.todo, ...record.effectiveTags])}
+    <div class="memory-record-details">
+      ${renderProperties(record.properties)}
+      ${renderEvidenceDetails(record.evidence)}
+      ${renderLinkDetails(record.links)}
+    </div>
+  </article>
+`;
+
+const renderStateMatrix = (stats: OrgizeMemoryStatsDto): string => `
+  <section class="memory-inspector-section">
+    <p class="eyebrow">State matrix</p>
+    <dl class="memory-state-matrix">
+      ${renderStateMetric("Current", stats.currentRecords, stats.totalRecords)}
+      ${renderStateMetric("Background", stats.backgroundRecords, stats.totalRecords)}
+      ${renderStateMetric("Closed", stats.closedRecords, stats.totalRecords)}
+      ${renderStateMetric("Archived", stats.archivedRecords, stats.totalRecords)}
+    </dl>
+  </section>
+`;
+
+const renderStateMetric = (label: string, count: number, total: number): string => {
+  const width = total > 0 ? Math.max(4, Math.round((count / total) * 100)) : 0;
+  return `
+    <div>
+      <dt>${escapeHtml(label)}</dt>
+      <dd><span style="--memory-bar:${width}%"></span><strong>${count}</strong></dd>
+    </div>
+  `;
+};
+
+const renderFacetPanel = (label: string, facets: MemoryFacetView[]): string => `
+  <section class="memory-inspector-section">
+    <p class="eyebrow">${escapeHtml(label)}</p>
+    ${
+      facets.length > 0
+        ? `<ul class="memory-facets">${facets.map(renderFacet).join("")}</ul>`
+        : `<p>No ${label.toLowerCase()} facets.</p>`
+    }
+  </section>
+`;
+
+const renderFacet = (facet: MemoryFacetView): string => `
+  <li>
+    <span style="--memory-bar:${Math.max(4, Math.round(facet.weight * 100))}%"></span>
+    <strong>${escapeHtml(facet.label)}</strong>
+    <em>${facet.count}</em>
+  </li>
+`;
+
+const renderEvidenceList = (items: OrgizeMemoryEvidenceDto[]): string => `
   <section>
-    <h4>${escapeHtml(label)}</h4>
+    <h5>Evidence</h5>
     ${
       items.length > 0
-        ? `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+        ? `<div class="memory-chip-list">${items.slice(0, 8).map(renderEvidenceChip).join("")}</div>`
         : `<p>None</p>`
     }
   </section>
 `;
 
-const memoryTone = (card: AgentMemoryCardView): string => {
-  const severity = card.severity.toLowerCase();
-  if (severity === "action") return "action";
-  if (severity === "suppressed") return "suppressed";
-  return "info";
+const renderAuthorityList = (items: OrgizeMemoryAuthorityReasonDto[]): string => `
+  <section>
+    <h5>Authority</h5>
+    ${
+      items.length > 0
+        ? `<ul>${items.map((item) => `<li>${escapeHtml(item.label)}</li>`).join("")}</ul>`
+        : `<p>None</p>`
+    }
+  </section>
+`;
+
+const renderLinkList = (items: OrgizeMemoryLinkDto[]): string => `
+  <section>
+    <h5>Links</h5>
+    ${
+      items.length > 0
+        ? `<ul>${items.slice(0, 4).map(renderLinkItem).join("")}</ul>`
+        : `<p>None</p>`
+    }
+  </section>
+`;
+
+const renderProperties = (properties: OrgizeMemoryPropertyDto[]): string => `
+  <details ${properties.length > 0 ? "open" : ""}>
+    <summary>Properties <span>${properties.length}</span></summary>
+    ${
+      properties.length > 0
+        ? `<dl>${properties.map((property) => `<div><dt>${escapeHtml(property.key)}</dt><dd>${escapeHtml(property.value)}</dd></div>`).join("")}</dl>`
+        : `<p>None</p>`
+    }
+  </details>
+`;
+
+const renderEvidenceDetails = (items: OrgizeMemoryEvidenceDto[]): string => `
+  <details open>
+    <summary>Evidence <span>${items.length}</span></summary>
+    ${
+      items.length > 0
+        ? `<ul>${items.map((item) => `<li><strong>${escapeHtml(item.kind.label)}</strong><span>${escapeHtml(item.value)}</span></li>`).join("")}</ul>`
+        : `<p>None</p>`
+    }
+  </details>
+`;
+
+const renderLinkDetails = (links: OrgizeMemoryLinkDto[]): string => `
+  <details ${links.length > 0 ? "open" : ""}>
+    <summary>Links <span>${links.length}</span></summary>
+    ${links.length > 0 ? `<ul>${links.map(renderLinkItem).join("")}</ul>` : `<p>None</p>`}
+  </details>
+`;
+
+const renderEvidenceChip = (item: OrgizeMemoryEvidenceDto): string =>
+  `<span title="${escapeAttribute(item.value)}">${escapeHtml(item.kind.label)}</span>`;
+
+const renderLinkItem = (link: OrgizeMemoryLinkDto): string =>
+  `<li><code>${escapeHtml(link.path)}</code><span>${escapeHtml(link.description)}</span></li>`;
+
+const renderTags = (tags: Array<string | null | undefined>): string => {
+  const visibleTags = tags.filter((tag): tag is string => Boolean(tag));
+  return visibleTags.length > 0
+    ? `<div class="memory-tags">${visibleTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>`
+    : "";
 };
 
 const escapeHtml = (value: string | number): string =>
@@ -123,3 +279,5 @@ const escapeHtml = (value: string | number): string =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+
+const escapeAttribute = (value: string | number): string => escapeHtml(value);

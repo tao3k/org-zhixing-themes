@@ -40,7 +40,7 @@ import {
   withLint,
   type OrgizeDocumentView,
 } from "./model";
-import { parseAgentMemoryText } from "./memoryModel";
+import { createAgentMemoryView } from "./memoryModel";
 import { OrgizeSession, type OrgizeSessionOptions } from "./orgizeClient";
 import { renderAppShell } from "./appShell";
 import { renderStats, renderView } from "./render";
@@ -381,13 +381,13 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     const version = this.#documentVersion;
     this.#pendingMessage = "Projecting Agent memory...";
     this.#render();
-    const memory = await this.#session.renderTimed("agentMemory");
+    const memory = await this.#session.memory();
     if (version !== this.#documentVersion) {
       return;
     }
     this.#timings = { ...this.#timings, memoryMs: memory.durationMs };
     if (this.#documentView) {
-      this.#documentView = withAgentMemory(this.#documentView, parseAgentMemoryText(memory.value));
+      this.#documentView = withAgentMemory(this.#documentView, createAgentMemoryView(memory.value));
     }
     this.#viewCache.delete("memory");
     this.#pendingMessage = "";
