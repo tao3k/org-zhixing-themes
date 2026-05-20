@@ -9,6 +9,7 @@ export type SiteConfig = {
   defaultSourceId: string;
   defaultView: ViewKey;
   agenda: AgendaSettings;
+  attachments: AttachmentSettings;
   behavior: SiteBehavior;
   menu: MenuItem[];
   sources: SourceItem[];
@@ -26,6 +27,13 @@ export type AgendaSettings = {
 };
 
 export type AgendaModeKey = "classic" | "strict" | "auto" | "agent";
+
+export type AttachmentSettings = {
+  attachIdDir: string;
+  checkVcs: boolean;
+  checkAnnex: boolean;
+  scanOrphans: boolean;
+};
 
 export type MenuItem = {
   name: string;
@@ -113,6 +121,7 @@ const parseSiteConfig = (source: string): SiteConfig => {
   const agenda = parseAgenda(asOptionalRecord(raw.agenda));
   const behavior = parseBehavior(asOptionalRecord(raw.behavior), ui);
   const contentRoot = normalizeDir(readString(content, "root", defaultContentDir));
+  const attachments = parseAttachments(asOptionalRecord(raw.attachments), contentRoot);
   const defaultSource = readString(content, "default_source", defaultSourceId);
   const sources = parseSources(asOptionalRecord(raw.content)?.sources, contentRoot);
 
@@ -123,6 +132,7 @@ const parseSiteConfig = (source: string): SiteConfig => {
     defaultSourceId: defaultSource,
     defaultView: readView(ui?.default_view, "blog"),
     agenda,
+    attachments,
     behavior,
     menu: parseMenu(ui?.views),
     sources:
@@ -157,6 +167,13 @@ const parseAgenda = (raw: TomlRecord | null): AgendaSettings => {
     mode: readAgendaMode(raw?.mode, "classic"),
   };
 };
+
+const parseAttachments = (raw: TomlRecord | null, contentRoot: string): AttachmentSettings => ({
+  attachIdDir: normalizeAttachmentDir(readString(raw, "attach_id_dir", ".attach"), contentRoot),
+  checkVcs: readBoolean(raw, "check_vcs", false),
+  checkAnnex: readBoolean(raw, "check_annex", false),
+  scanOrphans: readBoolean(raw, "scan_orphans", false),
+});
 
 const parseMenu = (raw: unknown): MenuItem[] => {
   const items = Array.isArray(raw)
@@ -215,6 +232,7 @@ const stripLeadingSlash = (path: string): string => path.replace(/^\/+/, "");
 
 const defaultMenu = (): MenuItem[] => [
   { name: "Blog", view: "blog", weight: 10 },
+  { name: "Gallery", view: "gallery", weight: 18 },
   { name: "Notes", view: "records", weight: 20 },
   { name: "Memory", view: "memory", weight: 25 },
   { name: "Agenda", view: "agenda", weight: 30 },
@@ -234,6 +252,18 @@ const configPathFromUrl = (): string => {
 const normalizeDir = (value: string): string => {
   const normalized = value.replace(/^\/+|\/+$/g, "");
   assertSafePath(normalized);
+  return normalized;
+};
+
+const normalizeAttachmentDir = (value: string, contentRoot: string): string => {
+  const trimmed = value.replace(/^\/+|\/+$/g, "");
+  const normalized =
+    trimmed === ".attach"
+      ? `${contentRoot}/.attach`
+      : trimmed.startsWith(`${contentRoot}/`)
+        ? trimmed
+        : `${contentRoot}/${trimmed}`;
+  assertSafeAttachmentPath(normalized);
   return normalized;
 };
 
@@ -257,6 +287,21 @@ const assertSafePath = (value: string): void => {
     value.includes("\\")
   ) {
     throw new Error(`unsafe config path: ${value}`);
+  }
+};
+
+const assertSafeAttachmentPath = (value: string): void => {
+  const segments = value.split("/");
+  if (
+    value.length === 0 ||
+    value.includes("..") ||
+    value.includes("//") ||
+    value.includes("\\") ||
+    segments.some(
+      (segment) => segment.length === 0 || (segment.startsWith(".") && segment !== ".attach"),
+    )
+  ) {
+    throw new Error(`unsafe attachment path: ${value}`);
   }
 };
 
@@ -333,6 +378,7 @@ const readAgendaMode = (value: unknown, fallback: AgendaModeKey): AgendaModeKey 
 
 const isViewKey = (value: unknown): value is ViewKey =>
   value === "blog" ||
+  value === "gallery" ||
   value === "records" ||
   value === "memory" ||
   value === "agenda" ||

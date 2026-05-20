@@ -2,6 +2,7 @@ import type { OrgizeLintFindingDto, OrgizeViewIndexRecordDto } from "orgize/dto"
 import type { AgendaPanelKey } from "./agendaTypes";
 import type { AgendaModeKey } from "./config";
 import { renderAgenda } from "./agendaRender";
+import { renderAttachmentGallery } from "./attachmentGalleryRender";
 import { renderAgentCapture } from "./captureRender";
 import { renderAgentMemory } from "./memoryRender";
 import { blogArticles, taggedRecords, type OrgizeDocumentView, type ViewKey } from "./model";
@@ -10,6 +11,7 @@ type TimingStats = {
   parseMs?: number;
   agendaMs?: number;
   captureMs?: number;
+  attachmentMs?: number;
   memoryMs?: number;
   lintMs?: number;
   htmlMs?: number;
@@ -26,6 +28,7 @@ type RenderViewOptions = {
   articleMessage?: string;
   blogArticleRangeStart?: number | null;
   blogZenMode?: boolean;
+  sourceFile?: string;
 };
 
 type ArticleTocItem = {
@@ -50,6 +53,7 @@ export const renderView = ({
   articleMessage = "",
   blogArticleRangeStart = null,
   blogZenMode = false,
+  sourceFile,
 }: RenderViewOptions): string => {
   if (pendingMessage) {
     return `<div class="empty">${escapeHtml(pendingMessage)}</div>`;
@@ -67,6 +71,8 @@ export const renderView = ({
         blogArticleRangeStart,
         blogZenMode,
       );
+    case "gallery":
+      return renderAttachmentGallery(document, sourceFile);
     case "records":
       return renderRecords(taggedRecords(document, "record"), "Records");
     case "memory":
@@ -253,6 +259,7 @@ export const renderStats = (
     ? [
         timings.parseMs === undefined ? null : `parse ${formatMs(timings.parseMs)}`,
         timings.agendaMs === undefined ? null : `agenda ${formatMs(timings.agendaMs)}`,
+        timings.attachmentMs === undefined ? null : `attachments ${formatMs(timings.attachmentMs)}`,
         timings.memoryMs === undefined ? null : `memory ${formatMs(timings.memoryMs)}`,
         timings.captureMs === undefined ? null : `capture ${formatMs(timings.captureMs)}`,
         timings.lintMs === undefined ? null : `lint ${formatMs(timings.lintMs)}`,
@@ -264,6 +271,7 @@ export const renderStats = (
   const lintText = lintCount === undefined ? "lint lazy" : `${lintCount} lint`;
   return [
     `${document.counts.blog} blog`,
+    `${document.counts.attachments} attachments`,
     `${document.counts.records} records`,
     `${document.counts.memory} memory`,
     `${document.counts.agenda} agenda`,

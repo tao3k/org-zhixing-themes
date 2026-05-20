@@ -15,7 +15,7 @@
     "preview": "rspack serve --mode production --host 127.0.0.1"
   },
   "dependencies": {
-    "orgize": "git+https://github.com/tao3k/orgize-wasm.git#1d2337c199addd8de12a11c922ece03bc80b28c5",
+    "orgize": "git+https://github.com/tao3k/orgize-wasm.git#c399578716718cddb70dd15dcbf5722ff25f371b",
     "smol-toml": "^1.6.1"
   },
   "devDependencies": {

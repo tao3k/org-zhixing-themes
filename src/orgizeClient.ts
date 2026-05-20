@@ -3,6 +3,8 @@ import type {
   OrgizeAgendaViewResponseDto,
   OrgizeAgentCapturePlanResponseDto,
   OrgizeAgentCaptureRequestDto,
+  OrgizeAttachmentInventoryRequestDto,
+  OrgizeAttachmentInventoryResponseDto,
   OrgizeLintResponseDto,
   OrgizeMemoryResponseDto,
   OrgizeProjectionName,
@@ -23,6 +25,7 @@ type WorkerRequestInput = {
   format?: OrgizeRenderFormat;
   agendaView?: OrgizeAgendaViewJsonRequestDto;
   capturePlan?: OrgizeAgentCaptureRequestDto;
+  attachmentInventory?: OrgizeAttachmentInventoryRequestDto;
 };
 
 export type TimedResult<T> = {
@@ -115,6 +118,16 @@ export class OrgizeSession {
       command: "projection",
       projection: "capturePlan",
       capturePlan: request,
+    });
+  }
+
+  attachmentInventory(
+    request: OrgizeAttachmentInventoryRequestDto,
+  ): Promise<TimedResult<OrgizeAttachmentInventoryResponseDto>> {
+    return this.#requestTimed<OrgizeAttachmentInventoryResponseDto>({
+      command: "projection",
+      projection: "attachmentInventory",
+      attachmentInventory: request,
     });
   }
 

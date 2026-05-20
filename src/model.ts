@@ -2,6 +2,7 @@ import type {
   OrgizeAgentCapturePlanResponseDto,
   OrgizeAgentCaptureRequestDto,
   OrgizeAgendaViewResponseDto,
+  OrgizeAttachmentInventoryResponseDto,
   OrgizeLintFindingDto,
   OrgizeViewIndexRecordDto,
 } from "orgize/dto";
@@ -9,7 +10,14 @@ import type { AgendaSettings } from "./config";
 import type { CaptureApplyPreview } from "./captureApplyPreview";
 import type { AgentMemoryView } from "./memoryModel";
 
-export type ViewKey = "blog" | "records" | "memory" | "agenda" | "capture" | "diagnostics";
+export type ViewKey =
+  | "blog"
+  | "gallery"
+  | "records"
+  | "memory"
+  | "agenda"
+  | "capture"
+  | "diagnostics";
 
 export type OrgizeDocumentView = {
   sectionIndex: OrgizeViewIndexRecordDto[];
@@ -18,18 +26,22 @@ export type OrgizeDocumentView = {
   agenda: AgendaItem[];
   agendaView: OrgizeAgendaViewResponseDto | null;
   agendaRange: AgendaSettings | null;
+  attachmentInventory: OrgizeAttachmentInventoryResponseDto | null;
   agentMemory: AgentMemoryView | null;
   capturePlan: OrgizeAgentCapturePlanResponseDto | null;
   captureRequest: OrgizeAgentCaptureRequestDto | null;
   captureApplyPreview: CaptureApplyPreview | null;
   counts: {
     blog: number;
+    attachments: number;
     records: number;
     memory: number;
     agenda: number;
   };
   lint: OrgizeLintFindingDto[] | null;
 };
+
+export type AttachmentDisplayRecord = OrgizeAttachmentInventoryResponseDto["display"][number];
 
 export type AgendaItem = {
   kind: "scheduled" | "deadline" | "closed";
@@ -53,12 +65,14 @@ export const createDocumentView = (
     agenda,
     agendaView: null,
     agendaRange: null,
+    attachmentInventory: null,
     agentMemory: null,
     capturePlan: null,
     captureRequest: null,
     captureApplyPreview: null,
     counts: {
       blog: recordsByTag.get("blog")?.length ?? 0,
+      attachments: recordsByTag.get("attach")?.length ?? 0,
       records: recordsByTag.get("record")?.length ?? 0,
       memory: recordsByTag.get("memory")?.length ?? 0,
       agenda: agenda.length,
@@ -78,6 +92,18 @@ export const withAgendaView = (
   counts: {
     ...document.counts,
     agenda: agendaView.cards.length,
+  },
+});
+
+export const withAttachmentInventory = (
+  document: OrgizeDocumentView,
+  attachmentInventory: OrgizeAttachmentInventoryResponseDto,
+): OrgizeDocumentView => ({
+  ...document,
+  attachmentInventory,
+  counts: {
+    ...document.counts,
+    attachments: attachmentInventory.display.length,
   },
 });
 
@@ -120,6 +146,10 @@ export const taggedRecords = (
 
 export const blogArticles = (document: OrgizeDocumentView | null): OrgizeViewIndexRecordDto[] =>
   articleRoots(taggedRecords(document, "blog"));
+
+export const attachmentDisplayRecords = (
+  document: OrgizeDocumentView | null,
+): AttachmentDisplayRecord[] => document?.attachmentInventory?.display ?? [];
 
 export const agendaItems = (document: OrgizeDocumentView | null): AgendaItem[] =>
   document?.agenda ?? [];

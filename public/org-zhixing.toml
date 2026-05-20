@@ -4,12 +4,17 @@ locale = "zh-CN"
 
 [content]
 root = "blog"
-default_source = "syntax-atlas"
+default_source = "wallpaper-gallery"
 
 [[content.sources]]
 id = "syntax-atlas"
 title = "Org Syntax Atlas"
 file = "org-syntax-atlas.org"
+
+[[content.sources]]
+id = "wallpaper-gallery"
+title = "Wallpaper Attachment Gallery"
+file = "wallpaper-gallery.org"
 
 [[content.sources]]
 id = "demo"
@@ -37,13 +42,18 @@ title = "Research Notebook"
 file = "org-research-notebook.org"
 
 [ui]
-default_view = "agenda"
+default_view = "gallery"
 show_timings = true
 
 [[ui.views]]
 id = "blog"
 label = "Blog"
 weight = 10
+
+[[ui.views]]
+id = "gallery"
+label = "Gallery"
+weight = 18
 
 [[ui.views]]
 id = "records"
@@ -62,6 +72,12 @@ weight = 30
 
 [behavior]
 lazy_lint = true
+
+[attachments]
+attach_id_dir = ".attach"
+check_vcs = false
+check_annex = false
+scan_orphans = false
 
 [agenda]
 start = "2026-05-15"

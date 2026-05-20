@@ -36,6 +36,7 @@ import {
   createDocumentView,
   withAgendaView,
   withAgentMemory,
+  withAttachmentInventory,
   withCapturePlan,
   withLint,
   type OrgizeDocumentView,
@@ -294,6 +295,9 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     if (this.#currentView === "memory") {
       await this.#refreshMemoryIfNeeded();
     }
+    if (this.#currentView === "gallery") {
+      await this.#refreshAttachmentInventoryIfNeeded();
+    }
     if (this.#currentView === "capture") {
       await this.#refreshCaptureIfNeeded();
     }
@@ -324,6 +328,9 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     }
     if (this.#currentView === "memory") {
       await this.#refreshMemoryIfNeeded();
+    }
+    if (this.#currentView === "gallery") {
+      await this.#refreshAttachmentInventoryIfNeeded();
     }
     if (this.#currentView === "capture") {
       await this.#refreshCaptureIfNeeded();
@@ -393,6 +400,30 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     this.#pendingMessage = "";
   }
 
+  async #refreshAttachmentInventoryIfNeeded(): Promise<void> {
+    if (this.#documentView?.attachmentInventory || !this.#siteConfig) {
+      return;
+    }
+    const version = this.#documentVersion;
+    this.#pendingMessage = "Projecting attachment gallery...";
+    this.#render();
+    const attachments = await this.#session.attachmentInventory({
+      attachIdDir: this.#siteConfig.attachments.attachIdDir,
+      checkVcs: this.#siteConfig.attachments.checkVcs,
+      checkAnnex: this.#siteConfig.attachments.checkAnnex,
+      scanOrphans: this.#siteConfig.attachments.scanOrphans,
+    });
+    if (version !== this.#documentVersion) {
+      return;
+    }
+    this.#timings = { ...this.#timings, attachmentMs: attachments.durationMs };
+    if (this.#documentView) {
+      this.#documentView = withAttachmentInventory(this.#documentView, attachments.value);
+    }
+    this.#viewCache.delete("gallery");
+    this.#pendingMessage = "";
+  }
+
   async #refreshCaptureIfNeeded(): Promise<void> {
     if (this.#documentView?.capturePlan || !this.#documentView || !this.#sourceItem) {
       return;
@@ -457,6 +488,7 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
         articleMessage: this.#articleMessage,
         blogArticleRangeStart: this.#blog.articleRangeStart,
         blogZenMode: this.#blog.zenMode,
+        sourceFile: this.#sourceItem?.sourceFile,
         agendaMode: this.#agendaMode,
         agendaPanel: this.#agendaPanel,
         agendaRuleId: this.#agendaRuleId,
