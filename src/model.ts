@@ -96,7 +96,7 @@ export const withAgendaView = (
   agendaRange,
   counts: {
     ...document.counts,
-    agenda: agendaView.cards.length || document.agenda.length,
+    agenda: agendaView.cards.length,
   },
 });
 

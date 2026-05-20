@@ -111,11 +111,10 @@ describe("Org Zhixing navigator", () => {
     clickNav("agenda");
     await waitForView("agenda");
     expect(new URL(window.location.href).searchParams.get("view")).toBe("agenda");
-    expect(document.body.textContent).toContain(
-      "Agenda window 2026-05-15 - 2026-05-21 has no projected rows.",
-    );
+    expect(document.body.textContent).toContain("Compiled sections");
     expect(document.body.textContent).toContain("Static Gallery");
-    expect(document.body.textContent).toContain("<2020-12-19 Sat>-<2020-12-19 Sat>");
+    expect(document.body.textContent).toContain("WASM agenda projection");
+    expect(document.body.textContent).not.toContain("source planning");
   });
 
   it("switches source navigator entries without reusing stale view cache", async () => {

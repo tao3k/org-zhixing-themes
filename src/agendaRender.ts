@@ -9,7 +9,7 @@ import type {
 } from "./agendaTypes";
 import { agendaPrograms, superAgendaWorkspace } from "./agendaModel";
 import { renderAgendaInspector } from "./agendaPanels";
-import { agendaItems, type AgendaItem, type OrgizeDocumentView } from "./model";
+import type { OrgizeDocumentView } from "./model";
 
 export const renderAgenda = (
   document: OrgizeDocumentView,
@@ -19,17 +19,10 @@ export const renderAgenda = (
 ): string => {
   const workspace = superAgendaWorkspace(document, agendaMode);
   if (!workspace) {
-    return renderAgendaFallback(agendaItems(document));
+    return `<div class="empty">Loading WASM agenda projection...</div>`;
   }
   if (workspace.totalCandidates === 0) {
-    const fallbackItems = agendaItems(document);
-    if (fallbackItems.length > 0) {
-      return renderAgendaFallback(
-        fallbackItems,
-        agendaWindowFallbackMessage(workspace.rangeLabel, fallbackItems.length),
-      );
-    }
-    return `<div class="empty">No agenda rows in ${escapeHtml(workspace.rangeLabel)}.</div>`;
+    return `<div class="empty">No WASM agenda rows in ${escapeHtml(workspace.rangeLabel)}.</div>`;
   }
   const activeRuleId = activeAgendaRuleId(workspace, selectedRuleId);
   return `
@@ -115,35 +108,6 @@ const activeAgendaRuleId = (
     null
   );
 };
-
-const renderAgendaFallback = (
-  items: AgendaItem[],
-  message = "Projecting parser-owned agenda intelligence...",
-): string => {
-  if (items.length === 0) {
-    return `<div class="empty">No scheduled, deadline, or closed planning data found.</div>`;
-  }
-  return `
-    <section class="agenda-loading">
-      <div class="empty">${escapeHtml(message)}</div>
-      <ol class="agenda-list">${items.map(renderFallbackAgendaItem).join("")}</ol>
-    </section>
-  `;
-};
-
-const renderFallbackAgendaItem = (item: AgendaItem): string => `
-  <li>
-    <span class="agenda-kind ${item.kind}">${item.kind}</span>
-    <strong>${escapeHtml(item.title)}</strong>
-    <code>${escapeHtml(item.value)}</code>
-    <small>${item.tags.map(escapeHtml).join(" ")}</small>
-  </li>
-`;
-
-const agendaWindowFallbackMessage = (rangeLabel: string, itemCount: number): string =>
-  `Agenda window ${rangeLabel} has no projected rows. Showing ${itemCount} source planning item${
-    itemCount === 1 ? "" : "s"
-  } from the current Org file instead.`;
 
 const renderRuleMicroscope = (
   workspace: SuperAgendaWorkspace,

@@ -56,7 +56,7 @@ describe("Org source view fallbacks", () => {
     expect(noteRecords(document).map((item) => item.title)).toEqual(["Typed note"]);
   });
 
-  it("shows source planning data when agenda projection has no rows in the configured window", () => {
+  it("does not synthesize Agenda rows from source planning when WASM returns no rows", () => {
     const document = createDocumentView([
       record({
         title: "Bathroom Design",
@@ -87,10 +87,11 @@ describe("Org source view fallbacks", () => {
 
     const html = renderView({ view: "agenda", document: projected });
 
-    expect(projected.counts.agenda).toBe(1);
-    expect(html).toContain("Agenda window 2026-05-15 to 2026-05-21 has no projected rows.");
-    expect(html).toContain("Bathroom Design");
-    expect(html).toContain("&lt;2020-12-19 Sat&gt;-&lt;2020-12-19 Sat&gt;");
+    expect(projected.counts.agenda).toBe(0);
+    expect(html).toContain("No WASM agenda rows in 2026-05-15 to 2026-05-21.");
+    expect(html).not.toContain("Bathroom Design");
+    expect(html).not.toContain("&lt;2020-12-19 Sat&gt;-&lt;2020-12-19 Sat&gt;");
+    expect(html).not.toContain("source planning");
   });
 
   it("renders Notes through the shared Org HTML record renderer", () => {
