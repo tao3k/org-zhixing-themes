@@ -1229,6 +1229,25 @@ nav button.active {
   font-size: 0.76rem;
 }
 
+.memory-link-item {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.memory-link-item code,
+.memory-link-item span {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: normal;
+  white-space: normal;
+  word-break: normal;
+}
+
+.memory-link-item code {
+  display: block;
+}
+
 .memory-next {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

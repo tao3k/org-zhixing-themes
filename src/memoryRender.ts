@@ -16,6 +16,7 @@ import {
   type OrgRecordRenderContext,
   type OrgRecordRenderer,
 } from "./recordRender";
+import { renderSoftBreakText } from "./typographicText";
 
 export const renderAgentMemory = (
   memory: AgentMemoryView | null,
@@ -278,7 +279,7 @@ const renderEvidenceChip = (item: OrgizeMemoryEvidenceDto): string =>
   `<span title="${escapeAttribute(item.value)}">${escapeHtml(item.kind.label)}</span>`;
 
 const renderLinkItem = (link: OrgizeMemoryLinkDto): string =>
-  `<li><code>${escapeHtml(link.path)}</code><span>${escapeHtml(link.description)}</span></li>`;
+  `<li class="memory-link-item"><code>${renderSoftBreakText(link.path)}</code><span>${renderSoftBreakText(link.description)}</span></li>`;
 
 const renderTags = (tags: Array<string | null | undefined>): string => {
   const visibleTags = tags.filter((tag): tag is string => Boolean(tag));

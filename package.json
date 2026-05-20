@@ -18,6 +18,7 @@
     "preview": "rspack serve --mode production --host 127.0.0.1"
   },
   "dependencies": {
+    "css-line-break": "^2.1.0",
     "orgize": "git+https://github.com/tao3k/orgize-wasm.git#1d7daa2fdfe659671499b739db8d241513ebde71",
     "photoswipe": "^5.4.4",
     "smol-toml": "^1.6.1"
