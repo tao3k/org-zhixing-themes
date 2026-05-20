@@ -61,7 +61,7 @@ export const createDocumentView = (
   const recordsByTag = indexRecordsByTag(sectionIndex);
   const recordsByRangeStart = indexRecordsByRangeStart(sectionIndex);
   const agenda = indexAgendaItems(sectionIndex);
-  const notes = explicitOrFallbackNoteRecords(sectionIndex, recordsByTag);
+  const notes = noteRecordsByPolicy(sectionIndex, null);
   return {
     sectionIndex,
     semanticSections,
@@ -109,6 +109,7 @@ export const withAttachmentInventory = (
   counts: {
     ...document.counts,
     attachments: attachmentInventory.display.length,
+    records: noteRecordsByPolicy(document.sectionIndex, attachmentInventory).length,
   },
 });
 
@@ -150,7 +151,7 @@ export const taggedRecords = (
 ): OrgizeViewIndexRecordDto[] => document?.recordsByTag.get(normalizeTag(tag)) ?? [];
 
 export const noteRecords = (document: OrgizeDocumentView | null): OrgizeViewIndexRecordDto[] =>
-  document ? explicitOrFallbackNoteRecords(document.sectionIndex, document.recordsByTag) : [];
+  document ? noteRecordsByPolicy(document.sectionIndex, document.attachmentInventory) : [];
 
 export const blogArticles = (document: OrgizeDocumentView | null): OrgizeViewIndexRecordDto[] =>
   articleRoots(taggedRecords(document, "blog"));
@@ -215,17 +216,26 @@ const indexAgendaItems = (records: OrgizeViewIndexRecordDto[]): AgendaItem[] => 
 
 const normalizeTag = (tag: string): string => tag.toLowerCase();
 
-const explicitOrFallbackNoteRecords = (
+const noteRecordsByPolicy = (
   records: OrgizeViewIndexRecordDto[],
-  recordsByTag: ReadonlyMap<string, OrgizeViewIndexRecordDto[]>,
+  attachmentInventory: OrgizeAttachmentInventoryResponseDto | null,
 ): OrgizeViewIndexRecordDto[] => {
-  const explicit = recordsByTag.get("record") ?? [];
-  return explicit.length > 0 ? explicit : records.filter(isNoteRecord);
+  const attachmentRanges = new Set(
+    attachmentInventory?.display.map((attachment) => attachment.source.rangeStart) ?? [],
+  );
+  return records.filter((record) => isNoteRecord(record, attachmentRanges));
 };
 
-const isNoteRecord = (record: OrgizeViewIndexRecordDto): boolean =>
-  record.title.trim().length > 0 &&
-  !record.effectiveTags.some((tag) => normalizeTag(tag) === "blog");
+const isNoteRecord = (
+  record: OrgizeViewIndexRecordDto,
+  attachmentRanges: ReadonlySet<number>,
+): boolean => {
+  if (!record.title.trim()) {
+    return false;
+  }
+  const tags = new Set(record.effectiveTags.map(normalizeTag));
+  return tags.has("record") || tags.has("attach") || attachmentRanges.has(record.rangeStart);
+};
 
 const addPlanning = (
   items: AgendaItem[],

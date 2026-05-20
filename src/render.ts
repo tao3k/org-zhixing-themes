@@ -7,7 +7,7 @@ import { renderAttachmentGallery } from "./attachmentGalleryRender";
 import { renderAgentCapture } from "./captureRender";
 import { renderAgentMemory } from "./memoryRender";
 import { blogArticles, noteRecords, type OrgizeDocumentView, type ViewKey } from "./model";
-import { renderOrgRecordCards } from "./recordRender";
+import { renderOrgRecordCards, renderSiteOrgRecordCards } from "./recordRender";
 import {
   augmentOrgHtmlMetadata,
   matchHeadingRecord,
@@ -16,6 +16,7 @@ import {
   sectionTitle,
   type SectionRecord,
 } from "./orgHtmlMetadata";
+import type { SiteNoteSource } from "./siteNotes";
 
 type TimingStats = {
   staticMs?: number;
@@ -39,6 +40,7 @@ type RenderViewOptions = {
   articleMessage?: string;
   blogArticleRangeStart?: number | null;
   blogZenMode?: boolean;
+  siteNotes?: SiteNoteSource[];
   sourceFile?: string;
 };
 
@@ -54,10 +56,20 @@ type PreparedArticle = {
   toc: ArticleTocItem[];
 };
 
-export const renderView = ({
+export const renderView = (options: RenderViewOptions): string => {
+  const pendingMessage = options.pendingMessage ?? "";
+  if (pendingMessage) {
+    return `<div class="empty">${escapeHtml(pendingMessage)}</div>`;
+  }
+  if (!options.document) {
+    return `<div class="empty">Loading Org parser...</div>`;
+  }
+  return renderLoadedView({ ...options, document: options.document });
+};
+
+const renderLoadedView = ({
   view,
   document,
-  pendingMessage = "",
   agendaMode = "classic",
   agendaPanel = "trace",
   agendaRuleId = null,
@@ -65,15 +77,9 @@ export const renderView = ({
   articleMessage = "",
   blogArticleRangeStart = null,
   blogZenMode = false,
+  siteNotes,
   sourceFile,
-}: RenderViewOptions): string => {
-  if (pendingMessage) {
-    return `<div class="empty">${escapeHtml(pendingMessage)}</div>`;
-  }
-  if (!document) {
-    return `<div class="empty">Loading Org parser...</div>`;
-  }
-
+}: RenderViewOptions & { document: OrgizeDocumentView }): string => {
   switch (view) {
     case "blog":
       return renderBlogReader(
@@ -87,6 +93,9 @@ export const renderView = ({
     case "gallery":
       return renderAttachmentGallery(document, sourceFile);
     case "records":
+      if (siteNotes) {
+        return renderSiteOrgRecordCards(siteNotes);
+      }
       return renderOrgRecordCards(noteRecords(document), "Notes", {
         articleHtml,
         document,

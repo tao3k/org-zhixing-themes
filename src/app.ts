@@ -6,7 +6,6 @@ import {
   type BlogReaderState,
 } from "./blogState";
 import {
-  agendaViewRequest,
   loadSiteConfig,
   publicAssetUrl,
   resolveInitialAgendaMode,
@@ -19,6 +18,7 @@ import {
   type SourceItem,
 } from "./config";
 import type { AgendaPanelKey } from "./agendaTypes";
+import { projectAgendaDocument } from "./appAgendaProjection";
 import { resolveInitialAgendaPanel, resolveInitialAgendaRuleId } from "./agendaState";
 import { bindAppDom, type AppDomNodes } from "./appDom";
 import { bindAppEvents } from "./appEvents";
@@ -32,7 +32,6 @@ import { createCaptureApplyPreview } from "./captureApplyPreview";
 import { createAgentCaptureRequest } from "./captureModel";
 import {
   createDocumentView,
-  withAgendaView,
   withAgentMemory,
   withAttachmentInventory,
   withCapturePlan,
@@ -49,6 +48,7 @@ import {
   staticSourceFor,
   type StaticSiteData,
 } from "./staticSiteData";
+import { siteNoteSources } from "./siteNotes";
 import { writeAppUrlState } from "./urlState";
 import { viewCacheKey } from "./viewCache";
 import type { ViewKey } from "./model";
@@ -307,24 +307,23 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
   }
 
   async #refreshAgendaIfNeeded(): Promise<void> {
-    if (this.#documentView?.agendaView || !this.#siteConfig) {
+    if (!this.#documentView || this.#documentView.agendaView || !this.#siteConfig) {
       return;
     }
     const version = this.#documentVersion;
+    const documentView = this.#documentView;
     this.#pendingMessage = "Projecting agenda intelligence...";
     this.#render();
-    const agenda = await this.#session.agendaView(agendaViewRequest(this.#siteConfig.agenda));
+    const agenda = await projectAgendaDocument(
+      this.#session,
+      documentView,
+      this.#siteConfig.agenda,
+    );
     if (version !== this.#documentVersion) {
       return;
     }
     this.#timings = { ...this.#timings, agendaMs: agenda.durationMs };
-    if (this.#documentView) {
-      this.#documentView = withAgendaView(
-        this.#documentView,
-        agenda.value,
-        this.#siteConfig.agenda,
-      );
-    }
+    this.#documentView = agenda.document;
     this.#clearAgendaCache();
     this.#pendingMessage = "";
   }
@@ -454,6 +453,10 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
         articleMessage: this.#articleMessage,
         blogArticleRangeStart: this.#blog.articleRangeStart,
         blogZenMode: this.#blog.zenMode,
+        siteNotes:
+          this.#currentView === "records" && this.#staticSite && this.#siteConfig
+            ? siteNoteSources(this.#staticSite, this.#siteConfig.agenda)
+            : undefined,
         sourceFile: this.#sourceItem?.sourceFile,
         agendaMode: this.#agendaMode,
         agendaPanel: this.#agendaPanel,

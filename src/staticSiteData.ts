@@ -23,6 +23,7 @@ export type StaticSourceProjection = {
   file: string;
   sourceFile: string;
   sourceBytes: number;
+  agendaRange?: AgendaSettings;
   viewIndex: OrgizeViewIndexResponseDto;
   sectionIndex: OrgizeSectionIndexResponseDto;
   html: string;
@@ -79,5 +80,5 @@ export const documentViewFromStaticSource = (
   );
   document = withAttachmentInventory(document, source.attachmentInventory);
   document = withAgentMemory(document, createAgentMemoryView(source.memory));
-  return withAgendaView(document, source.agendaView, agenda);
+  return withAgendaView(document, source.agendaView, source.agendaRange ?? agenda);
 };

@@ -804,6 +804,71 @@ nav button.active {
   align-content: start;
 }
 
+.org-record-workbench {
+  display: grid;
+  gap: 16px;
+}
+
+.org-record-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #dfe7f0;
+  padding-bottom: 12px;
+}
+
+.org-record-header h2 {
+  margin: 2px 0 4px;
+}
+
+.org-record-header p:last-child {
+  margin: 0;
+  color: #657386;
+  font-size: 0.9rem;
+}
+
+.org-note-policy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.org-note-policy span {
+  border: 1px solid #dbe5ef;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #30425a;
+  background: #f7fafc;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.org-record-source-group {
+  display: grid;
+  gap: 12px;
+}
+
+.org-record-source-group header {
+  display: flex;
+  align-items: end;
+  justify-content: flex-start;
+  border-bottom: 1px solid #e0e7ef;
+  padding-bottom: 8px;
+}
+
+.org-record-source-group h3 {
+  margin: 0;
+  color: #172026;
+  font-size: 1rem;
+}
+
+.org-record-source-group p {
+  margin: 3px 0 0;
+  color: #657386;
+  font-size: 0.82rem;
+}
+
 .org-record-render {
   max-width: none;
   margin: 4px 0 0;
@@ -822,27 +887,17 @@ nav button.active {
   background: #ffffff;
 }
 
-.org-record-source-meta {
-  margin-top: 14px;
-  border-left: 3px solid rgba(14, 165, 233, 0.55);
-  padding: 10px 12px;
-  background: rgba(14, 165, 233, 0.08);
+.org-record-render--missing {
+  padding: 12px;
+  border: 1px dashed #d3dde8;
+  border-radius: 8px;
+  background: #f7fafc;
+  color: #617083;
+  font-size: 0.9rem;
 }
 
-.org-record-source-meta span {
-  display: block;
-  margin-bottom: 6px;
-  color: #075985;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.org-record-source-meta pre,
-.org-record-render--source pre {
+.org-record-render--missing p {
   margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
 .card-kicker {
@@ -3106,6 +3161,13 @@ nav button.active {
 .agenda-row-main p {
   margin: 2px 0 7px;
   font-weight: 700;
+}
+
+.agenda-planning-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
 }
 
 .agenda-row-evidence {

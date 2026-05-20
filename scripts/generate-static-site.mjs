@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
@@ -15,6 +15,7 @@ const configPath = "org-zhixing.toml";
 const main = async () => {
   const configText = await readFile(resolve(publicRoot, configPath), "utf8");
   const config = parseConfig(configText);
+  config.sources = mergeSources(config.sources, await discoverOrgSources(config.contentRoot));
   const require = createRequire(import.meta.url);
   await init({ module_or_path: readFileSync(require.resolve("orgize/wasm")) });
 
@@ -48,17 +49,20 @@ const projectSource = async (source, config) => {
   const sourceText = await readFile(resolve(publicRoot, source.sourceFile), "utf8");
   const org = new Org(sourceText);
   try {
+    const viewIndex = parseJson(org.viewIndexJson(source.sourceFile));
+    const agendaProjection = projectAgendaView(org, viewIndex, config.agenda);
     return {
       ...source,
       sourceBytes: Buffer.byteLength(sourceText),
-      viewIndex: parseJson(org.viewIndexJson(source.sourceFile)),
+      viewIndex,
       sectionIndex: parseJson(org.sectionIndexJson(source.sourceFile)),
       html: org.html(),
       attachmentInventory: parseJson(
         org.attachmentInventoryJson(JSON.stringify(config.attachments)),
       ),
       memory: parseJson(org.memoryJson()),
-      agendaView: parseJson(org.agendaViewJson(JSON.stringify(config.agendaViewRequest))),
+      agendaRange: agendaProjection.range,
+      agendaView: agendaProjection.view,
       lint: parseJson(org.lintJson()),
     };
   } finally {
@@ -78,9 +82,32 @@ const parseConfig = (text) => {
         ? sources
         : [sourceFromPath(contentRoot, "demo", "org-zhixing-demo.org", "Org Zhixing Demo")],
     attachments: parseAttachments(asOptionalRecord(raw.attachments), contentRoot),
-    agendaViewRequest: agendaViewRequest(asOptionalRecord(raw.agenda)),
+    agenda: agendaSettings(asOptionalRecord(raw.agenda)),
   };
 };
+
+const projectAgendaView = (org, viewIndex, configuredRange) => {
+  const configured = requestAgendaView(org, configuredRange);
+  if (configured.cards.length > 0) {
+    return { range: configuredRange, view: configured };
+  }
+  const sourceRange = sourcePlanningAgendaRange(viewIndex.records, configuredRange);
+  if (!sourceRange || sameAgendaRange(sourceRange, configuredRange)) {
+    return { range: configuredRange, view: configured };
+  }
+  return { range: sourceRange, view: requestAgendaView(org, sourceRange) };
+};
+
+const requestAgendaView = (org, range) =>
+  parseJson(
+    org.agendaViewJson(
+      JSON.stringify({
+        start: range.start,
+        end: range.end,
+        limit: range.limit,
+      }),
+    ),
+  );
 
 const parseSources = (raw, contentRoot) =>
   Array.isArray(raw)
@@ -96,6 +123,59 @@ const parseSources = (raw, contentRoot) =>
         )
     : [];
 
+const discoverOrgSources = async (contentRoot) => {
+  const root = resolve(publicRoot, contentRoot);
+  const files = await orgFiles(root);
+  return files.map((file) =>
+    sourceFromPath(contentRoot, sourceIdFromPath(file), file, sourceTitleFromPath(file)),
+  );
+};
+
+const orgFiles = async (dir, prefix = "") => {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (entry.name.startsWith(".")) {
+      continue;
+    }
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      files.push(...(await orgFiles(resolve(dir, entry.name), relative)));
+    } else if (entry.isFile() && entry.name.endsWith(".org")) {
+      files.push(relative);
+    }
+  }
+  return files.sort((left, right) => left.localeCompare(right));
+};
+
+const mergeSources = (configured, discovered) => {
+  const sources = new Map();
+  for (const source of discovered) {
+    sources.set(source.file, source);
+  }
+  for (const source of configured) {
+    sources.set(source.file, source);
+  }
+  return [...sources.values()];
+};
+
+const sourceIdFromPath = (file) =>
+  file
+    .replace(/\.org$/, "")
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+
+const sourceTitleFromPath = (file) =>
+  file
+    .split("/")
+    .pop()
+    .replace(/\.org$/, "")
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 const sourceFromPath = (contentRoot, id, file, name) => ({
   id,
   name,
@@ -110,15 +190,60 @@ const parseAttachments = (raw, contentRoot) => ({
   scanOrphans: readBoolean(raw, "scan_orphans", false),
 });
 
-const agendaViewRequest = (raw) => {
+const agendaSettings = (raw) => {
   const start = readDate(raw, "start") ?? todayDate();
   const days = clampWholeNumber(readNumber(raw, "days", 7), 1, 31);
+  const end = addDays(start, days - 1);
   return {
     start,
-    end: addDays(start, days - 1),
+    end,
+    days,
+    label: agendaRangeLabel(start, end),
     limit: readOptionalWholeNumber(raw, "limit"),
+    mode: readAgendaMode(raw?.mode, "classic"),
   };
 };
+
+const sourcePlanningAgendaRange = (records, configuredRange) => {
+  const dates = records.flatMap((record) =>
+    ["scheduled", "deadline", "closed"].flatMap((key) => planningDates(record.planning?.[key])),
+  );
+  if (dates.length === 0) {
+    return null;
+  }
+  const start = dates.reduce((left, right) => (compareDate(left, right) <= 0 ? left : right));
+  const end = dates.reduce((left, right) => (compareDate(left, right) >= 0 ? left : right));
+  return {
+    ...configuredRange,
+    start,
+    end,
+    days: daysBetween(start, end) + 1,
+    label: agendaRangeLabel(start, end),
+  };
+};
+
+const planningDates = (value) =>
+  typeof value === "string"
+    ? [...value.matchAll(/(?:<|\[)(\d{4})-(\d{2})-(\d{2})/g)].map((match) => ({
+        year: Number(match[1]),
+        month: Number(match[2]),
+        day: Number(match[3]),
+      }))
+    : [];
+
+const sameAgendaRange = (left, right) =>
+  compareDate(left.start, right.start) === 0 && compareDate(left.end, right.end) === 0;
+
+const agendaRangeLabel = (start, end) =>
+  compareDate(start, end) === 0 ? formatDate(start) : `${formatDate(start)} - ${formatDate(end)}`;
+
+const compareDate = (left, right) =>
+  dateMs(left) === dateMs(right) ? 0 : dateMs(left) < dateMs(right) ? -1 : 1;
+
+const daysBetween = (start, end) =>
+  Math.max(0, Math.round((dateMs(end) - dateMs(start)) / 86_400_000));
+
+const dateMs = (date) => Date.UTC(date.year, date.month - 1, date.day);
 
 const normalizeDir = (value) => {
   const normalized = value.replace(/^\/+|\/+$/g, "");
@@ -226,7 +351,15 @@ const addDays = (date, days) => {
   };
 };
 
+const formatDate = (date) =>
+  `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
+
 const clampWholeNumber = (value, min, max) => Math.min(max, Math.max(min, Math.trunc(value)));
+
+const readAgendaMode = (value, fallback) =>
+  value === "classic" || value === "strict" || value === "auto" || value === "agent"
+    ? value
+    : fallback;
 
 const asOptionalRecord = (value) =>
   value && typeof value === "object" && !Array.isArray(value) ? value : null;

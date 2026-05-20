@@ -17,10 +17,11 @@ export const staticProjection = (): StaticSourceProjection => {
       schemaVersion: 1,
       records: [
         record({
-          bodyPreview: "Static fallback",
+          bodyPreview: "Static preview",
           effectiveTags: ["ATTACH", "memory"],
+          outline: "Environments / [[https://example.com/static-gallery][Static Gallery]]",
           rangeStart: 7,
-          title: "Static Gallery",
+          title: "[[https://example.com/static-gallery][Static Gallery]]",
         }),
       ],
     },
@@ -29,12 +30,17 @@ export const staticProjection = (): StaticSourceProjection => {
       records: [
         {
           source,
-          outlinePath: ["Static Gallery"],
-          outlinePathText: ["Static Gallery"],
+          outlinePath: ["Environments", "[[https://example.com/static-gallery][Static Gallery]]"],
+          outlinePathText: ["Environments", "Static Gallery"],
           level: 1,
-          title: "Static Gallery",
+          title: "[[https://example.com/static-gallery][Static Gallery]]",
           titleText: "Static Gallery",
-          body: [],
+          body: [
+            {
+              source,
+              text: "#+DOWNLOADED: https://example.com/static.jpg @ 2026-05-15\n[[attachment:static.jpg]]",
+            },
+          ],
           todo: null,
           todoState: null,
           priority: {
@@ -98,7 +104,7 @@ export const staticProjection = (): StaticSourceProjection => {
           targetEndDate: null,
           time: null,
           endTime: null,
-          title: "Static Gallery",
+          title: "[[https://example.com/static-gallery][Static Gallery]]",
           category: null,
           todo: null,
           todoState: null,
@@ -158,18 +164,19 @@ const attachmentInventory = (source: OrgizeSourceRangeDto) => ({
 const record = ({
   bodyPreview,
   effectiveTags,
+  outline,
   rangeStart,
   title,
 }: Pick<
   OrgizeViewIndexRecordDto,
-  "bodyPreview" | "effectiveTags" | "rangeStart" | "title"
+  "bodyPreview" | "effectiveTags" | "outline" | "rangeStart" | "title"
 >): OrgizeViewIndexRecordDto => ({
   bodyPreview,
   effectiveTags,
   rangeStart,
   title,
   level: 1,
-  outline: title,
+  outline: outline ?? title,
   planning: { scheduled: "<2020-12-19 Sat>-<2020-12-19 Sat>" },
   properties: [],
   todo: null,

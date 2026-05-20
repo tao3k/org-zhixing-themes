@@ -6,6 +6,7 @@ import type {
 import type { AgendaModeKey } from "./config";
 import type {
   AgendaCardView,
+  AgendaPlanningEntry,
   SuperAgendaAgentBrief,
   SuperAgendaCapabilitySummary,
   SuperAgendaCaptureEntry,
@@ -169,14 +170,47 @@ const agendaCardView = (
   recordsByRangeStart: ReadonlyMap<number, OrgizeViewIndexRecordDto>,
 ): AgendaCardView => {
   const record = recordsByRangeStart.get(card.source.rangeStart) ?? null;
-  return {
+  const displayCard = {
     ...card,
-    record,
-    signals: agendaSignals(card, record),
-    pressure: agendaPressure(card),
-    agentState: agendaAgentState(card, record),
-    memorySignals: agendaMemorySignals(card, record),
+    title: orgTitleText(card.title),
+    blockers: card.blockers.map((blocker) => ({
+      ...blocker,
+      blocker: {
+        ...blocker.blocker,
+        title: orgTitleText(blocker.blocker.title),
+      },
+    })),
   };
+  return {
+    ...displayCard,
+    record,
+    signals: agendaSignals(displayCard, record),
+    planning: agendaPlanningEntries(record),
+    pressure: agendaPressure(displayCard),
+    agentState: agendaAgentState(displayCard, record),
+    memorySignals: agendaMemorySignals(displayCard, record),
+  };
+};
+
+const agendaPlanningEntries = (record: OrgizeViewIndexRecordDto | null): AgendaPlanningEntry[] =>
+  [
+    planningEntry("SCHEDULED", "scheduled", record?.planning.scheduled),
+    planningEntry("DEADLINE", "deadline", record?.planning.deadline),
+    planningEntry("CLOSED", "closed", record?.planning.closed),
+  ].filter((entry): entry is AgendaPlanningEntry => entry !== null);
+
+const planningEntry = (
+  label: AgendaPlanningEntry["label"],
+  kind: AgendaPlanningEntry["kind"],
+  value: unknown,
+): AgendaPlanningEntry | null => {
+  const raw =
+    typeof value === "string"
+      ? value
+      : value && typeof value === "object" && "raw" in value && typeof value.raw === "string"
+        ? value.raw
+        : "";
+  return raw ? { label, kind, value: raw } : null;
 };
 
 const agendaSignals = (
@@ -356,3 +390,10 @@ const sortStepDetail = (key: string): string => {
   };
   return details[key] ?? "parser sort signal";
 };
+
+const orgTitleText = (value: string): string =>
+  value
+    .replace(/\[\[([^\]]+)\]\[([^\]]+)\]\]/g, "$2")
+    .replace(/\[\[([^\]]+)\]\]/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();

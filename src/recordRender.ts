@@ -9,6 +9,7 @@ import {
   sectionTitle,
   type SectionRecord,
 } from "./orgHtmlMetadata";
+import type { SiteNoteSource } from "./siteNotes";
 
 export type OrgRecordRenderContext = {
   articleHtml: string;
@@ -20,6 +21,11 @@ export type RenderedOrgRecord = {
   bodyHtml: string;
   rangeStart: number;
   title: string;
+};
+
+export type OrgRecordRenderer = {
+  rendered: ReadonlyMap<number, RenderedOrgRecord>;
+  semantic: ReadonlyMap<number, SectionRecord>;
 };
 
 type OrgRecordLike = {
@@ -39,28 +45,73 @@ export const renderOrgRecordCards = (
   if (records.length === 0) {
     return `<div class="empty">No ${label.toLowerCase()} records found.</div>`;
   }
-  const rendered = renderedOrgRecords(context);
-  const semantic = semanticRecordsByRangeStart(context.document);
-  return `<div class="card-grid">${records.map((record) => renderOrgRecordCard(record, rendered, semantic)).join("")}</div>`;
+  const renderer = createOrgRecordRenderer(context);
+  return `
+    <section class="org-record-workbench" aria-label="${escapeHtml(label)}">
+      <header class="org-record-header">
+        <div>
+          <p class="eyebrow">Org notes</p>
+          <h2>${escapeHtml(label)}</h2>
+          <p>${escapeHtml(notesRecordSummary(records, context.sourceFile))}</p>
+        </div>
+      </header>
+      <div class="card-grid">${records.map((record) => renderOrgRecordCard(record, renderer)).join("")}</div>
+    </section>
+  `;
+};
+
+export const renderSiteOrgRecordCards = (sources: SiteNoteSource[]): string => {
+  const total = sources.reduce((sum, source) => sum + source.records.length, 0);
+  if (total === 0) {
+    return `<div class="empty">No Notes records found in the configured Org sources.</div>`;
+  }
+  return `
+    <section class="org-record-workbench" aria-label="Notes">
+      <header class="org-record-header">
+        <div>
+          <p class="eyebrow">Org notes</p>
+          <h2>Notes</h2>
+          <p>${escapeHtml(siteNotesSummary(total, sources.length))}</p>
+        </div>
+      </header>
+      <div class="org-note-policy">
+        <span>:record:</span>
+        <span>:ATTACH:</span>
+        <span>attachment-backed headings</span>
+      </div>
+      ${sources.map(renderSiteNoteSource).join("")}
+    </section>
+  `;
 };
 
 export const renderMemoryRecordArticle = (
   record: OrgizeMemoryRecordDto,
-  context: OrgRecordRenderContext,
+  renderer: OrgRecordRenderer,
 ): string | null => {
-  const rendered = renderedOrgRecords(context).get(record.source.rangeStart);
-  const semantic = semanticRecordsByRangeStart(context.document).get(record.source.rangeStart);
-  const sourceFallback = renderSourceBackedBody(semantic, rendered?.bodyHtml ?? "");
+  const rendered = renderer.rendered.get(record.source.rangeStart);
   if (!rendered?.bodyHtml) {
-    return sourceFallback;
+    return renderMissingProjection(record.source.rangeStart);
   }
   return `
     <section class="org-record-render org-record-render--memory rendered-html" aria-label="Rendered Org memory">
       ${rendered.bodyHtml}
-      ${sourceFallback ?? ""}
     </section>
   `;
 };
+
+export const createOrgRecordRenderer = (context: OrgRecordRenderContext): OrgRecordRenderer => ({
+  rendered: renderedOrgRecords(context),
+  semantic: semanticRecordsByRangeStart(context.document),
+});
+
+export const orgRecordDisplayTitle = (
+  renderer: OrgRecordRenderer,
+  rangeStart: number,
+  fallbackTitle: string,
+): string =>
+  renderer.rendered.get(rangeStart)?.title ||
+  sectionTitleForRange(renderer, rangeStart) ||
+  orgTitleText(fallbackTitle);
 
 export const renderedOrgRecords = (
   context: OrgRecordRenderContext,
@@ -98,26 +149,45 @@ export const renderedOrgRecords = (
 
 const renderOrgRecordCard = (
   record: OrgizeViewIndexRecordDto,
-  rendered: ReadonlyMap<number, RenderedOrgRecord>,
-  semantic: ReadonlyMap<number, SectionRecord>,
+  renderer: OrgRecordRenderer,
 ): string => {
-  const bodyHtml = rendered.get(record.rangeStart)?.bodyHtml;
-  const sourceFallback = renderSourceBackedBody(semantic.get(record.rangeStart), bodyHtml ?? "");
+  const rendered = renderer.rendered.get(record.rangeStart);
+  const bodyHtml = rendered?.bodyHtml;
+  const semanticRecord = renderer.semantic.get(record.rangeStart);
+  const footer = bodyHtml ? "" : `${renderTags(record)}${renderProperties(record)}`;
   return `
     <article class="card org-record-card">
-      <div class="card-kicker">${escapeHtml(record.outline)}</div>
-      <h2>${escapeHtml(recordDisplayTitle(record, rendered))}</h2>
+      <div class="card-kicker">${escapeHtml(recordOutlineText(record, semanticRecord))}</div>
+      <h2>${escapeHtml(recordDisplayTitle(record, renderer))}</h2>
       ${
         bodyHtml
-          ? `<section class="org-record-render rendered-html">${bodyHtml}${sourceFallback ?? ""}</section>`
-          : (sourceFallback ?? `<p>${escapeHtml(record.bodyPreview)}</p>`)
+          ? `<section class="org-record-render rendered-html">${bodyHtml}</section>`
+          : renderMissingProjection(record.rangeStart)
       }
-      <div class="meta-row">
-        ${record.effectiveTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
-      </div>
-      ${renderProperties(record)}
+      ${footer}
     </article>
 `;
+};
+
+const renderSiteNoteSource = (source: SiteNoteSource): string => {
+  const renderer = createOrgRecordRenderer({
+    articleHtml: source.html,
+    document: source.document,
+    sourceFile: source.sourceFile,
+  });
+  return `
+    <section class="org-record-source-group">
+      <header>
+        <div>
+          <h3>${escapeHtml(source.name)}</h3>
+          <p>${escapeHtml(source.file)} / ${source.records.length} notes</p>
+        </div>
+      </header>
+      <div class="card-grid">
+        ${source.records.map((record) => renderOrgRecordCard(record, renderer)).join("")}
+      </div>
+    </section>
+  `;
 };
 
 const semanticRecordsByRangeStart = (
@@ -125,46 +195,35 @@ const semanticRecordsByRangeStart = (
 ): ReadonlyMap<number, SectionRecord> =>
   new Map(sectionRecords(document).map((record) => [record.source.rangeStart, record]));
 
-const renderSourceBackedBody = (
-  record: SectionRecord | undefined,
-  renderedHtml: string,
-): string | null => {
-  const sourceText = recordSourceText(record);
-  if (!sourceText) {
-    return null;
-  }
-  const metadataLines = sourceText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => /^#\+[A-Z0-9_]+:/.test(line));
-  if (metadataLines.length > 0) {
-    return `
-      <div class="org-record-source-meta">
-        <span>Source metadata</span>
-        <pre>${escapeHtml(metadataLines.join("\n"))}</pre>
-      </div>
-    `;
-  }
-  if (renderedHtml.trim()) {
-    return null;
-  }
-  return `
-    <section class="org-record-render org-record-render--source rendered-html">
-      <pre>${escapeHtml(sourceText)}</pre>
-    </section>
-  `;
-};
+const renderMissingProjection = (rangeStart: number): string => `
+  <section class="org-record-render org-record-render--missing" data-range-start="${rangeStart}">
+    <p>HTML projection missing for this Org section.</p>
+  </section>
+`;
 
-const recordSourceText = (record: SectionRecord | undefined): string =>
-  record?.body
-    .map((slice) => slice.text.trim())
-    .filter(Boolean)
-    .join("\n\n") ?? "";
+const sectionTitleForRange = (renderer: OrgRecordRenderer, rangeStart: number): string | null => {
+  const record = renderer.semantic.get(rangeStart);
+  if (!record) {
+    return null;
+  }
+  return sectionTitle(record);
+};
 
 const recordDisplayTitle = (
   record: OrgizeViewIndexRecordDto,
-  rendered: ReadonlyMap<number, RenderedOrgRecord>,
-): string => rendered.get(record.rangeStart)?.title || orgTitleText(record.title);
+  renderer: OrgRecordRenderer,
+): string => orgRecordDisplayTitle(renderer, record.rangeStart, record.title);
+
+const recordOutlineText = (
+  record: OrgizeViewIndexRecordDto,
+  semantic: SectionRecord | undefined,
+): string => {
+  const semanticPath = semantic?.outlinePathText?.map(normalizeDisplayText).filter(Boolean);
+  if (semanticPath && semanticPath.length > 0) {
+    return semanticPath.join(" / ");
+  }
+  return orgTitleText(record.outline || record.title);
+};
 
 const cloneSection = (heading: HTMLHeadingElement, parsed: Document): HTMLElement => {
   const container = parsed.createElement("div");
@@ -190,6 +249,42 @@ const renderProperties = (record: OrgRecordLike): string => {
     )
     .join("")}</dl>`;
 };
+
+const renderTags = (record: OrgRecordLike): string => {
+  if (record.effectiveTags.length === 0) {
+    return "";
+  }
+  return `
+    <div class="meta-row">
+      ${record.effectiveTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
+    </div>
+  `;
+};
+
+const notesRecordSummary = (
+  records: OrgizeViewIndexRecordDto[],
+  sourceFile: string | undefined,
+): string => {
+  const plural = records.length === 1 ? "heading" : "headings";
+  const source = sourceFile ? sourceFile.split("/").filter(Boolean).pop() : null;
+  return `${records.length} ${notesScope(records)} ${plural} from ${source ?? "Org source"}`;
+};
+
+const siteNotesSummary = (records: number, sources: number): string =>
+  `${records} indexed notes from ${sources} Org sources`;
+
+const notesScope = (records: OrgizeViewIndexRecordDto[]): string => {
+  if (records.some((record) => hasTag(record, "record"))) {
+    return "explicit :record:";
+  }
+  if (records.some((record) => hasTag(record, "attach"))) {
+    return "attachment-backed";
+  }
+  return "semantic";
+};
+
+const hasTag = (record: OrgizeViewIndexRecordDto, tag: string): boolean =>
+  record.effectiveTags.some((value) => value.toLowerCase() === tag);
 
 const orgTitleText = (value: string): string =>
   normalizeDisplayText(

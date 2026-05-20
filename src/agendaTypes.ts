@@ -52,9 +52,16 @@ export type SuperAgendaSelector =
 export type AgendaCardView = OrgizeAgendaViewCardDto & {
   record: OrgizeViewIndexRecordDto | null;
   signals: string[];
+  planning: AgendaPlanningEntry[];
   pressure: SuperAgendaTone;
   agentState: string;
   memorySignals: string[];
+};
+
+export type AgendaPlanningEntry = {
+  label: "SCHEDULED" | "DEADLINE" | "CLOSED";
+  kind: "scheduled" | "deadline" | "closed";
+  value: string;
 };
 
 export type SuperAgendaProgramRule = {

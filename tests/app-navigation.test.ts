@@ -92,8 +92,18 @@ describe("Org Zhixing navigator", () => {
     clickNav("records");
     await waitForView("records");
     expect(new URL(window.location.href).searchParams.get("view")).toBe("records");
-    expect(document.querySelectorAll(".org-record-render")).toHaveLength(1);
+    expect(document.querySelectorAll(".org-record-render")).toHaveLength(2);
+    expect(document.body.textContent).toContain("2 indexed notes from 2 Org sources");
+    expect(document.body.textContent).toContain(":record:");
+    expect(document.body.textContent).toContain(":ATTACH:");
     expect(document.body.textContent).toContain("Static rendered body");
+    expect(document.body.textContent).toContain("Demo rendered body");
+    expect(document.body.textContent).toContain("Environments / Static Gallery");
+    expect(document.body.textContent).not.toContain("Source metadata");
+    expect(document.body.textContent).not.toContain("Downloaded");
+    expect(document.body.textContent).not.toContain("https://example.com/static.jpg");
+    expect(document.body.textContent).not.toContain("[[https://example.com/static-gallery");
+    expect(document.body.textContent).not.toContain("#+DOWNLOADED");
     expect(document.body.textContent).not.toContain("No notes records found");
 
     clickNav("memory");
@@ -113,7 +123,10 @@ describe("Org Zhixing navigator", () => {
     expect(new URL(window.location.href).searchParams.get("view")).toBe("agenda");
     expect(document.body.textContent).toContain("Compiled sections");
     expect(document.body.textContent).toContain("Static Gallery");
+    expect(document.body.textContent).toContain("SCHEDULED");
+    expect(document.body.textContent).toContain("<2020-12-19 Sat>-<2020-12-19 Sat>");
     expect(document.body.textContent).toContain("WASM agenda projection");
+    expect(document.body.textContent).not.toContain("[[https://example.com/static-gallery");
     expect(document.body.textContent).not.toContain("source planning");
   });
 
@@ -135,7 +148,8 @@ describe("Org Zhixing navigator", () => {
 
     clickNav("records");
     await waitForText("Demo rendered body");
-    expect(document.body.textContent).not.toContain("Static rendered body");
+    expect(document.body.textContent).toContain("Static rendered body");
+    expect(document.body.textContent).toContain("2 indexed notes from 2 Org sources");
   });
 });
 

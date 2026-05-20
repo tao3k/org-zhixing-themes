@@ -205,6 +205,7 @@ const renderAgendaCard = (
     <div class="agenda-row-main">
       <h3>${escapeHtml(transformedTitle(card, transformer))}</h3>
       <p>${escapeHtml(card.agentState)}</p>
+      ${renderPlanningChips(card)}
       <div class="agenda-signal-row agenda-signal-row--compact">
         ${card.signals
           .slice(0, 9)
@@ -237,6 +238,22 @@ const transformedTitle = (
     case undefined:
       return card.title;
   }
+};
+
+const renderPlanningChips = (card: AgendaCardView): string => {
+  if (card.planning.length === 0) {
+    return "";
+  }
+  return `
+    <div class="agenda-planning-row">
+      ${card.planning
+        .map(
+          (entry) =>
+            `<span class="org-meta-chip org-meta-chip--${entry.kind}"><b>${escapeHtml(entry.label)}</b> ${escapeHtml(entry.value)}</span>`,
+        )
+        .join("")}
+    </div>
+  `;
 };
 
 const renderReceiptRail = (card: AgendaCardView): string => `
@@ -300,11 +317,18 @@ const renderSkippedAgenda = (workspace: SuperAgendaWorkspace): string => {
 
 const renderSkippedAgendaItem = (item: OrgizeAgendaViewSkipDto): string => `
   <li>
-    <strong>${escapeHtml(item.title)}</strong>
+    <strong>${escapeHtml(orgTitleText(item.title))}</strong>
     <span>${escapeHtml(item.reason)}</span>
     <small>sorted #${item.sortedPosition}</small>
   </li>
 `;
+
+const orgTitleText = (value: string): string =>
+  value
+    .replace(/\[\[([^\]]+)\]\[([^\]]+)\]\]/g, "$2")
+    .replace(/\[\[([^\]]+)\]\]/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const escapeHtml = (value: string | number): string =>
   String(value)

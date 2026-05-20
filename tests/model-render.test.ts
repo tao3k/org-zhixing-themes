@@ -1,11 +1,5 @@
-import type {
-  OrgizeMemoryRecordDto,
-  OrgizeSectionIndexRecordDto,
-  OrgizeSourceRangeDto,
-  OrgizeTextSliceDto,
-  OrgizeViewIndexRecordDto,
-} from "orgize/dto";
 import { describe, expect, it } from "vitest";
+import { sourcePlanningAgendaRange } from "../src/agendaRange";
 import { createAgentMemoryView } from "../src/memoryModel";
 import {
   createDocumentView,
@@ -16,10 +10,10 @@ import {
 } from "../src/model";
 import { renderView } from "../src/render";
 import { documentViewFromStaticSource, staticSourceFor } from "../src/staticSiteData";
+import { cacheKeyFor, memoryResponse, record, sectionRecord, sourceRange } from "./modelFixtures";
 import { staticProjection } from "./staticProjection.fixture";
-import { viewCacheKey } from "../src/viewCache";
 
-describe("Org source view fallbacks", () => {
+describe("Org source view projections", () => {
   it("uses semantic headings as Notes when a real attachment source has no :record: tags", () => {
     const document = createDocumentView([
       record({
@@ -40,7 +34,7 @@ describe("Org source view fallbacks", () => {
     expect(renderView({ view: "records", document })).toContain("Wallpaper Attachment Gallery");
   });
 
-  it("keeps explicit :record: notes as the primary Notes surface", () => {
+  it("keeps explicit :record: and attachment-backed headings in Notes", () => {
     const document = createDocumentView([
       record({
         title: "Attachment-only heading",
@@ -52,8 +46,11 @@ describe("Org source view fallbacks", () => {
       }),
     ]);
 
-    expect(document.counts.records).toBe(1);
-    expect(noteRecords(document).map((item) => item.title)).toEqual(["Typed note"]);
+    expect(document.counts.records).toBe(2);
+    expect(noteRecords(document).map((item) => item.title)).toEqual([
+      "Attachment-only heading",
+      "Typed note",
+    ]);
   });
 
   it("does not synthesize Agenda rows from source planning when WASM returns no rows", () => {
@@ -94,18 +91,60 @@ describe("Org source view fallbacks", () => {
     expect(html).not.toContain("source planning");
   });
 
+  it("derives a source-local range for a second WASM Agenda query", () => {
+    const document = createDocumentView([
+      record({
+        title: "Bathroom Design",
+        planning: {
+          scheduled: "<2020-12-19 Sat>-<2020-12-19 Sat>",
+        },
+      }),
+      record({
+        rangeStart: 9,
+        title: "Closed archive",
+        planning: {
+          closed: "[2019-07-27 Sat 16:32]",
+        },
+      }),
+    ]);
+
+    const range = sourcePlanningAgendaRange(document.agenda, {
+      start: { year: 2026, month: 5, day: 15 },
+      days: 7,
+      end: { year: 2026, month: 5, day: 21 },
+      label: "2026-05-15 - 2026-05-21",
+      limit: 32,
+      mode: "classic",
+    });
+
+    expect(range).toMatchObject({
+      start: { year: 2019, month: 7, day: 27 },
+      end: { year: 2020, month: 12, day: 19 },
+      label: "2019-07-27 - 2020-12-19",
+      mode: "classic",
+    });
+  });
+
   it("renders Notes through the shared Org HTML record renderer", () => {
     const document = createDocumentView(
       [
         record({
-          bodyPreview: "Plain fallback should not be primary",
+          bodyPreview: "Plain preview should not be primary",
           effectiveTags: ["record"],
+          outline: "Environments / [[https://example.com/wallpaper][Wallpaper]]",
           rangeStart: 42,
           title: "[[https://example.com/wallpaper][Wallpaper]]",
         }),
       ],
       null,
-      [sectionRecord({ rangeStart: 42, title: "[[https://example.com/wallpaper][Wallpaper]]" })],
+      [
+        sectionRecord({
+          outlinePath: ["Environments", "[[https://example.com/wallpaper][Wallpaper]]"],
+          outlinePathText: ["Environments", "Wallpaper"],
+          rangeStart: 42,
+          title: "[[https://example.com/wallpaper][Wallpaper]]",
+        }),
+      ],
     );
 
     const html = renderView({
@@ -121,17 +160,20 @@ describe("Org source view fallbacks", () => {
     });
 
     expect(html).toContain("org-record-render");
+    expect(html).toContain("1 explicit :record: heading from Org source");
+    expect(html).toContain("Environments / Wallpaper");
     expect(html).toContain("Rendered paragraph");
     expect(html).toContain("<pre>");
-    expect(html).not.toContain("Plain fallback should not be primary");
+    expect(html).not.toContain("[[https://example.com/wallpaper");
+    expect(html).not.toContain("Plain preview should not be primary");
   });
 
-  it("keeps Notes source metadata when the HTML exporter omits Org keyword lines", () => {
+  it("keeps source metadata out of Notes cards when the exporter omits Org keyword lines", () => {
     const source = sourceRange(99);
     const document = createDocumentView(
       [
         record({
-          bodyPreview: "Plain fallback should not be primary",
+          bodyPreview: "Plain preview should not be primary",
           effectiveTags: ["record"],
           rangeStart: 99,
           title: "Semantic source title",
@@ -168,16 +210,19 @@ describe("Org source view fallbacks", () => {
 
     expect(html).toContain("org-record-render");
     expect(html).toContain("local-copy.jpg");
-    expect(html).toContain("#+DOWNLOADED: https://example.com/original.jpg");
-    expect(html).not.toContain("Plain fallback should not be primary");
+    expect(html).not.toContain("Source metadata");
+    expect(html).not.toContain("Downloaded");
+    expect(html).not.toContain("https://example.com/original.jpg");
+    expect(html).not.toContain("#+DOWNLOADED");
+    expect(html).not.toContain("Plain preview should not be primary");
   });
 
-  it("falls back to semantic source body when a Note has no rendered HTML section", () => {
+  it("surfaces a missing HTML projection instead of rendering raw source content", () => {
     const source = sourceRange(123);
     const document = createDocumentView(
       [
         record({
-          bodyPreview: "Plain fallback should not be primary",
+          bodyPreview: "Plain preview should not be primary",
           effectiveTags: ["record"],
           rangeStart: 123,
           title: "Source-only note",
@@ -199,48 +244,62 @@ describe("Org source view fallbacks", () => {
       articleHtml: "<main><h2>Different note</h2></main>",
     });
 
-    expect(html).toContain("org-record-render--source");
-    expect(html).toContain("Source-only body from semantic section.");
-    expect(html).not.toContain("Plain fallback should not be primary");
+    expect(html).toContain("org-record-render--missing");
+    expect(html).toContain("HTML projection missing for this Org section.");
+    expect(html).not.toContain("Source-only body from semantic section.");
+    expect(html).not.toContain("Plain preview should not be primary");
   });
 
   it("renders Memory records through the same Org HTML record renderer", () => {
     const source = sourceRange(84);
+    const rawTitle = "[[https://example.com/memory][Memory heading]]";
     const document = withAgentMemory(
       createDocumentView(
         [
           record({
-            bodyPreview: "Plain memory fallback",
+            bodyPreview: "Plain memory preview",
             effectiveTags: ["memory"],
             rangeStart: 84,
-            title: "Memory heading",
+            title: rawTitle,
           }),
         ],
         null,
-        [sectionRecord({ rangeStart: 84, title: "Memory heading" })],
+        [
+          sectionRecord({
+            outlinePath: ["Workspace", rawTitle],
+            outlinePathText: ["Workspace", "Memory heading"],
+            rangeStart: 84,
+            title: rawTitle,
+          }),
+        ],
       ),
-      createAgentMemoryView({
-        schemaVersion: 1,
-        stats: {
-          totalRecords: 1,
-          currentRecords: 1,
-          backgroundRecords: 0,
-          closedRecords: 0,
-          archivedRecords: 0,
-          cards: 0,
-          actionCards: 0,
-          suppressedCards: 0,
-          infoCards: 0,
-          evidence: 0,
-          properties: 0,
-          links: 0,
-          authorityReasons: 0,
-        },
-        records: [memoryRecord({ source, title: "Memory heading" })],
-        cards: [],
-        evidenceKinds: [],
-        authorityKinds: [],
-      }),
+      createAgentMemoryView(
+        memoryResponse({
+          source,
+          title: rawTitle,
+          cards: [
+            {
+              source,
+              decision: {
+                code: "MEM-R001",
+                kind: "current",
+                severity: "info",
+                title: "Render as semantic HTML",
+                nextAction: "Keep unified projection in use.",
+              },
+              authority: [],
+              title: rawTitle,
+              todo: null,
+              todoState: null,
+              tags: ["memory"],
+              effectiveTags: ["memory"],
+              anchor: null,
+              evidence: [],
+              links: [],
+            },
+          ],
+        }),
+      ),
     );
 
     const html = renderView({
@@ -256,7 +315,55 @@ describe("Org source view fallbacks", () => {
 
     expect(html).toContain("org-record-render--memory");
     expect(html).toContain("Rendered memory paragraph");
-    expect(html).not.toContain("Plain memory fallback");
+    expect(html).toContain("Memory heading");
+    expect(html).not.toContain("[[https://example.com/memory");
+    expect(html).not.toContain("Plain memory preview");
+  });
+
+  it("does not render raw Org content when a Memory section is missing from HTML", () => {
+    const source = sourceRange(88);
+    const document = withAgentMemory(
+      createDocumentView(
+        [
+          record({
+            bodyPreview: "Raw memory preview",
+            effectiveTags: ["memory"],
+            rangeStart: 88,
+            title: "Missing Memory HTML",
+          }),
+        ],
+        null,
+        [
+          sectionRecord({
+            body: [
+              {
+                source,
+                text: [
+                  "#+DOWNLOADED: https://example.com/raw.jpg",
+                  "[[https://example.com/raw][raw link]]",
+                  "[[attachment:raw.jpg]]",
+                ].join("\n"),
+              },
+            ],
+            rangeStart: 88,
+            title: "Missing Memory HTML",
+          }),
+        ],
+      ),
+      createAgentMemoryView(memoryResponse({ source, title: "Missing Memory HTML" })),
+    );
+
+    const html = renderView({
+      view: "memory",
+      document,
+      articleHtml: "<main><h2>Different memory heading</h2></main>",
+    });
+
+    expect(html).toContain("org-record-render--missing");
+    expect(html).not.toContain("#+DOWNLOADED");
+    expect(html).not.toContain("[[https://example.com/raw");
+    expect(html).not.toContain("[[attachment:raw.jpg]]");
+    expect(html).not.toContain("Raw memory preview");
   });
 
   it("separates cache keys by source and late projection state", () => {
@@ -363,125 +470,3 @@ describe("Org source view fallbacks", () => {
     ).toContain("Static rendered body");
   });
 });
-
-const record = ({
-  bodyPreview = "",
-  effectiveTags = [],
-  level = 1,
-  outline,
-  planning = {},
-  properties = [],
-  rangeStart = 0,
-  title,
-  todo = null,
-  todoState = null,
-}: Partial<OrgizeViewIndexRecordDto> & { title: string }): OrgizeViewIndexRecordDto => ({
-  bodyPreview,
-  effectiveTags,
-  level,
-  outline: outline ?? title,
-  planning,
-  properties,
-  rangeStart,
-  title,
-  todo,
-  todoState,
-});
-
-const sectionRecord = ({
-  body = [],
-  rangeStart,
-  title,
-}: {
-  body?: OrgizeTextSliceDto[];
-  rangeStart: number;
-  title: string;
-}): OrgizeSectionIndexRecordDto => ({
-  source: sourceRange(rangeStart),
-  outlinePath: [title],
-  outlinePathText: [title.replace(/\[\[[^\]]+\]\[([^\]]+)\]\]/g, "$1")],
-  level: 1,
-  title,
-  titleText: title.replace(/\[\[[^\]]+\]\[([^\]]+)\]\]/g, "$1"),
-  body,
-  todo: null,
-  todoState: null,
-  priority: {
-    effective: "B",
-    isDefault: true,
-    rangeStatus: "inRange",
-    profile: {
-      highest: "A",
-      lowest: "C",
-      default: "B",
-    },
-  },
-  category: null,
-  tags: [],
-  effectiveTags: [],
-  properties: [],
-  effectiveProperties: [],
-  specialProperties: [],
-  planning: {},
-  isComment: false,
-  archive: {
-    archived: false,
-    hasArchiveTag: false,
-  },
-  attachment: {
-    hasAttachTag: false,
-  },
-  links: [],
-  targets: [],
-  lifecycle: [],
-});
-
-const memoryRecord = ({
-  source,
-  title,
-}: {
-  source: OrgizeSourceRangeDto;
-  title: string;
-}): OrgizeMemoryRecordDto => ({
-  source,
-  state: "current",
-  level: 1,
-  title,
-  todo: null,
-  todoState: null,
-  tags: ["memory"],
-  effectiveTags: ["memory"],
-  anchor: null,
-  properties: [],
-  evidence: [],
-  links: [],
-});
-
-const sourceRange = (rangeStart: number): OrgizeSourceRangeDto => ({
-  start: { line: rangeStart, column: 1 },
-  end: { line: rangeStart, column: 1 },
-  rangeStart,
-  rangeEnd: rangeStart + 10,
-});
-
-const cacheKeyFor = (
-  document: ReturnType<typeof createDocumentView>,
-  view: "records",
-  sourceFile: string,
-  renderedHtml: string,
-): string =>
-  viewCacheKey({
-    agendaMode: "classic",
-    agendaPanel: "trace",
-    agendaRuleId: null,
-    blog: { articleRangeStart: null, zenMode: false },
-    document,
-    renderedHtml,
-    sourceItem: {
-      id: sourceFile,
-      name: sourceFile,
-      file: sourceFile,
-      sourceFile: `blog/${sourceFile}`,
-    },
-    view,
-  });
