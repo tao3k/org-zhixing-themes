@@ -197,9 +197,10 @@ memory cards, Travel cards, attachment cards, and rendered articles should not
 each invent a private TODO or planning badge.  The common classes are the
 contract: =org-heading-todo=, =org-heading-priority=, =org-planning-chip=,
 =org-timestamp=, =org-id-link=, =org-meta-tag=, and =org-native-table=.
-Tailwind CSS owns the small repeated utility composition for these atoms; larger
-view layouts stay in scoped CSS modules until a utility migration removes real
-duplication without flattening Org semantics.
+Tailwind CSS owns the small repeated utility composition for these atoms with
+=source(none)= enabled; larger view layouts stay in scoped CSS modules until a
+utility migration removes real duplication without flattening Org semantics or
+absorbing arbitrary user/exported HTML classes.
 
 ** Tests
 

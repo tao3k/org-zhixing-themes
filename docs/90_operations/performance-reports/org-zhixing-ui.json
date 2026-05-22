@@ -14,7 +14,8 @@
     "largestSourceShardBytes": 800000,
     "initialScriptBytes": 1500000,
     "initialScriptCount": 4,
-    "generatedTailwindCssBytes": 50000,
+    "generatedTailwindCssBytes": 5000,
+    "tailwindContentUtilityLeak": false,
     "travelPlacesBeforeVirtualization": 80,
     "staticManifestParseP50Ms": 15,
     "staticManifestParseP95Ms": 80,
@@ -136,14 +137,15 @@
       "sourceId": 135,
       "schemaVersion": 8
     },
-    "initialScriptBytes": 988325,
+    "initialScriptBytes": 988345,
     "initialScriptCount": 3,
     "initialScripts": [
       "assets/runtime.32ec875b.js",
       "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.760eebcd.js"
+      "assets/app.6df81f64.js"
     ],
-    "generatedTailwindCssBytes": 4479,
+    "generatedTailwindCssBytes": 774,
+    "tailwindContentUtilityLeak": false,
     "parserWorkerScriptBytes": 119867,
     "wasmAssetBytes": 2158753,
     "largestAsyncAssets": [
@@ -215,7 +217,7 @@
       "minMs": 0.13,
       "p50Ms": 0.13,
       "p95Ms": 0.14,
-      "maxMs": 0.22,
+      "maxMs": 0.15,
       "avgMs": 0.13
     },
     "travelProjectionRead": {
@@ -264,7 +266,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 988325,
+      "actual": 988345,
       "budget": 1500000,
       "pass": true
     },
@@ -274,8 +276,13 @@
       "pass": true
     },
     "generatedTailwindCssBytes": {
-      "actual": 4479,
-      "budget": 50000,
+      "actual": 774,
+      "budget": 5000,
+      "pass": true
+    },
+    "tailwindContentUtilityLeak": {
+      "actual": false,
+      "budget": false,
       "pass": true
     },
     "staticManifestParseP50Ms": {
@@ -407,8 +414,13 @@
     },
     {
       "area": "tailwind-design-token-runtime",
-      "signal": "generated Tailwind utilities are 4 KiB",
+      "signal": "generated Tailwind utilities are 774 B",
       "action": "Keep Tailwind on token-backed Org semantic atoms first, then migrate repeated hand-written component rules when the utility form is clearer."
+    },
+    {
+      "area": "tailwind-source-boundary",
+      "signal": "Tailwind source scanning is disabled for user/exported content classes",
+      "action": "Keep source(none) on the Tailwind utilities import so exported Org HTML classes do not silently become design-system utilities."
     },
     {
       "area": "parser-worker-startup",

@@ -29,7 +29,8 @@ const budgets = {
   largestSourceShardBytes: 800_000,
   initialScriptBytes: 1_500_000,
   initialScriptCount: 4,
-  generatedTailwindCssBytes: 50_000,
+  generatedTailwindCssBytes: 5_000,
+  tailwindContentUtilityLeak: false,
   travelPlacesBeforeVirtualization: 80,
   staticManifestParseP50Ms: 15,
   staticManifestParseP95Ms: 80,
@@ -122,6 +123,7 @@ const metrics = {
   initialScriptCount: initialScripts.length,
   initialScripts,
   generatedTailwindCssBytes: Buffer.byteLength(generatedTailwindCssText),
+  tailwindContentUtilityLeak: tailwindContentUtilityLeak(generatedTailwindCssText),
   parserWorkerScriptBytes: assetBytesMatching(/orgize_worker_js/),
   wasmAssetBytes: assetBytesMatching(/orgize_bg\..+\.wasm$/),
   largestAsyncAssets: largestAsyncAssets(initialScripts, assets, 8),
@@ -437,6 +439,11 @@ function evaluateBudgets(metrics, budgetConfig) {
       metrics.generatedTailwindCssBytes,
       budgetConfig.generatedTailwindCssBytes,
     ),
+    tailwindContentUtilityLeak: {
+      actual: metrics.tailwindContentUtilityLeak,
+      budget: budgetConfig.tailwindContentUtilityLeak,
+      pass: metrics.tailwindContentUtilityLeak === budgetConfig.tailwindContentUtilityLeak,
+    },
     staticManifestParseP50Ms: passMetric(
       metrics.staticManifestParse.p50Ms,
       budgetConfig.staticManifestParseP50Ms,
@@ -681,6 +688,14 @@ function recommendationsFor(metrics) {
         "Keep Tailwind on token-backed Org semantic atoms first, then migrate repeated hand-written component rules when the utility form is clearer.",
     });
   }
+  if (!metrics.tailwindContentUtilityLeak) {
+    recommendations.push({
+      area: "tailwind-source-boundary",
+      signal: "Tailwind source scanning is disabled for user/exported content classes",
+      action:
+        "Keep source(none) on the Tailwind utilities import so exported Org HTML classes do not silently become design-system utilities.",
+    });
+  }
   if (metrics.parserWorkerScriptBytes > 0 && metrics.lazyParserWorker) {
     recommendations.push({
       area: "parser-worker-startup",
@@ -778,6 +793,10 @@ function initialScriptsContainModule(pattern) {
       pattern.test(match[1] ?? ""),
     ),
   );
+}
+
+function tailwindContentUtilityLeak(css) {
+  return /\.(?:container|mb-4|grid|block|hidden|table|font-mono|font-sans)\b/.test(css);
 }
 
 function assetBytesMatching(pattern) {

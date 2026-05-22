@@ -85,16 +85,23 @@ describe("style module boundaries", () => {
     }
 
     const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+      dependencies: Record<string, string>;
       devDependencies: Record<string, string>;
       scripts: Record<string, string>;
     };
+    expect(packageJson.dependencies.effect).toBeUndefined();
+    expect(packageJson.devDependencies.effect).toBeTruthy();
     expect(packageJson.devDependencies.tailwindcss).toBeTruthy();
     expect(packageJson.devDependencies["@tailwindcss/cli"]).toBeTruthy();
     expect(packageJson.scripts["generate:theme"]).toBe("node scripts/build-elegant-theme.mjs");
     expect(packageJson.scripts.build).toContain("npm run generate:theme");
-    expect(tailwind).toContain('@import "tailwindcss/utilities.css"');
-    expect(tailwind).toContain("@theme inline");
+    expect(tailwind).not.toContain("tailwindcss/theme.css");
+    expect(tailwind).toContain(
+      '@import "tailwindcss/utilities.css" layer(utilities) source(none);',
+    );
     expect(tailwind).toContain(".org-timestamp");
+    expect(tailwind).toContain("font-size: var(--type-label-size);");
+    expect(tailwind).not.toContain("text-[var(--type-label-size)]");
   });
 
   it("keeps typography and product surfaces on semantic tokens", () => {

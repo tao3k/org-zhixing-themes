@@ -149,6 +149,7 @@ describe("Org Zhixing performance regression gates", () => {
     expect(perfScript).toContain("dynamicTanStackQueryChunk");
     expect(perfScript).toContain("eagerEffectRuntime: false");
     expect(perfScript).toContain("generatedTailwindCssBytes");
+    expect(perfScript).toContain("tailwindContentUtilityLeak: false");
     expect(perfScript).toContain("memoryShardBytes");
     expect(perfScript).toContain("sectionShardBytes");
     expect(perfScript).toContain("static-agenda-shards");

@@ -67,8 +67,10 @@ only for orchestration and rendering.
   a multi-megabyte async chunk in Rspack.
 - Theme tokens are generated before build with =style-dictionary=, Capsize
   metrics, and Tailwind CSS v4 utilities.  Tailwind currently owns repeated Org
-  semantic atoms such as timestamps and ID links; the broader product layout CSS
-  remains module-scoped until a migration removes real duplication.
+  semantic atoms such as timestamps and ID links through a =source(none)=
+  utilities import, so exported/user HTML classes such as =mb-4= do not silently
+  become design-system CSS.  The broader product layout CSS remains
+  module-scoped until a migration removes real duplication.
 - The source picker uses a styled =@zag-js/select= surface instead of the native
   browser select popup, but the Zag select runtime stays behind a dynamic chunk
   so fixing native popup styling does not inflate initial scripts.
@@ -134,7 +136,8 @@ The current UI performance receipt shows the entry manifest at about 64 KiB,
 with eight source shards totaling about 64 KiB, eight lazy agenda shards
 totaling about 77 KiB, eight lazy attachment shards totaling about 169 KiB,
 eight lazy memory shards totaling about 506 KiB, and eight lazy section shards
-totaling about 448 KiB.  Initial scripts are about 965 KiB across three files,
+totaling about 448 KiB.  Initial scripts are about 965 KiB across three files
+and generated Tailwind CSS is about 1 KiB,
 with PhotoSwipe, TanStack Virtual, TanStack Query Core, Masonry, Zag Floating
 Panel, and Zag Select all behind dynamic chunks; Effect is used in static
 generation and does not ship to the browser.  Static manifest
