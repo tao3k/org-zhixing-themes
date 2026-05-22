@@ -109,6 +109,10 @@ describe("style module boundaries", () => {
     expect(styles).toContain(".source-select-root");
     expect(styles).toContain('.source-select-item[data-selected="true"]');
     expect(styles).not.toContain(".source-select option");
+    expect(styles).not.toContain("nav button.active");
+    expect(styles).toContain(
+      ".site-nav-item.active {\n  border-left-color: var(--face-salient);\n  background: transparent;\n}",
+    );
     expect(styles).toContain(".source-feed {\n  display: none;");
     expect(styles).toContain(".source-block--summary");
     expect(styles).toContain(".life-index");

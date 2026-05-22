@@ -99,6 +99,7 @@ button {
 
 .site-nav-item.active {
   border-left-color: var(--face-salient);
+  background: transparent;
 }
 
 .site-nav-item span {
@@ -561,30 +562,6 @@ h1 {
   color: var(--face-strong);
   font-size: 1rem;
   line-height: 1.2;
-}
-
-nav {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  padding: 0;
-  overflow-x: auto;
-}
-
-nav button {
-  border: 0;
-  border-radius: var(--radius-ui);
-  padding: 9px 12px;
-  color: var(--face-normal);
-  background: transparent;
-  cursor: pointer;
-  font-size: 0.88rem;
-  font-weight: var(--weight-strong);
-}
-
-nav button.active {
-  color: var(--surface-paper);
-  background: var(--face-strong);
 }
 
 #view {
