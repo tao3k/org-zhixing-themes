@@ -24,17 +24,17 @@
     "eagerZagSelect": false
   },
   "metrics": {
-    "staticManifestBytes": 64297,
-    "sourceShardBytes": 1289988,
+    "staticManifestBytes": 64445,
+    "sourceShardBytes": 1290224,
     "sourceShardCount": 8,
-    "largestSourceShardBytes": 407338,
+    "largestSourceShardBytes": 407361,
     "largestSourceShard": "org-zhixing.sources/wallpaper-gallery.json",
-    "initialScriptBytes": 922948,
+    "initialScriptBytes": 923015,
     "initialScriptCount": 3,
     "initialScripts": [
       "assets/runtime.545635b2.js",
       "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.d568b5ee.js"
+      "assets/app.b82261ee.js"
     ],
     "blogArticles": 8,
     "blogSourceCount": 8,
@@ -62,9 +62,9 @@
       "name": "staticManifestParse",
       "minMs": 0.12,
       "p50Ms": 0.13,
-      "p95Ms": 0.21,
-      "maxMs": 0.75,
-      "avgMs": 0.15
+      "p95Ms": 0.17,
+      "maxMs": 0.26,
+      "avgMs": 0.13
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
@@ -77,22 +77,22 @@
   },
   "budgetResults": {
     "staticManifestBytes": {
-      "actual": 64297,
+      "actual": 64445,
       "budget": 500000,
       "pass": true
     },
     "sourceShardBytes": {
-      "actual": 1289988,
+      "actual": 1290224,
       "budget": 2000000,
       "pass": true
     },
     "largestSourceShardBytes": {
-      "actual": 407338,
+      "actual": 407361,
       "budget": 800000,
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 922948,
+      "actual": 923015,
       "budget": 1500000,
       "pass": true
     },
@@ -107,7 +107,7 @@
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.21,
+      "actual": 0.17,
       "budget": 80,
       "pass": true
     },

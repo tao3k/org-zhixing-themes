@@ -23,6 +23,7 @@ import type { TravelView } from "./travelModel";
 export type StaticSourceSummary = {
   id: string;
   name: string;
+  orgTitle?: string;
   file: string;
   sourceFile: string;
   sourceBytes: number;
@@ -32,6 +33,7 @@ export type StaticSourceSummary = {
 export type StaticSourceProjection = {
   id: string;
   name: string;
+  orgTitle?: string;
   file: string;
   sourceFile: string;
   sourceBytes: number;
@@ -134,7 +136,7 @@ export const staticSourceFor = (
 export const sourceItemsFromStaticSite = (staticSite: StaticSiteData | null): SourceItem[] =>
   staticSite?.sources.map((source) => ({
     id: source.id,
-    name: source.name,
+    name: source.orgTitle ?? source.name,
     file: source.file,
     sourceFile: source.sourceFile,
   })) ?? [];

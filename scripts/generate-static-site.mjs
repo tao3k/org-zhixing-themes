@@ -65,11 +65,13 @@ const projectSource = async (source, config) => {
   const sourceText = await readFile(resolve(publicRoot, source.sourceFile), "utf8");
   const org = new Org(sourceText);
   try {
+    const metadata = parseJson(org.metadataJson());
     const viewIndex = parseJson(org.viewIndexJson(source.sourceFile));
     const agendaProjection = projectAgendaView(org, viewIndex, config.agenda);
     const attachmentInventory = await projectAttachmentInventory(org, config, source);
     return {
       ...source,
+      orgTitle: orgDocumentTitle(metadata) ?? source.name,
       sourceBytes: Buffer.byteLength(sourceText),
       viewIndex,
       sectionIndex: parseJson(org.sectionIndexJson(source.sourceFile)),
@@ -97,7 +99,8 @@ const writeSourceShards = async (sources) => {
 
 const sourceSummary = (source) => ({
   id: source.id,
-  name: source.name,
+  name: sourceDisplayTitle(source),
+  orgTitle: source.orgTitle,
   file: source.file,
   sourceFile: source.sourceFile,
   sourceBytes: source.sourceBytes,
@@ -165,6 +168,7 @@ const projectBlogIndex = (sources) => {
 };
 
 const blogArticleFromSource = (source) => {
+  const title = blogArticleTitle(source);
   const firstSection = source.sectionIndex.records[0];
   const firstViewRecord = firstSection
     ? source.viewIndex.records.find(
@@ -180,14 +184,14 @@ const blogArticleFromSource = (source) => {
       effectiveTags: [],
       file: source.file,
       level: 1,
-      outline: source.name,
+      outline: title,
       planning: {},
       properties: [],
       rangeStart: 0,
       sourceFile: source.sourceFile,
       sourceId: source.id,
-      sourceName: source.name,
-      title: source.name,
+      sourceName: title,
+      title,
       todo: null,
       todoState: null,
     };
@@ -197,17 +201,29 @@ const blogArticleFromSource = (source) => {
     effectiveTags: sourceArticle.effectiveTags,
     file: source.file,
     level: sourceArticle.level,
-    outline: source.name,
+    outline: title,
     planning: sourceArticle.planning,
     properties: sourceArticle.properties,
     rangeStart: sourceArticle.rangeStart,
     sourceFile: source.sourceFile,
     sourceId: source.id,
-    sourceName: source.name,
-    title: source.name,
+    sourceName: title,
+    title,
     todo: sourceArticle.todo,
     todoState: sourceArticle.todoState,
   };
+};
+
+const blogArticleTitle = (source) => sourceDisplayTitle(source);
+
+const sourceDisplayTitle = (source) => source.orgTitle || source.name;
+
+const orgDocumentTitle = (metadata) => {
+  const keyword = metadata?.keywords?.find(
+    (item) => typeof item?.key === "string" && item.key.toUpperCase() === "TITLE",
+  );
+  const title = normalizeDisplayText(keyword?.value ?? "");
+  return title.length > 0 ? title : null;
 };
 
 const blogArticleFromSectionRecord = (record, viewRecord) => ({
@@ -320,7 +336,7 @@ const projectAttachmentGalleryView = (sources) => {
       record,
       sourceFile: source.sourceFile,
       sourceId: source.id,
-      sourceName: source.name,
+      sourceName: sourceDisplayTitle(source),
     })),
   );
   const entryCount = sources.reduce(
@@ -420,7 +436,7 @@ const createTravelPlace = (record, currentRegion, source, embedHtmlByRangeStart)
     title,
     outline: outlineText(record),
     sourceFile: source.sourceFile ?? null,
-    sourceName: source.name ?? null,
+    sourceName: sourceDisplayTitle(source) ?? null,
     region,
     tags,
     kind: travelKind(Boolean(headingRegion)),

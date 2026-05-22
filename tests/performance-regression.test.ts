@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import { describe, expect, it } from "vitest";
 import { renderView } from "../src/render";
@@ -69,11 +70,35 @@ describe("Org Zhixing performance regression gates", () => {
     const generator = readFileSync("scripts/generate-static-site.mjs", "utf8");
 
     expect(generator).toContain("sources.map(blogArticleFromSource)");
-    expect(generator).toContain("title: source.name");
+    expect(generator).toContain("org.metadataJson()");
+    expect(generator).toContain("const title = blogArticleTitle(source);");
+    expect(generator).not.toContain("title: source.name");
     expect(generator).not.toContain("source.sectionIndex.records.map");
     expect(generator).not.toContain(
       'record.effectiveTags.some((tag) => tag.toLowerCase() === "blog")',
     );
+  });
+
+  it("projects Blog article display titles from Org #+TITLE metadata", () => {
+    execFileSync("node", ["scripts/generate-static-site.mjs"], { stdio: "pipe" });
+    const manifest = JSON.parse(
+      readFileSync(".cache/org-zhixing/static-site.json", "utf8"),
+    ) as StaticSiteData;
+    const sourceTitles = new Map(
+      manifest.sources.map((source) => [source.sourceFile, source.orgTitle ?? source.name]),
+    );
+    const travelArticle = manifest.blog?.articles.find(
+      (article) => article.sourceFile === "blog/travel.org",
+    );
+
+    expect(manifest.blog?.articleCount).toBe(manifest.sources.length);
+    for (const article of manifest.blog?.articles ?? []) {
+      expect(article.title).toBe(sourceTitles.get(article.sourceFile));
+      expect(article.sourceName).toBe(article.title);
+    }
+    expect(travelArticle?.title).toBe("游山玩水");
+    expect(travelArticle?.sourceName).toBe("游山玩水");
+    expect(manifest.blog?.articles.map((article) => article.title)).toContain("Org Syntax Atlas");
   });
 
   it("keeps Zen reader progress as a lazy reading affordance", () => {
