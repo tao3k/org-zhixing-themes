@@ -16,6 +16,7 @@ import {
   type OrgRecordRenderContext,
   type OrgRecordRenderer,
 } from "./recordRender";
+import { renderOrgMetaRow, renderOrgTagBadges, renderOrgTodoBadge } from "./orgSemanticHtml";
 import { renderSoftBreakText } from "./typographicText";
 
 export const renderAgentMemory = (
@@ -112,7 +113,7 @@ const renderMemoryCard = (card: OrgizeAgentMemoryCardDto, renderer: OrgRecordRen
     <div class="memory-card-body">
       <h4>${escapeHtml(orgRecordDisplayTitle(renderer, card.source.rangeStart, card.title))}</h4>
       <p>${escapeHtml(card.decision.title)}</p>
-      ${renderTags([card.todo, ...card.effectiveTags])}
+      ${renderMemorySemanticRow(card.todo, card.todoState, card.effectiveTags)}
     </div>
     <div class="memory-card-grid">
       ${renderEvidenceList(card.evidence)}
@@ -161,7 +162,7 @@ const renderMemoryRecord = (record: OrgizeMemoryRecordDto, renderer: OrgRecordRe
         </div>
         <code>${escapeHtml(memorySourceLabel(record.source))}</code>
       </header>
-      ${renderTags([record.todo, ...record.effectiveTags])}
+      ${renderMemorySemanticRow(record.todo, record.todoState, record.effectiveTags)}
       ${renderedRecord ?? ""}
       <div class="memory-record-details">
         ${renderProperties(record.properties)}
@@ -281,12 +282,14 @@ const renderEvidenceChip = (item: OrgizeMemoryEvidenceDto): string =>
 const renderLinkItem = (link: OrgizeMemoryLinkDto): string =>
   `<li class="memory-link-item"><code>${renderSoftBreakText(link.path)}</code><span>${renderSoftBreakText(link.description)}</span></li>`;
 
-const renderTags = (tags: Array<string | null | undefined>): string => {
-  const visibleTags = tags.filter((tag): tag is string => Boolean(tag));
-  return visibleTags.length > 0
-    ? `<div class="memory-tags">${visibleTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>`
-    : "";
-};
+const renderMemorySemanticRow = (
+  todo: string | null | undefined,
+  todoState: "todo" | "done" | null | undefined,
+  tags: Array<string | null | undefined>,
+): string =>
+  renderOrgMetaRow([renderOrgTodoBadge(todo, todoState), ...renderOrgTagBadges(tags)], {
+    rowClassName: "org-meta-row--tags memory-tags",
+  });
 
 const escapeHtml = (value: string | number): string =>
   String(value)

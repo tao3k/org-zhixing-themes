@@ -778,11 +778,24 @@
   min-width: 0;
 }
 
-.agenda-row-main h3 {
+.agenda-row-main h3,
+.agenda-row-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: baseline;
   margin: 0;
   color: #172026;
   font-size: 0.94rem;
   line-height: 1.25;
+}
+
+.agenda-row-title-text {
+  min-width: 0;
+}
+
+.agenda-title-markers {
+  flex: 0 0 auto;
 }
 
 .agenda-row-main p {

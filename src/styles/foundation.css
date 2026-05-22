@@ -42,7 +42,7 @@ button {
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 22px;
   align-items: center;
-  padding: 14px clamp(18px, 4vw, 54px);
+  padding: 14px var(--frame-inset);
   border-bottom: 1px solid var(--hairline-soft);
   background: color-mix(in srgb, var(--surface-paper) 92%, transparent);
   backdrop-filter: blur(14px);
@@ -72,9 +72,9 @@ button {
 .site-hero {
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(320px, 0.72fr);
-  gap: 42px;
+  gap: var(--reader-gutter);
   align-items: center;
-  width: min(1120px, calc(100% - 36px));
+  width: min(1120px, calc(100% - (var(--frame-inset) * 2)));
   margin: 0 auto;
   padding: 54px 0 30px;
 }

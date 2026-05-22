@@ -1,5 +1,6 @@
 import type { OrgizeDocumentView } from "./model";
 import { embedHtmlByRangeStart } from "./orgRenderedSections";
+import { renderOrgTagRow } from "./orgSemanticHtml";
 import {
   createTravelView,
   type TravelEvidence,
@@ -125,12 +126,7 @@ const renderTravelGlanceTemplate = (place: TravelPlace): string => `
 `;
 
 const renderTravelTags = (place: TravelPlace): string =>
-  place.tags.length > 0
-    ? `<div class="travel-tags">${place.tags
-        .slice(0, 8)
-        .map((tag) => `<span>${escapeHtml(tag)}</span>`)
-        .join("")}</div>`
-    : "";
+  renderOrgTagRow(place.tags.slice(0, 8), { rowClassName: "travel-tags" });
 
 const renderEvidence = (items: TravelEvidence[]): string =>
   items.length > 0

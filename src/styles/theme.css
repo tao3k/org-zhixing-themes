@@ -132,8 +132,11 @@
   --radius-tight: 4px;
   --radius-ui: 6px;
   --radius-label: 5px;
-  --reader-width: 760px;
-  --reader-wide-width: 1040px;
+  --frame-inset: clamp(18px, 3vw, 42px);
+  --reader-gutter: clamp(22px, 5vw, 48px);
+  --reader-width: 72ch;
+  --reader-wide-width: 112ch;
+  --divider-width: 2px;
   --type-body-size: 16px;
   --type-body-leading: 28px;
   --type-heading-size: 32px;

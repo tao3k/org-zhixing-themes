@@ -45,7 +45,7 @@
 .blog-reader-layout {
   display: grid;
   grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
-  gap: 34px;
+  gap: var(--reader-gutter);
   align-items: start;
 }
 
@@ -101,7 +101,7 @@
   gap: 10px;
   max-height: calc(100vh - 110px);
   overflow: auto;
-  border-left: 2px solid var(--hairline);
+  border-left: var(--divider-width) solid var(--hairline);
   padding-left: 14px;
 }
 
@@ -188,7 +188,7 @@
 .blog-reader:not(.is-zen) .blog-article {
   max-width: none;
   border-left: 1px solid var(--hairline-soft);
-  padding: 34px 0 56px 28px;
+  padding: 34px 0 56px var(--reader-gutter);
   background: transparent;
   box-shadow: none;
 }

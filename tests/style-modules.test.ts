@@ -63,6 +63,10 @@ describe("style module boundaries", () => {
     expect(theme).toContain("--surface-subtle:");
     expect(theme).toContain("--shadow-reading: 0 1px 0 var(--slate-a3);");
     expect(theme).toContain("--radius-label: 5px;");
+    expect(theme).toContain("--frame-inset:");
+    expect(theme).toContain("--reader-gutter:");
+    expect(theme).toContain("--reader-width: 72ch;");
+    expect(theme).toContain("--divider-width: 2px;");
     expect(theme).toContain("--weight-heavy: 700;");
     expect(theme).toContain("--type-body-trim-before:");
   });
@@ -93,6 +97,9 @@ describe("style module boundaries", () => {
     const travel = readFileSync("src/styles/travel.css", "utf8");
 
     expect(styles).not.toMatch(/font-size:\s*clamp\(/);
+    expect(styles).toContain("padding: 14px var(--frame-inset);");
+    expect(styles).toContain("gap: var(--reader-gutter);");
+    expect(styles).toContain("border-left: var(--divider-width) solid var(--hairline);");
     expect(travel).toContain("color: var(--face-strong);");
     expect(travel).toContain("background: var(--surface-paper);");
     expect(travel).toContain("border: 1px solid var(--hairline");

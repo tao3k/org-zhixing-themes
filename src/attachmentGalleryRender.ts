@@ -1,6 +1,7 @@
 import { attachmentPublicUrl, basename } from "./attachmentPaths";
 import type { AttachmentGalleryRecord, AttachmentGalleryView } from "./attachmentGalleryModel";
 import type { AttachmentDisplayRecord } from "./model";
+import { renderOrgTagRow } from "./orgSemanticHtml";
 
 export const renderAttachmentGallery = (gallery: AttachmentGalleryView | null): string => {
   if (!gallery) {
@@ -67,9 +68,7 @@ const renderAttachmentCard = (
           <span>${escapeHtml(record.mediaKind)}</span>
           <h3>${escapeHtml(title)}</h3>
           <p>${escapeHtml(`${sourceName} / ${outline}`)}</p>
-          <div class="meta-row">
-            ${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
-          </div>
+          ${renderOrgTagRow(tags, { rowClassName: "meta-row" })}
         </div>
       </a>
     </article>

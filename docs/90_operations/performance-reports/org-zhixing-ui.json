@@ -27,12 +27,12 @@
     "sourceShardCount": 8,
     "largestSourceShardBytes": 407338,
     "largestSourceShard": "org-zhixing.sources/wallpaper-gallery.json",
-    "initialScriptBytes": 827950,
+    "initialScriptBytes": 837597,
     "initialScriptCount": 3,
     "initialScripts": [
       "assets/runtime.1ea3f64c.js",
       "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.462f55a4.js"
+      "assets/app.93f76c0e.js"
     ],
     "travelPlaces": 22,
     "travelSourceCount": 1,
@@ -51,17 +51,17 @@
     "staticManifestParse": {
       "name": "staticManifestParse",
       "minMs": 0.1,
-      "p50Ms": 0.1,
-      "p95Ms": 0.11,
-      "maxMs": 0.23,
-      "avgMs": 0.11
+      "p50Ms": 0.16,
+      "p95Ms": 0.28,
+      "maxMs": 0.68,
+      "avgMs": 0.18
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
       "minMs": 0,
       "p50Ms": 0,
       "p95Ms": 0,
-      "maxMs": 0,
+      "maxMs": 0.01,
       "avgMs": 0
     }
   },
@@ -82,7 +82,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 827950,
+      "actual": 837597,
       "budget": 1500000,
       "pass": true
     },
@@ -92,12 +92,12 @@
       "pass": true
     },
     "staticManifestParseP50Ms": {
-      "actual": 0.1,
+      "actual": 0.16,
       "budget": 15,
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.11,
+      "actual": 0.28,
       "budget": 80,
       "pass": true
     },

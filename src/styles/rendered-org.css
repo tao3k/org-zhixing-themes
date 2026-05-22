@@ -205,7 +205,7 @@ code {
   gap: 8px;
   margin: 10px 0 18px;
   padding: 0 0 0 12px;
-  border-left: 2px solid var(--hairline);
+  border-left: var(--divider-width) solid var(--hairline);
 }
 
 .org-meta-row {

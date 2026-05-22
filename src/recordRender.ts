@@ -7,6 +7,7 @@ import {
   sectionTitle,
   type SectionRecord,
 } from "./orgHtmlMetadata";
+import { renderOrgTagRow } from "./orgSemanticHtml";
 import type { SiteNoteSource } from "./siteNotes";
 
 export type OrgRecordRenderContext = {
@@ -203,14 +204,7 @@ const renderProperties = (record: OrgRecordLike): string => {
 };
 
 const renderTags = (record: OrgRecordLike): string => {
-  if (record.effectiveTags.length === 0) {
-    return "";
-  }
-  return `
-    <div class="meta-row">
-      ${record.effectiveTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
-    </div>
-  `;
+  return renderOrgTagRow(record.effectiveTags, { rowClassName: "meta-row" });
 };
 
 const notesRecordSummary = (

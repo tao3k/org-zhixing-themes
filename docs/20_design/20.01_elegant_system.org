@@ -66,6 +66,26 @@ wrong.
 - Zen Glance is a windowed reading surface.  The floating-panel state machine
   owns its size and position; CSS only paints the shell and content.
 
+** Elegant Layout Translation
+
+The layout model is inspired by
+[[https://github.com/rougier/elegant-emacs][rougier/elegant-emacs]] and
+[[https://github.com/minad/org-modern][minad/org-modern]], but it is translated
+into browser constraints instead of copied as Emacs Lisp.
+
+| Reference idea | Org Zhixing rule |
+|----------------+------------------|
+| Minimal frame chrome | page gutters come from =--frame-inset=; major separation uses hairlines and whitespace |
+| 72-column editor frame | rendered Org uses =--reader-width: 72ch= as the default reading measure |
+| Window dividers instead of cards | navigation, TOC, and section metadata use =--divider-width= hairlines |
+| A few named faces | every component maps back to the face economy instead of local color inventions |
+| Line spacing as breathing room | text rhythm comes from tokenized type leading, not viewport-scaled type |
+| Org syntax as UI | TODO, priority, timestamp, tag, table, and block atoms participate directly in layout |
+
+The practical test is simple: if a surface needs more elegance, first ask which
+Org semantic unit is missing or which frame rhythm is unstable.  Add a card,
+shadow, or decorative wrapper only after that answer is clear.
+
 ** Org Native Alignment
 
 The frontend should make Org syntax beautiful by consuming parser/exporter
@@ -86,12 +106,20 @@ facts, not by reparsing Org text in TypeScript.
 This is the boundary: TypeScript can beautify semantic facts, but it must not
 invent a second Org parser with regular expressions.
 
+The same visual atoms must be shared across views.  Agenda rows, record cards,
+memory cards, Travel cards, attachment cards, and rendered articles should not
+each invent a private TODO or planning badge.  The common classes are the
+contract: =org-heading-todo=, =org-heading-priority=, =org-planning-chip=,
+=org-timestamp=, =org-meta-tag=, and =org-native-table=.
+
 ** Tests
 
 The style tests protect the contract:
 
 - =src/styles/theme.css= must be generated from =tokens/elegant.json=.
 - every token in =tokens/elegant.json= must appear in the generated theme;
+- elegant layout tokens such as =--frame-inset=, =--reader-gutter=,
+  =--reader-width=, and =--divider-width= must stay in use by reader surfaces;
 - package-backed color and font imports must stay present;
 - core reader surfaces must not reintroduce hard-coded hex colors, very heavy
   font weights, =999px= label radii, local card shadows, or hover translation;
@@ -105,7 +133,10 @@ The style tests protect the contract:
 
 This slice introduces the generated token contract, migrates the foundation,
 blog reader, Travel, attachment gallery, rendered Org, and memory records onto
-the face economy, and adds explicit Org-native render affordances for headings,
-planning timestamps, tables, and blocks in the TypeScript renderer.  Checkboxes
-stay behind a parser-owned DTO boundary.  Later slices can move agenda modules
-through the same gate once their product layout is revisited.
+the face economy, adds explicit Org-native render affordances for headings,
+planning timestamps, tables, and blocks in the TypeScript renderer, and starts
+sharing those atoms in Agenda rows, record cards, and memory cards.  Checkboxes
+stay behind a parser-owned DTO boundary.  Travel and attachment tags now consume
+the same Org tag atom instead of private chips.  Later slices can move the
+remaining agenda modules through the same gate once their product layout is
+revisited.

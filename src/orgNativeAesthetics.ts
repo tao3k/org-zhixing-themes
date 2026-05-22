@@ -5,6 +5,12 @@ import {
   sectionRecords,
   type SectionRecord,
 } from "./orgHtmlMetadata";
+import {
+  hasExplicitOrgPriority,
+  orgPriorityLabel,
+  orgPriorityTone,
+  orgTodoTone,
+} from "./orgSemanticTone";
 
 export const enhanceOrgNativeAesthetics = (
   root: ParentNode,
@@ -42,15 +48,15 @@ const decorateHeading = (heading: HTMLHeadingElement, record: SectionRecord): vo
 
   if (record.todo) {
     const todo = heading.ownerDocument.createElement("span");
-    todo.className = `org-heading-todo org-heading-todo--${todoTone(record)}`;
+    todo.className = `org-heading-todo org-heading-todo--${orgTodoTone(record.todo, record.todoState)}`;
     todo.textContent = record.todo;
     markers.append(todo);
   }
 
-  if (hasExplicitPriority(record)) {
+  if (hasExplicitOrgPriority(record.priority)) {
     const priority = heading.ownerDocument.createElement("span");
-    priority.className = `org-heading-priority org-priority--${priorityTone(record)}`;
-    priority.textContent = priorityLabel(record);
+    priority.className = `org-heading-priority org-priority--${orgPriorityTone(record.priority)}`;
+    priority.textContent = orgPriorityLabel(record.priority);
     markers.append(priority);
   }
 
@@ -64,33 +70,6 @@ const decorateHeading = (heading: HTMLHeadingElement, record: SectionRecord): vo
     title.append(heading.firstChild);
   }
   heading.append(markers, title);
-};
-
-const todoTone = (record: SectionRecord): string => {
-  if (record.todoState === "done") {
-    return "done";
-  }
-  const todo = record.todo?.toLowerCase() ?? "";
-  if (["wait", "waiting", "hold", "blocked"].includes(todo)) {
-    return "waiting";
-  }
-  if (["next", "today", "review"].includes(todo)) {
-    return "focus";
-  }
-  return "todo";
-};
-
-const hasExplicitPriority = (record: SectionRecord): boolean =>
-  Boolean(record.priority.raw) || !record.priority.isDefault;
-
-const priorityLabel = (record: SectionRecord): string =>
-  record.priority.raw?.trim() || `#${record.priority.effective}`;
-
-const priorityTone = (record: SectionRecord): string => {
-  const priority = record.priority.effective.toLowerCase();
-  if (priority === "a") return "a";
-  if (priority === "b") return "b";
-  return "c";
 };
 
 const enhanceOrgTables = (root: ParentNode): void => {

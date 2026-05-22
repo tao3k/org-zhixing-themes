@@ -10,6 +10,7 @@ import type {
 import { agendaPrograms, superAgendaWorkspace } from "./agendaModel";
 import { renderAgendaInspector } from "./agendaPanels";
 import type { OrgizeDocumentView } from "./model";
+import { renderOrgPlanningChip, renderOrgTodoBadge } from "./orgSemanticHtml";
 
 export const renderAgenda = (
   document: OrgizeDocumentView,
@@ -203,7 +204,7 @@ const renderAgendaCard = (
       <small>${card.time ? `${escapeHtml(card.time)}${card.endTime ? `-${escapeHtml(card.endTime)}` : ""}` : `#${card.sortedPosition}`}</small>
     </div>
     <div class="agenda-row-main">
-      <h3>${escapeHtml(transformedTitle(card, transformer))}</h3>
+      <h3 class="agenda-row-title">${renderAgendaTitleMarkers(card)}<span class="agenda-row-title-text">${escapeHtml(transformedTitle(card, transformer))}</span></h3>
       <p>${escapeHtml(card.agentState)}</p>
       ${renderPlanningChips(card)}
       <div class="agenda-signal-row agenda-signal-row--compact">
@@ -246,14 +247,14 @@ const renderPlanningChips = (card: AgendaCardView): string => {
   }
   return `
     <div class="agenda-planning-row">
-      ${card.planning
-        .map(
-          (entry) =>
-            `<span class="org-meta-chip org-meta-chip--${entry.kind}"><b>${escapeHtml(entry.label)}</b> ${escapeHtml(entry.value)}</span>`,
-        )
-        .join("")}
+      ${card.planning.map((entry) => renderOrgPlanningChip(entry)).join("")}
     </div>
   `;
+};
+
+const renderAgendaTitleMarkers = (card: AgendaCardView): string => {
+  const markers = [renderOrgTodoBadge(card.todo, card.todoState)].filter(Boolean).join("");
+  return markers ? `<span class="agenda-title-markers org-heading-markers">${markers}</span>` : "";
 };
 
 const renderReceiptRail = (card: AgendaCardView): string => `

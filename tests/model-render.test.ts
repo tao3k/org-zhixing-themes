@@ -61,6 +61,55 @@ describe("Org source view projections", () => {
     ]);
   });
 
+  it("renders attachment tags through the shared Org tag atom", () => {
+    const source = sourceRange(17);
+    const document = withAttachmentInventory(createDocumentView([]), {
+      schemaVersion: 1,
+      entries: [
+        {
+          source,
+          sectionTitle: "Tagged image",
+          kind: { label: "link", link: { path: "tagged.jpg" } },
+          path: "tagged.jpg",
+          absolutePath: "/tmp/tagged.jpg",
+          exists: true,
+          vcs: {
+            status: "notChecked",
+            annex: { status: "notChecked" },
+          },
+        },
+      ],
+      display: [
+        {
+          source,
+          sectionTitle: "Tagged image",
+          sectionTitleText: "Tagged image",
+          outlinePath: ["Tagged image"],
+          outlinePathText: ["Tagged image"],
+          tags: ["ATTACH"],
+          effectiveTags: ["ATTACH", "gallery"],
+          directoryPath: ".attach/id",
+          linkPath: "tagged.jpg",
+          absolutePath: "/tmp/tagged.jpg",
+          exists: true,
+          mediaKind: "image",
+        },
+      ],
+      syncPlan: { actions: [] },
+      archiveAdvice: [],
+      warnings: [],
+    });
+
+    const html = renderView({ view: "gallery", document, sourceFile: "blog/gallery.org" });
+
+    expect(html).toContain("attachment-card");
+    expect(html).toContain("meta-row org-meta-row");
+    expect(html).toContain("org-meta-row--tags");
+    expect(html).toContain("org-meta-tag");
+    expect(html).toContain("ATTACH");
+    expect(html).toContain("gallery");
+  });
+
   it("does not synthesize Agenda rows from source planning when WASM returns no rows", () => {
     const document = createDocumentView([
       record({
@@ -97,6 +146,66 @@ describe("Org source view projections", () => {
     expect(html).not.toContain("Bathroom Design");
     expect(html).not.toContain("&lt;2020-12-19 Sat&gt;-&lt;2020-12-19 Sat&gt;");
     expect(html).not.toContain("source planning");
+  });
+
+  it("uses shared Org-native atoms inside Agenda rows", () => {
+    const document = createDocumentView([
+      record({
+        effectiveTags: ["agenda", "focus"],
+        planning: { scheduled: "<2026-05-16 Sat 11:00>" },
+        rangeStart: 12,
+        title: "Agenda native row",
+        todo: "NEXT",
+        todoState: "todo",
+      }),
+    ]);
+    const projected = withAgendaView(
+      document,
+      {
+        schemaVersion: 1,
+        totalCandidates: 1,
+        sortStrategy: [],
+        cards: [
+          {
+            source: sourceRange(12),
+            sortedPosition: 0,
+            kind: "scheduled",
+            displayDate: "2026-05-16",
+            targetDate: "2026-05-16",
+            targetEndDate: null,
+            time: "11:00",
+            endTime: null,
+            title: "Agenda native row",
+            category: null,
+            todo: "NEXT",
+            todoState: "todo",
+            effectiveTags: ["agenda", "focus"],
+            blockers: [],
+            urgency: { total: 0, ingredients: [] },
+            sortKeys: [],
+            receipts: [{ kind: "scheduled", message: "WASM agenda projection" }],
+          },
+        ],
+        skipped: [],
+      },
+      {
+        start: { year: 2026, month: 5, day: 15 },
+        days: 7,
+        end: { year: 2026, month: 5, day: 21 },
+        label: "2026-05-15 to 2026-05-21",
+        limit: 32,
+        mode: "classic",
+      },
+    );
+
+    const html = renderView({ view: "agenda", document: projected });
+
+    expect(html).toContain("agenda-row-title");
+    expect(html).toContain("agenda-title-markers org-heading-markers");
+    expect(html).toContain("org-heading-todo org-heading-todo--focus");
+    expect(html).toContain("org-planning-chip org-planning-chip--scheduled");
+    expect(html).toContain("org-timestamp org-timestamp--raw");
+    expect(html).toContain("Agenda native row");
   });
 
   it("derives a source-local range for a second WASM Agenda query", () => {
@@ -300,6 +409,8 @@ describe("Org source view projections", () => {
       sourceFile: "blog/travel.org",
     });
     expect(html).toContain("data-travel-card");
+    expect(html).toContain("travel-tags");
+    expect(html).toContain("org-meta-tag");
     expect(html).toContain("data-travel-map-toggle");
     expect(html).toContain("data-travel-glance-template");
     expect(html).toContain("travel-glance-flow");
@@ -580,6 +691,9 @@ describe("Org source view projections", () => {
 
     expect(html).toContain("org-record-render--missing");
     expect(html).toContain("HTML projection missing for this Org section.");
+    expect(html).toContain("meta-row org-meta-row");
+    expect(html).toContain("org-meta-row--tags");
+    expect(html).toContain("org-meta-tag");
     expect(html).not.toContain("Source-only body from semantic section.");
     expect(html).not.toContain("Plain preview should not be primary");
   });
@@ -623,8 +737,8 @@ describe("Org source view projections", () => {
               },
               authority: [],
               title: rawTitle,
-              todo: null,
-              todoState: null,
+              todo: "NEXT",
+              todoState: "todo",
               tags: ["memory"],
               effectiveTags: ["memory"],
               anchor: null,
@@ -648,6 +762,9 @@ describe("Org source view projections", () => {
     });
 
     expect(html).toContain("org-record-render--memory");
+    expect(html).toContain("memory-tags");
+    expect(html).toContain("org-heading-todo org-heading-todo--focus");
+    expect(html).toContain("org-meta-tag");
     expect(html).toContain("Rendered memory paragraph");
     expect(html).toContain("Memory heading");
     expect(html).not.toContain("[[https://example.com/memory");
