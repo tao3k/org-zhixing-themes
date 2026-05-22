@@ -35,6 +35,7 @@ const budgets = {
   eagerTravelVirtualList: false,
   eagerMasonryLayout: false,
   eagerFloatingPanel: false,
+  eagerZagSelect: false,
 };
 
 const indexHtml = await readFile(resolve(distRoot, "index.html"), "utf8");
@@ -77,6 +78,7 @@ const metrics = {
   eagerTravelVirtualList: initialScriptsContainModule(/src\/travelVirtualList\.ts/),
   eagerMasonryLayout: initialScriptsContainModule(/node_modules\/masonry-layout/),
   eagerFloatingPanel: initialScriptsContainModule(/node_modules\/@zag-js\/floating-panel/),
+  eagerZagSelect: initialScriptsContainModule(/node_modules\/@zag-js\/select/),
   dynamicTanStackChunk: [...assets.keys()].some((script) => /tanstack_virtual-core/.test(script)),
   dynamicTravelVirtualListChunk: [...assets.keys()].some((script) =>
     /travelVirtualList/.test(script),
@@ -85,6 +87,7 @@ const metrics = {
   dynamicFloatingPanelChunk: [...assets.keys()].some((script) =>
     /zag-js_floating-panel/.test(script),
   ),
+  dynamicZagSelectChunk: [...assets.keys()].some((script) => /zag-js_select/.test(script)),
   staticManifestParse,
   travelProjectionRead,
 };
@@ -244,6 +247,11 @@ function evaluateBudgets(metrics, budgetConfig) {
       budget: budgetConfig.eagerFloatingPanel,
       pass: metrics.eagerFloatingPanel === budgetConfig.eagerFloatingPanel,
     },
+    eagerZagSelect: {
+      actual: metrics.eagerZagSelect,
+      budget: budgetConfig.eagerZagSelect,
+      pass: metrics.eagerZagSelect === budgetConfig.eagerZagSelect,
+    },
   };
 }
 
@@ -321,6 +329,14 @@ function recommendationsFor(metrics) {
       signal: "Zag Floating Panel exists only as an on-demand chunk",
       action:
         "Keep Zen Glance window control behind the card-open boundary instead of adding it to initial navigation.",
+    });
+  }
+  if (metrics.dynamicZagSelectChunk && !metrics.eagerZagSelect) {
+    recommendations.push({
+      area: "source-picker-runtime",
+      signal: "Zag Select exists only as an on-demand chunk",
+      action:
+        "Keep the styled source picker out of initial scripts while preserving the non-native select surface.",
     });
   }
   return recommendations;

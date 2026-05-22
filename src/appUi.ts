@@ -1,6 +1,7 @@
 import { createTabButtons } from "./appChrome";
 import type { AppDomNodes } from "./appDom";
 import { renderSourceBlocks } from "./sourceBlocks";
+import { renderSourcePickerToDom } from "./sourcePicker";
 import type { SiteConfig, SourceItem } from "./config";
 import type { ViewKey } from "./model";
 
@@ -22,8 +23,8 @@ export const renderSourceOptionsToDom = (
   config: SiteConfig,
   sourceItem: SourceItem | null,
 ): void => {
-  const { active, blocks, options } = renderSourceBlocks(config, sourceItem?.file, sourceItem);
-  dom.sourceSelect.replaceChildren(...options);
+  const { active, blocks, sources } = renderSourceBlocks(config, sourceItem?.file, sourceItem);
+  renderSourcePickerToDom(dom.sourcePicker, sources, active?.file);
   dom.sourceFeed.replaceChildren(...blocks);
   dom.activeSourceTitle.textContent = active?.name ?? config.title;
   dom.activeSourcePath.textContent = active ? `${active.file} / blog source` : "No Org source";

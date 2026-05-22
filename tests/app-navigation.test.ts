@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mountOrgZhixingApp } from "../src/app";
 import { attachmentGalleryFromSources } from "../src/attachmentGalleryModel";
+import { sourcePickerChangeEvent } from "../src/sourcePicker";
 import type { StaticSiteData, StaticSourceProjection } from "../src/staticSiteData";
 import { sectionRecord, sourceRange } from "./modelFixtures";
 import { staticProjection } from "./staticProjection.fixture";
@@ -146,7 +147,7 @@ describe("Org Zhixing navigator", () => {
     mountStaticApp();
 
     await waitForText("Wallpaper Attachment Gallery");
-    sourceButton("demo").click();
+    selectSource("org-zhixing-demo.org");
 
     await waitForText("Demo Source");
     const url = new URL(window.location.href);
@@ -383,10 +384,16 @@ const clickNav = (viewKey: string): void => {
   button?.click();
 };
 
-const sourceButton = (sourceId: string): HTMLButtonElement => {
-  const button = document.querySelector<HTMLButtonElement>(`button[data-source-id="${sourceId}"]`);
-  expect(button).toBeTruthy();
-  return button as HTMLButtonElement;
+const selectSource = (sourceFile: string): void => {
+  const picker = document.querySelector<HTMLElement>("#source-picker");
+  expect(picker).toBeTruthy();
+  expect(document.querySelector("select#source-select")).toBeNull();
+  picker!.dispatchEvent(
+    new CustomEvent(sourcePickerChangeEvent, {
+      bubbles: true,
+      detail: { sourceFile },
+    }),
+  );
 };
 
 const view = (): string | null => document.querySelector("#app")?.getAttribute("data-view") ?? null;

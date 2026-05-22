@@ -37,6 +37,7 @@ import {
 import { createAgentMemoryView } from "./memoryModel";
 import { OrgizeSession, type OrgizeSessionOptions } from "./orgizeClient";
 import { renderAppShell } from "./appShell";
+import { destroySourcePicker } from "./sourcePicker";
 import { renderStats, renderView } from "./render";
 import {
   documentViewFromStaticSource,
@@ -97,6 +98,9 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
 
   dispose(): void {
     this.#abortController.abort();
+    if (this.#dom) {
+      destroySourcePicker(this.#dom.sourcePicker);
+    }
     this.#session.dispose();
   }
 
@@ -197,7 +201,6 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     if (this.#siteConfig) {
       renderSourceOptionsToDom(this.#dom, this.#siteConfig, this.#sourceItem);
     }
-    this.#dom.sourceSelect.value = nextSource.file;
     this.#sourceOrg = "";
     this.#documentView = null;
     this.#renderedHtml = "";

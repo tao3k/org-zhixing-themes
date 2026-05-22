@@ -1,8 +1,8 @@
 export type AppDomNodes = {
   sourceFeed: HTMLDivElement;
+  sourcePicker: HTMLElement;
   status: HTMLOutputElement;
   siteTitle: HTMLHeadingElement;
-  sourceSelect: HTMLSelectElement;
   activeSourceTitle: HTMLElement;
   activeSourcePath: HTMLElement;
   tabs: HTMLElement;
@@ -11,9 +11,9 @@ export type AppDomNodes = {
 
 export const bindAppDom = (root: HTMLElement): AppDomNodes => ({
   sourceFeed: requireNode(root, "#source-feed", HTMLDivElement),
+  sourcePicker: requireNode(root, "#source-picker", HTMLElement),
   status: requireNode(root, "#status", HTMLOutputElement),
   siteTitle: requireNode(root, "#site-title", HTMLHeadingElement),
-  sourceSelect: requireNode(root, "#source-select", HTMLSelectElement),
   activeSourceTitle: requireNode(root, "#active-source-title", HTMLElement),
   activeSourcePath: requireNode(root, "#active-source-path", HTMLElement),
   tabs: requireNode(root, "#tabs", HTMLElement),

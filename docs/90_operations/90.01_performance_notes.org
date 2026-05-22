@@ -51,6 +51,9 @@ only for orchestration and rendering.
 - Theme tokens are generated before build with =style-dictionary= and Capsize
   metrics, but those packages remain dev-only and do not enter the runtime
   bundle.
+- The source picker uses a styled =@zag-js/select= surface instead of the native
+  browser select popup, but the Zag select runtime stays behind a dynamic chunk
+  so fixing native popup styling does not inflate initial scripts.
 - Vite now allows only the demo root and the parent =wasm= package, excludes the
   symlinked =orgize= package from dependency pre-bundling, and uses an explicit
   watch allowlist: =src/=, root entry files, root-level public TOML config,
@@ -76,7 +79,8 @@ The benchmark reports are Git-tracked under
 - =org-zhixing-ui.json= reports entry manifest size, source-shard size, eager
   script size, static manifest JSON parse timing, Travel projection read
   timing, and whether PhotoSwipe, =css-line-break=, TanStack Virtual, or the
-  Travel virtual-list chunk leaked into initial scripts.
+  Travel virtual-list chunk, Zag Floating Panel, or Zag Select leaked into
+  initial scripts.
 
 The unit suite also carries regression gates:
 
@@ -85,6 +89,7 @@ The unit suite also carries regression gates:
 - real-scale Travel virtual-list binding must not construct =ResizeObserver=;
 - source-derived static Travel projection fallback must be cached;
 - the Travel virtual-list dependency must stay behind a dynamic import.
+- the styled source picker must keep =@zag-js/select= behind a dynamic import.
 - the attachment lightbox dependency must stay behind an image-opener dynamic
   import;
 - link soft wrapping must not reintroduce the =css-line-break= runtime.
@@ -102,10 +107,10 @@ ms.
 
 The current UI performance receipt shows the entry manifest at about 54 KiB,
 with eight source shards totaling about 1.2 MiB.  Initial scripts are about
-818 KiB across three files, with PhotoSwipe, TanStack Virtual, Masonry, and Zag
-Floating Panel all behind dynamic chunks.  Static manifest parse currently
-measures p50 0.16 ms / p95 0.28 ms on this fixture, so the former 1.3 MiB
-entry-manifest bottleneck has moved into shard-level DTO shape.
+858 KiB across three files, with PhotoSwipe, TanStack Virtual, Masonry, Zag
+Floating Panel, and Zag Select all behind dynamic chunks.  Static manifest
+parse currently measures p50 0.10 ms / p95 0.13 ms on this fixture, so the
+former 1.3 MiB entry-manifest bottleneck has moved into shard-level DTO shape.
 
 ** Next Performance Milestones
 

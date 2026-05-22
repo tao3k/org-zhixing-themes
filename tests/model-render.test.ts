@@ -208,6 +208,100 @@ describe("Org source view projections", () => {
     expect(html).toContain("Agenda native row");
   });
 
+  it("renders the Blog reader as a compact editor frame with rail navigation", () => {
+    const document = createDocumentView(
+      [
+        record({
+          effectiveTags: ["blog"],
+          rangeStart: 30,
+          title: "Elegant Org Frame",
+        }),
+        record({
+          effectiveTags: ["blog"],
+          rangeStart: 60,
+          title: "Second Article",
+        }),
+      ],
+      null,
+      [
+        sectionRecord({
+          effectiveTags: ["blog"],
+          rangeStart: 30,
+          title: "Elegant Org Frame",
+        }),
+      ],
+    );
+
+    const html = renderView({
+      view: "blog",
+      document,
+      articleHtml: `
+        <main>
+          <h1>Elegant Org Frame</h1>
+          <section>
+            <h2>Native rhythm</h2>
+            <p>Readable body.</p>
+          </section>
+        </main>
+      `,
+    });
+
+    expect(html).toContain('class="blog-rail"');
+    expect(html).toContain('class="life-index"');
+    expect(html).toContain("Writing");
+    expect(html).toContain("Journeys");
+    expect(html).toContain('data-view="travel"');
+    expect(html.indexOf("article-switcher")).toBeLessThan(html.indexOf("blog-toc"));
+    expect(html).toContain('data-blog-article="30"');
+    expect(html).toContain('data-blog-article="60"');
+    expect(html).toContain("Native rhythm");
+    expect(html).toContain('class="rendered-html blog-article"');
+  });
+
+  it("keeps large Blog article sets summarized inside the rail", () => {
+    const records = Array.from({ length: 20 }, (_, index) =>
+      record({
+        effectiveTags: ["blog"],
+        properties: [
+          {
+            key: "DATE",
+            value: `<2026-05-${String(index + 1).padStart(2, "0")} Fri>`,
+          },
+        ],
+        rangeStart: index + 1,
+        title: `Article ${index + 1}`,
+      }),
+    );
+    const document = createDocumentView(records);
+
+    const html = renderView({
+      view: "blog",
+      document,
+      blogArticleRangeStart: 12,
+      articleHtml: `
+        <main>
+          <h1>Article 12</h1>
+          <p>Selected article body.</p>
+        </main>
+      `,
+    });
+
+    expect(html).toContain("article-switcher-summary");
+    expect(html).toContain(">20<");
+    expect(html.match(/data-blog-article=/g) ?? []).toHaveLength(7);
+    expect(html).toContain("13 more articles");
+    expect(html).toContain('data-blog-article="12"');
+    expect([...html.matchAll(/data-blog-article="(\d+)"/g)].map((match) => match[1])).toEqual([
+      "14",
+      "13",
+      "12",
+      "11",
+      "10",
+      "9",
+      "8",
+    ]);
+  });
+
   it("derives a source-local range for a second WASM Agenda query", () => {
     const document = createDocumentView([
       record({

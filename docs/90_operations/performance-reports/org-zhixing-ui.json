@@ -19,7 +19,8 @@
     "eagerTanStackVirtual": false,
     "eagerTravelVirtualList": false,
     "eagerMasonryLayout": false,
-    "eagerFloatingPanel": false
+    "eagerFloatingPanel": false,
+    "eagerZagSelect": false
   },
   "metrics": {
     "staticManifestBytes": 55767,
@@ -27,12 +28,12 @@
     "sourceShardCount": 8,
     "largestSourceShardBytes": 407338,
     "largestSourceShard": "org-zhixing.sources/wallpaper-gallery.json",
-    "initialScriptBytes": 837597,
+    "initialScriptBytes": 878650,
     "initialScriptCount": 3,
     "initialScripts": [
-      "assets/runtime.1ea3f64c.js",
+      "assets/runtime.c3721c97.js",
       "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.93f76c0e.js"
+      "assets/app.b7456e88.js"
     ],
     "travelPlaces": 22,
     "travelSourceCount": 1,
@@ -44,17 +45,19 @@
     "eagerTravelVirtualList": false,
     "eagerMasonryLayout": false,
     "eagerFloatingPanel": false,
+    "eagerZagSelect": false,
     "dynamicTanStackChunk": true,
     "dynamicTravelVirtualListChunk": true,
     "dynamicMasonryChunk": true,
     "dynamicFloatingPanelChunk": true,
+    "dynamicZagSelectChunk": true,
     "staticManifestParse": {
       "name": "staticManifestParse",
-      "minMs": 0.1,
-      "p50Ms": 0.16,
-      "p95Ms": 0.28,
-      "maxMs": 0.68,
-      "avgMs": 0.18
+      "minMs": 0.09,
+      "p50Ms": 0.1,
+      "p95Ms": 0.13,
+      "maxMs": 0.22,
+      "avgMs": 0.11
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
@@ -82,7 +85,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 837597,
+      "actual": 878650,
       "budget": 1500000,
       "pass": true
     },
@@ -92,12 +95,12 @@
       "pass": true
     },
     "staticManifestParseP50Ms": {
-      "actual": 0.16,
+      "actual": 0.1,
       "budget": 15,
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.28,
+      "actual": 0.13,
       "budget": 80,
       "pass": true
     },
@@ -140,6 +143,11 @@
       "actual": false,
       "budget": false,
       "pass": true
+    },
+    "eagerZagSelect": {
+      "actual": false,
+      "budget": false,
+      "pass": true
     }
   },
   "recommendations": [
@@ -157,6 +165,11 @@
       "area": "zen-glance-window-runtime",
       "signal": "Zag Floating Panel exists only as an on-demand chunk",
       "action": "Keep Zen Glance window control behind the card-open boundary instead of adding it to initial navigation."
+    },
+    {
+      "area": "source-picker-runtime",
+      "signal": "Zag Select exists only as an on-demand chunk",
+      "action": "Keep the styled source picker out of initial scripts while preserving the non-native select surface."
     }
   ]
 }

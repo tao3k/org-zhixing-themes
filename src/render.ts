@@ -1,5 +1,6 @@
 import type { OrgizeLintFindingDto, OrgizeViewIndexRecordDto } from "orgize/dto";
 import type { AgendaPanelKey } from "./agendaTypes";
+import { articleDateLabel, blogRailItems, blogTimelineArticles } from "./blogArticleTimeline";
 import type { AgendaModeKey } from "./config";
 import { renderAgenda } from "./agendaRender";
 import { rewriteAttachmentLinks } from "./attachmentHtmlRewrite";
@@ -11,7 +12,8 @@ import { renderAttachmentGallery } from "./attachmentGalleryRender";
 import { renderAgentCapture } from "./captureRender";
 import { renderAgentMemory } from "./memoryRender";
 import { applyHtmlEmbedPolicy } from "./htmlEmbedPolicy";
-import { blogArticles, noteRecords, type OrgizeDocumentView, type ViewKey } from "./model";
+import { noteRecords, type OrgizeDocumentView, type ViewKey } from "./model";
+import { renderLifeIndex } from "./lifeIndexRender";
 import { renderOrgRecordCards, renderSiteOrgRecordCards } from "./recordRender";
 import { renderTravel } from "./travelRender";
 import type { TravelView } from "./travelModel";
@@ -166,7 +168,7 @@ const renderBlogReader = (
   zenMode: boolean,
   sourceFile: string | undefined,
 ): string => {
-  const articles = blogArticles(document);
+  const articles = blogTimelineArticles(document);
   const selected =
     articles.find((article) => article.rangeStart === selectedRangeStart) ?? articles[0];
   const selectedArticle = selected
@@ -190,13 +192,16 @@ const renderBlogReader = (
           ${zenMode ? "Library" : "Zen"}
         </button>
       </header>
+      ${renderLifeIndex(document)}
       <div class="zen-toolbar" aria-label="Zen reader toolbar">
         <span>${escapeHtml(selected?.title ?? "Zen reader")}</span>
         <button type="button" class="reader-mode-button" data-blog-zen="0" aria-pressed="true">Library</button>
       </div>
-      ${renderArticleSwitcher(articles, selected?.rangeStart ?? null)}
       <div class="blog-reader-layout">
-        ${renderArticleToc(selectedArticle.toc)}
+        <aside class="blog-rail" aria-label="Article navigation">
+          ${renderArticleSwitcher(articles, selected?.rangeStart ?? null)}
+          ${renderArticleToc(selectedArticle.toc)}
+        </aside>
         ${
           selectedArticle.html
             ? `<article class="rendered-html blog-article">${selectedArticle.html}</article>`
@@ -214,9 +219,16 @@ const renderArticleSwitcher = (
   if (articles.length === 0) {
     return "";
   }
+  const visibleArticles = blogRailItems(articles, selectedRangeStart);
+  const hiddenCount = articles.length - visibleArticles.length;
   return `
     <nav class="article-switcher" aria-label="Articles in this Org source">
-      ${articles.map((article) => renderArticleTab(article, article.rangeStart === selectedRangeStart)).join("")}
+      <div class="article-switcher-summary">
+        <span>Articles</span>
+        <strong>${articles.length}</strong>
+      </div>
+      ${visibleArticles.map((article) => renderArticleTab(article, article.rangeStart === selectedRangeStart)).join("")}
+      ${hiddenCount > 0 ? `<p class="article-switcher-overflow">${hiddenCount} more articles stay in the source picker and search surface.</p>` : ""}
     </nav>
   `;
 };
@@ -262,15 +274,6 @@ const renderTocTags = (tags: string[]): string =>
 
 const readerSummary = (articleCount: number, recordCount: number, agendaCount: number): string =>
   `${articleCount} posts from the current Org source, with ${recordCount} records and ${agendaCount} agenda signals still available.`;
-
-const articleDateLabel = (article: OrgizeViewIndexRecordDto): string =>
-  propertyValue(article, "CLOSED") ??
-  propertyValue(article, "DATE") ??
-  propertyValue(article, "SCHEDULED") ??
-  "Article";
-
-const propertyValue = (record: OrgizeViewIndexRecordDto, key: string): string | null =>
-  record.properties.find((property) => property.key.toUpperCase() === key)?.value ?? null;
 
 const prepareRenderedArticle = (
   articleHtml: string,

@@ -70,6 +70,18 @@ describe("Org Zhixing performance regression gates", () => {
     expect(perfScript).toContain("dynamicFloatingPanelChunk");
   });
 
+  it("keeps the styled source picker runtime behind a lazy boundary", () => {
+    const appUi = readFileSync("src/appUi.ts", "utf8");
+    const sourcePicker = readFileSync("src/sourcePicker.ts", "utf8");
+    const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
+
+    expect(appUi).not.toContain("@zag-js/select");
+    expect(sourcePicker).not.toMatch(/^import\s+\{[^}]*\}\s+from "@zag-js\/select"/m);
+    expect(sourcePicker).toContain('import("@zag-js/select")');
+    expect(perfScript).toContain("eagerZagSelect: false");
+    expect(perfScript).toContain("dynamicZagSelectChunk");
+  });
+
   it("keeps attachment lightbox code behind an image-opener lazy boundary", () => {
     const appEvents = readFileSync("src/appEvents.ts", "utf8");
 

@@ -5,7 +5,7 @@ export const renderAppShell = (): string => `
         <span>知行合一</span>
         <small>Zhixing</small>
       </a>
-      <nav id="tabs" class="site-nav" aria-label="Primary navigation"></nav>
+      <nav id="tabs" class="site-nav" aria-label="Life archive navigation"></nav>
       <output id="status" class="site-status">Loading Org parser...</output>
     </header>
     <section class="site-hero">
@@ -27,15 +27,17 @@ export const renderAppShell = (): string => `
     </section>
     <section class="blog-source-panel" aria-label="Org blog sources">
       <div class="source-feed-heading">
-        <span>Org files</span>
-        <small>Blog sources</small>
+        <div>
+          <span>Archive sources</span>
+          <small>Org files as quiet substrate</small>
+        </div>
+        <div id="source-picker" class="source-picker" aria-label="Source"></div>
       </div>
       <div id="source-feed" class="source-feed" role="list"></div>
     </section>
     <section class="viewer-pane">
       <div id="view"></div>
     </section>
-    <select id="source-select" class="source-select-hidden" aria-label="Source"></select>
     <div class="runtime-state" aria-hidden="true">
       <strong id="active-source-title">Loading source...</strong>
       <small id="active-source-path">blog source</small>

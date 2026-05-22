@@ -1,19 +1,26 @@
 import type { SiteConfig, SourceItem } from "./config";
 
+const visibleSourceBlockLimit = 6;
+
 export const renderSourceBlocks = (
   config: SiteConfig,
   selected: string | undefined,
   extraSource: SourceItem | null,
 ): {
   active: SourceItem | undefined;
-  options: HTMLOptionElement[];
   blocks: HTMLButtonElement[];
+  sources: SourceItem[];
 } => {
   const sources = sourceList(config, extraSource);
+  const active = sources.find((source) => source.file === selected) ?? sources[0];
+  const visibleSources = sourceFeedSources(sources, active);
   return {
-    active: sources.find((source) => source.file === selected) ?? sources[0],
-    options: sources.map((source) => sourceOption(source, source.file === selected)),
-    blocks: sources.map((source) => sourceBlock(source, source.file === selected)),
+    active,
+    blocks: [
+      ...visibleSources.map((source) => sourceBlock(source, source.file === selected)),
+      ...sourceSummaryBlocks(sources.length, visibleSources.length),
+    ],
+    sources,
   };
 };
 
@@ -25,12 +32,24 @@ const sourceList = (config: SiteConfig, extraSource: SourceItem | null): SourceI
   return sources;
 };
 
-const sourceOption = (source: SourceItem, active: boolean): HTMLOptionElement => {
-  const option = document.createElement("option");
-  option.value = source.file;
-  option.textContent = source.name;
-  option.selected = active;
-  return option;
+const sourceFeedSources = (sources: SourceItem[], active: SourceItem | undefined): SourceItem[] => {
+  if (sources.length <= visibleSourceBlockLimit) {
+    return sources;
+  }
+  const visible = new Map<string, SourceItem>();
+  const add = (source: SourceItem | undefined): void => {
+    if (source) {
+      visible.set(source.file, source);
+    }
+  };
+  add(active);
+  for (const source of sources) {
+    if (visible.size >= visibleSourceBlockLimit) {
+      break;
+    }
+    add(source);
+  }
+  return [...visible.values()];
 };
 
 const sourceBlock = (source: SourceItem, active: boolean): HTMLButtonElement => {
@@ -44,6 +63,21 @@ const sourceBlock = (source: SourceItem, active: boolean): HTMLButtonElement => 
   button.append(sourceText(source.file, "small"));
   button.append(sourceText(active ? "Reading" : "Open", "em"));
   return button;
+};
+
+const sourceSummaryBlocks = (total: number, visible: number): HTMLButtonElement[] => {
+  const hidden = total - visible;
+  if (hidden <= 0) {
+    return [];
+  }
+  const button = document.createElement("button");
+  button.type = "button";
+  button.disabled = true;
+  button.className = "source-block source-block--summary";
+  button.append(sourceText("Indexed", "span"));
+  button.append(sourceText(`${hidden} more Org files`, "strong"));
+  button.append(sourceText("Use the source picker", "small"));
+  return [button];
 };
 
 const sourceText = <K extends keyof HTMLElementTagNameMap>(

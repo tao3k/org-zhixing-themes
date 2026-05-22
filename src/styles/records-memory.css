@@ -21,9 +21,23 @@
   align-content: start;
 }
 
+.org-record-workbench .card-grid {
+  grid-template-columns: minmax(0, var(--reader-wide-width));
+  justify-content: center;
+  gap: 0;
+}
+
+.org-record-card.card {
+  border: 0;
+  border-top: 1px solid var(--hairline-soft);
+  border-radius: 0;
+  padding: 18px 0 24px;
+  background: transparent;
+}
+
 .org-record-workbench {
   display: grid;
-  gap: 16px;
+  gap: var(--space-5);
 }
 
 .org-record-header {
@@ -63,7 +77,11 @@
 
 .org-record-source-group {
   display: grid;
-  gap: 12px;
+  gap: var(--space-4);
+}
+
+.org-record-source-group .card-grid {
+  justify-content: stretch;
 }
 
 .org-record-source-group header {

@@ -3,6 +3,7 @@ import type { AgendaPanelKey } from "./agendaTypes";
 import { isAgendaMode, isAgendaPanel } from "./agendaState";
 import type { AppDomNodes } from "./appDom";
 import { bindTravelGlance } from "./travelGlance";
+import { sourcePickerChangeEvent, type SourcePickerChangeDetail } from "./sourcePicker";
 import type { AgendaModeKey } from "./config";
 import type { ViewKey } from "./model";
 
@@ -35,9 +36,12 @@ export const bindAppEvents = (
     listenerOptions,
   );
 
-  dom.sourceSelect.addEventListener(
-    "change",
-    () => handlers.onSourceSelect(dom.sourceSelect.value),
+  dom.sourcePicker.addEventListener(
+    sourcePickerChangeEvent,
+    (event) => {
+      const detail = (event as CustomEvent<SourcePickerChangeDetail>).detail;
+      handlers.onSourceSelect(detail.sourceFile);
+    },
     listenerOptions,
   );
 

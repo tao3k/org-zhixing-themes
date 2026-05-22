@@ -82,6 +82,31 @@ into browser constraints instead of copied as Emacs Lisp.
 | Line spacing as breathing room | text rhythm comes from tokenized type leading, not viewport-scaled type |
 | Org syntax as UI | TODO, priority, timestamp, tag, table, and block atoms participate directly in layout |
 
+Blog is the first explicit frame translation.  The old product layout used a
+large library header plus a horizontal article switcher, which felt like a web
+dashboard.  The elegant layout uses a compact header-line, a left rail with the
+article list and TOC, and a centered 72-column article body.  Records follow the
+same direction: source-backed notes are a hairline-separated index, not a card
+wall.
+
+Large collections must not become large visual grids.  A workspace with 1000 or
+2000 Org files still gets a compact source picker, but source files are quiet
+substrate rather than the main visual object.  This follows the static-site
+mental model used by Hugo: content-backed
+[[https://gohugo.io/methods/site/regularpages/][regular pages]] form page
+collections, and
+[[https://gohugo.io/quick-reference/page-collections/][collection methods]]
+can sort those pages by date.  Blog therefore presents a
+bounded article timeline sorted by article date, with a small window around the
+current article plus a count summary.  Bulk discovery belongs to search/command
+surfaces and virtualized lists, not to the reading frame.
+
+The first viewport should say "life archive" by structure, not by translating
+English labels to Chinese.  Navigation labels remain recognizable product
+surfaces, while the Blog frame adds a restrained =life-index=: writing, images,
+notes, journeys, memory, and time.  These are semantic lenses over the same Org
+facts, not separate decorative cards.
+
 The practical test is simple: if a surface needs more elegance, first ask which
 Org semantic unit is missing or which frame rhythm is unstable.  Add a card,
 shadow, or decorative wrapper only after that answer is clear.
@@ -120,6 +145,16 @@ The style tests protect the contract:
 - every token in =tokens/elegant.json= must appear in the generated theme;
 - elegant layout tokens such as =--frame-inset=, =--reader-gutter=,
   =--reader-width=, and =--divider-width= must stay in use by reader surfaces;
+- Blog must keep article navigation and TOC inside =.blog-rail=, with the
+  rendered article constrained by =--reader-width=;
+- source navigation and Blog article rails must stay bounded for large
+  workspaces; tests cover 1000 source files and 20 article headings so the UI
+  cannot regress into an unbounded card/grid list;
+- Blog article rails are ordered as a dated article collection, not by source
+  file order;
+- the Blog frame exposes a small =life-index= over writing, images, notes,
+  journeys, memory, and time without changing stable view labels into a surface
+  translation exercise;
 - package-backed color and font imports must stay present;
 - core reader surfaces must not reintroduce hard-coded hex colors, very heavy
   font weights, =999px= label radii, local card shadows, or hover translation;
@@ -137,6 +172,9 @@ the face economy, adds explicit Org-native render affordances for headings,
 planning timestamps, tables, and blocks in the TypeScript renderer, and starts
 sharing those atoms in Agenda rows, record cards, and memory cards.  Checkboxes
 stay behind a parser-owned DTO boundary.  Travel and attachment tags now consume
-the same Org tag atom instead of private chips.  Later slices can move the
-remaining agenda modules through the same gate once their product layout is
-revisited.
+the same Org tag atom instead of private chips.
+
+This follow-up makes the layout change visible: Blog becomes an editor-like
+frame with a compact header-line, left rail, and 72-column reading body; Records
+become a hairline-separated note index.  Later slices can move the remaining
+agenda modules through the same gate once their product layout is revisited.
