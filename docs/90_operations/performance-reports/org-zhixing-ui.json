@@ -133,12 +133,12 @@
       "sourceId": 135,
       "schemaVersion": 8
     },
-    "initialScriptBytes": 978160,
+    "initialScriptBytes": 1163366,
     "initialScriptCount": 3,
     "initialScripts": [
-      "assets/runtime.545635b2.js",
-      "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.a15d2e93.js"
+      "assets/runtime.7db58fb7.js",
+      "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-b4fb51.1e419265.js",
+      "assets/app.53136183.js"
     ],
     "parserWorkerScriptBytes": 119867,
     "wasmAssetBytes": 2158753,
@@ -207,7 +207,7 @@
       "minMs": 0.13,
       "p50Ms": 0.14,
       "p95Ms": 0.16,
-      "maxMs": 0.39,
+      "maxMs": 0.55,
       "avgMs": 0.14
     },
     "travelProjectionRead": {
@@ -256,7 +256,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 978160,
+      "actual": 1163366,
       "budget": 1500000,
       "pass": true
     },
@@ -371,6 +371,11 @@
       "area": "static-attachment-shards",
       "signal": "8 attachment shards are 169 KiB and source shards contain no attachmentInventory field",
       "action": "Keep Gallery, Notes, Memory, and Zen link rewriting on the attachment-shard path while preserving lighter source shards for other views."
+    },
+    {
+      "area": "initial-bundle",
+      "signal": "initial scripts total 1.1 MiB",
+      "action": "Inspect the shared vendor chunk and keep TanStack Virtual, parser runtime, and map code out of eager scripts."
     },
     {
       "area": "parser-worker-startup",

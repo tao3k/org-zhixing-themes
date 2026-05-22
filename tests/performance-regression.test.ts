@@ -98,6 +98,7 @@ describe("Org Zhixing performance regression gates", () => {
     const staticSiteData = readFileSync("src/staticSiteData.ts", "utf8");
     const staticSiteShards = readFileSync("src/staticSiteShards.ts", "utf8");
 
+    expect(staticSiteShards).toContain('from "@tanstack/query-core"');
     expect(generator).toContain('const sourceMemoryShardPublicDir = "org-zhixing.memory";');
     expect(generator).toContain('const sourceSectionShardPublicDir = "org-zhixing.sections";');
     expect(generator).toContain(
@@ -124,7 +125,9 @@ describe("Org Zhixing performance regression gates", () => {
     expect(staticSiteShards).toContain("fetchStaticAttachmentShard");
     expect(staticSiteShards).toContain("fetchStaticMemoryShard");
     expect(staticSiteShards).toContain("fetchStaticSectionShard");
+    expect(staticSiteData).toContain("Promise.all([");
     expect(app).toContain("loadStaticAgendaForSource(this.#staticSite, this.#sourceItem)");
+    expect(app).toContain("const staticAgendaPromise =");
     expect(app).toContain("loadStaticAttachmentInventoryForSource(");
     expect(app).toContain("loadStaticMemoryForSource(this.#staticSite, this.#sourceItem)");
     expect(app).toContain("loadStaticSectionIndexForSource(");

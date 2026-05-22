@@ -277,17 +277,16 @@ export const loadAllStaticSources = async (
             if (!projection) {
               return null;
             }
-            if (options.sectionIndex) {
-              const sectionIndex = await loadStaticSectionIndexForSource(staticSite, projection);
-              projection = withStaticSectionIndex(projection, sectionIndex);
-            }
-            if (options.attachmentInventory) {
-              const attachmentInventory = await loadStaticAttachmentInventoryForSource(
-                staticSite,
-                projection,
-              );
-              projection = withStaticAttachmentInventory(projection, attachmentInventory);
-            }
+            const [sectionIndex, attachmentInventory] = await Promise.all([
+              options.sectionIndex
+                ? loadStaticSectionIndexForSource(staticSite, projection)
+                : Promise.resolve(null),
+              options.attachmentInventory
+                ? loadStaticAttachmentInventoryForSource(staticSite, projection)
+                : Promise.resolve(null),
+            ]);
+            projection = withStaticSectionIndex(projection, sectionIndex);
+            projection = withStaticAttachmentInventory(projection, attachmentInventory);
             return projection;
           }),
         )

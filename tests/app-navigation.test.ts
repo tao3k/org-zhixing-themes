@@ -258,6 +258,47 @@ describe("Org Zhixing navigator", () => {
     expect(fetchedPaths(fetch)).toContain("/org-zhixing.memory/wallpaper-gallery.json");
     expect(createWorker).not.toHaveBeenCalled();
   });
+
+  it("keeps the static page visible while agenda shards load on demand", async () => {
+    const delayedSource = deferred<Response>();
+    const delayedAgenda = deferred<Response>();
+    const baseFetch = fetchShardedStaticFixture();
+    const fetch = vi.fn((input: RequestInfo | URL) => {
+      const url = input instanceof URL ? input : new URL(String(input), window.location.href);
+      if (url.pathname === "/org-zhixing.sources/wallpaper-gallery.json") {
+        return delayedSource.promise;
+      }
+      if (url.pathname === "/org-zhixing.agenda/wallpaper-gallery.json") {
+        return delayedAgenda.promise;
+      }
+      return baseFetch(input);
+    });
+    mountStaticApp("/", fetch);
+
+    await waitForText("2 image items");
+    clickNav("agenda");
+
+    await vi.waitFor(() => {
+      expect(fetchedPaths(fetch)).toContain("/org-zhixing.sources/wallpaper-gallery.json");
+      expect(fetchedPaths(fetch)).toContain("/org-zhixing.agenda/wallpaper-gallery.json");
+    });
+    expect(document.body.textContent).toContain("2 image items");
+    expect(document.body.textContent).not.toContain("Loading Org source");
+    expect(document.body.textContent).not.toContain("Projecting agenda intelligence");
+
+    delayedSource.resolve(jsonResponse(sourceShardFixture(staticProjection())));
+    delayedAgenda.resolve(
+      jsonResponse({
+        schemaVersion: 1,
+        sourceId: "wallpaper-gallery",
+        sourceFile: "blog/wallpaper-gallery.org",
+        agendaRange: staticProjection().agendaRange,
+        agendaView: staticProjection().agendaView,
+      }),
+    );
+    await waitForText("Compiled sections");
+    expect(document.body.textContent).toContain("Static Gallery");
+  });
 });
 
 const mountStaticApp = (
@@ -635,6 +676,14 @@ const textResponse = (body: string): Response =>
 
 const jsonResponse = (body: unknown): Response =>
   new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
+
+const deferred = <T>(): { promise: Promise<T>; resolve: (value: T) => void } => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+};
 
 const fetchedPaths = (fetch: ReturnType<typeof vi.fn>): string[] =>
   fetch.mock.calls.map(([input]) => {

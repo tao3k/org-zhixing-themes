@@ -237,22 +237,20 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     if (this.#siteConfig) {
       renderSourceOptionsToDom(this.#dom, this.#siteConfig, this.#sourceItem);
     }
-    this.#sourceOrg = "";
-    this.#documentView = null;
-    this.#semanticSectionsReady = false;
-    this.#renderedHtml = "";
-    this.#timings = {};
-    this.#viewCache.clear();
-    this.#pendingMessage = "Loading Org source...";
-    this.#articleMessage = "Loading Org source...";
-    this.#render();
 
-    const staticSource = await loadStaticSourceFor(this.#staticSite, nextSource);
+    const staticSourcePromise = loadStaticSourceFor(this.#staticSite, nextSource);
+    const staticAgendaPromise =
+      this.#currentView === "agenda" && this.#staticSite
+        ? loadStaticAgendaForSource(this.#staticSite, nextSource)
+        : null;
+    void staticAgendaPromise;
+    const staticSource = await staticSourcePromise;
     if (version !== this.#documentVersion) {
       return;
     }
     if (staticSource && this.#siteConfig) {
       const startedAt = performance.now();
+      this.#resetSourceProjectionState();
       this.#documentView = documentViewFromStaticSource(staticSource, {
         agenda: this.#siteConfig.agenda,
       });
@@ -271,6 +269,11 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
       this.#render();
       return;
     }
+
+    this.#resetSourceProjectionState();
+    this.#pendingMessage = "Loading Org source...";
+    this.#articleMessage = "Loading Org source...";
+    this.#render();
 
     this.#sourceOrg = await this.#loadOrgSource(nextSource.sourceFile);
     this.#pendingMessage = "Parsing view index...";
@@ -396,8 +399,6 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     }
     const version = this.#documentVersion;
     const documentView = this.#documentView;
-    this.#pendingMessage = "Projecting agenda intelligence...";
-    this.#render();
     if (this.#staticSite && this.#sourceItem) {
       const startedAt = performance.now();
       const agenda = await loadStaticAgendaForSource(this.#staticSite, this.#sourceItem);
@@ -420,6 +421,8 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
         return;
       }
     }
+    this.#pendingMessage = "Projecting agenda intelligence...";
+    this.#render();
     const agenda = await projectAgendaDocument(
       this.#session,
       documentView,
@@ -432,6 +435,15 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     this.#documentView = agenda.document;
     this.#clearAgendaCache();
     this.#pendingMessage = "";
+  }
+
+  #resetSourceProjectionState(): void {
+    this.#sourceOrg = "";
+    this.#documentView = null;
+    this.#semanticSectionsReady = false;
+    this.#renderedHtml = "";
+    this.#timings = {};
+    this.#viewCache.clear();
   }
 
   async #refreshSectionIndexIfNeeded(version: number): Promise<void> {

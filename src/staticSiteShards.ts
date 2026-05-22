@@ -1,3 +1,4 @@
+import { QueryClient } from "@tanstack/query-core";
 import type {
   OrgizeAttachmentInventoryResponseDto,
   OrgizeMemoryResponseDto,
@@ -13,86 +14,72 @@ import type {
   StaticSourceProjection,
 } from "./staticSiteData";
 
-const sourceCache = new WeakMap<
-  StaticSiteData,
-  Map<string, Promise<StaticSourceProjection | null>>
->();
-const memoryCache = new WeakMap<
-  StaticSiteData,
-  Map<string, Promise<OrgizeMemoryResponseDto | null>>
->();
-const sectionCache = new WeakMap<
-  StaticSiteData,
-  Map<string, Promise<OrgizeSectionIndexResponseDto | null>>
->();
-const attachmentCache = new WeakMap<
-  StaticSiteData,
-  Map<string, Promise<OrgizeAttachmentInventoryResponseDto | null>>
->();
-const agendaCache = new WeakMap<StaticSiteData, Map<string, Promise<StaticAgendaShard | null>>>();
+const queryClients = new WeakMap<StaticSiteData, QueryClient>();
 
 export const loadCachedStaticSourceShard = (
   staticSite: StaticSiteData,
   key: string,
   shardPath: string,
 ): Promise<StaticSourceProjection | null> =>
-  loadCachedShard(sourceCache, staticSite, key, shardPath, fetchStaticSourceShard);
+  loadCachedShard(staticSite, "source", key, shardPath, fetchStaticSourceShard);
 
 export const loadCachedStaticAgendaShard = (
   staticSite: StaticSiteData,
   key: string,
   shardPath: string,
 ): Promise<StaticAgendaShard | null> =>
-  loadCachedShard(agendaCache, staticSite, key, shardPath, fetchStaticAgendaShard);
+  loadCachedShard(staticSite, "agenda", key, shardPath, fetchStaticAgendaShard);
 
 export const loadCachedStaticMemoryShard = (
   staticSite: StaticSiteData,
   key: string,
   shardPath: string,
 ): Promise<OrgizeMemoryResponseDto | null> =>
-  loadCachedShard(memoryCache, staticSite, key, shardPath, fetchStaticMemoryShard);
+  loadCachedShard(staticSite, "memory", key, shardPath, fetchStaticMemoryShard);
 
 export const loadCachedStaticSectionShard = (
   staticSite: StaticSiteData,
   key: string,
   shardPath: string,
 ): Promise<OrgizeSectionIndexResponseDto | null> =>
-  loadCachedShard(sectionCache, staticSite, key, shardPath, fetchStaticSectionShard);
+  loadCachedShard(staticSite, "section", key, shardPath, fetchStaticSectionShard);
 
 export const loadCachedStaticAttachmentShard = (
   staticSite: StaticSiteData,
   key: string,
   shardPath: string,
 ): Promise<OrgizeAttachmentInventoryResponseDto | null> =>
-  loadCachedShard(attachmentCache, staticSite, key, shardPath, fetchStaticAttachmentShard);
+  loadCachedShard(staticSite, "attachment", key, shardPath, fetchStaticAttachmentShard);
 
 const loadCachedShard = <T>(
-  cacheRoot: WeakMap<StaticSiteData, Map<string, Promise<T | null>>>,
   staticSite: StaticSiteData,
+  kind: string,
   key: string,
   shardPath: string,
   fetchShard: (shardPath: string) => Promise<T | null>,
-): Promise<T | null> => {
-  const cache = cacheFor(cacheRoot, staticSite);
-  const cached = cache.get(key);
-  if (cached) {
-    return cached;
-  }
-  const loaded = fetchShard(shardPath);
-  cache.set(key, loaded);
-  return loaded;
-};
+): Promise<T | null> =>
+  queryClientFor(staticSite).fetchQuery({
+    queryKey: ["org-zhixing-static-shard", staticSite.generatedAt, kind, key, shardPath],
+    queryFn: () => fetchShard(shardPath),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
 
-const cacheFor = <T>(
-  cacheRoot: WeakMap<StaticSiteData, Map<string, Promise<T | null>>>,
-  staticSite: StaticSiteData,
-): Map<string, Promise<T | null>> => {
-  const cached = cacheRoot.get(staticSite);
+const queryClientFor = (staticSite: StaticSiteData): QueryClient => {
+  const cached = queryClients.get(staticSite);
   if (cached) {
     return cached;
   }
-  const next = new Map<string, Promise<T | null>>();
-  cacheRoot.set(staticSite, next);
+  const next = new QueryClient({
+    defaultOptions: {
+      queries: {
+        gcTime: Infinity,
+        retry: false,
+        staleTime: Infinity,
+      },
+    },
+  });
+  queryClients.set(staticSite, next);
   return next;
 };
 

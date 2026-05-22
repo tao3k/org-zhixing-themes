@@ -55,6 +55,11 @@ only for orchestration and rendering.
   picker no longer imports the 634 KiB Zag Select chunk during construction;
   Gallery lightbox and Travel Glance chunks are prefetched after the relevant
   DOM appears, without entering initial scripts.
+- Static shard loading uses =@tanstack/query-core= for query-keyed shard
+  caching and request de-duplication.  When Agenda opens from a static
+  site-wide surface, the source shard and agenda shard are requested
+  concurrently, and the existing static view stays visible until the target
+  projection is ready.
 - Theme tokens are generated before build with =style-dictionary= and Capsize
   metrics, but those packages remain dev-only and do not enter the runtime
   bundle.
@@ -123,7 +128,7 @@ The current UI performance receipt shows the entry manifest at about 64 KiB,
 with eight source shards totaling about 64 KiB, eight lazy agenda shards
 totaling about 77 KiB, eight lazy attachment shards totaling about 169 KiB,
 eight lazy memory shards totaling about 506 KiB, and eight lazy section shards
-totaling about 448 KiB.  Initial scripts are about 955 KiB across three files,
+totaling about 448 KiB.  Initial scripts are about 1.1 MiB across three files,
 with PhotoSwipe, TanStack Virtual, Masonry, Zag
 Floating Panel, and Zag Select all behind dynamic chunks.  Static manifest
 parse currently measures p50 0.14 ms / p95 0.16 ms on this fixture, so the
