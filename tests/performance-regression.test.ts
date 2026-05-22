@@ -98,7 +98,11 @@ describe("Org Zhixing performance regression gates", () => {
     const staticSiteData = readFileSync("src/staticSiteData.ts", "utf8");
     const staticSiteShards = readFileSync("src/staticSiteShards.ts", "utf8");
 
-    expect(staticSiteShards).toContain('from "@tanstack/query-core"');
+    expect(staticSiteShards).toContain('import("@tanstack/query-core")');
+    expect(staticSiteShards).not.toContain('from "@tanstack/query-core"');
+    expect(staticSiteShards).not.toContain("effect/Effect");
+    expect(generator).toContain('from "effect/Effect"');
+    expect(generator).toContain("StaticGenerationError");
     expect(generator).toContain('const sourceMemoryShardPublicDir = "org-zhixing.memory";');
     expect(generator).toContain('const sourceSectionShardPublicDir = "org-zhixing.sections";');
     expect(generator).toContain(
@@ -141,12 +145,28 @@ describe("Org Zhixing performance regression gates", () => {
     expect(rspackConfig).toContain("org-zhixing.sections/[name][ext]");
     expect(perfScript).toContain("agendaShardBytes");
     expect(perfScript).toContain("attachmentShardBytes");
+    expect(perfScript).toContain("eagerTanStackQueryCore: false");
+    expect(perfScript).toContain("dynamicTanStackQueryChunk");
+    expect(perfScript).toContain("eagerEffectRuntime: false");
+    expect(perfScript).toContain("generatedTailwindCssBytes");
     expect(perfScript).toContain("memoryShardBytes");
     expect(perfScript).toContain("sectionShardBytes");
     expect(perfScript).toContain("static-agenda-shards");
     expect(perfScript).toContain("static-attachment-shards");
     expect(perfScript).toContain("static-memory-shards");
     expect(perfScript).toContain("static-section-shards");
+  });
+
+  it("does not render parser/source loading text in the static app shell", () => {
+    const app = readFileSync("src/app.ts", "utf8");
+    const appShell = readFileSync("src/appShell.ts", "utf8");
+    const render = readFileSync("src/render.ts", "utf8");
+
+    expect(app).not.toContain("this.#render();\n    void this.#boot();");
+    expect(app).not.toContain("Loading Org parser");
+    expect(appShell).not.toContain("Loading Org parser");
+    expect(appShell).not.toContain("Loading source");
+    expect(render).not.toContain("Loading Org parser");
   });
 
   it("keeps static Blog generation on one article per discovered Org file", () => {

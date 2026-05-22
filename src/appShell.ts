@@ -6,7 +6,7 @@ export const renderAppShell = (): string => `
         <small>Zhixing</small>
       </a>
       <nav id="tabs" class="site-nav" aria-label="Life archive navigation"></nav>
-      <output id="status" class="site-status">Loading Org parser...</output>
+      <output id="status" class="site-status">Static index</output>
     </header>
     <section class="site-hero">
       <div class="hero-copy">
@@ -39,7 +39,7 @@ export const renderAppShell = (): string => `
       <div id="view"></div>
     </section>
     <div class="runtime-state" aria-hidden="true">
-      <strong id="active-source-title">Loading source...</strong>
+      <strong id="active-source-title">Source index</strong>
       <small id="active-source-path">blog source</small>
     </div>
   </main>

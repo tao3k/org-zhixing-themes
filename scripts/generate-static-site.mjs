@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as Effect from "effect/Effect";
 import { Window } from "happy-dom";
 import init, { Org } from "orgize";
 import { parse } from "smol-toml";
@@ -1161,7 +1162,19 @@ const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
 const relativeOutputPath = () => outputPath.replace(`${projectRoot}/`, "");
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
+const generation = Effect.tryPromise({
+  try: main,
+  catch: (error) => ({
+    _tag: "StaticGenerationError",
+    error,
+  }),
 });
+
+await Effect.runPromise(
+  Effect.catchAll(generation, (failure) =>
+    Effect.sync(() => {
+      console.error(failure.error);
+      process.exitCode = 1;
+    }),
+  ),
+);

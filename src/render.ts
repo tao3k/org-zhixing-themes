@@ -58,7 +58,7 @@ export const renderView = (options: RenderViewOptions): string => {
     return `<div class="empty">${escapeHtml(pendingMessage)}</div>`;
   }
   if (!options.document) {
-    return `<div class="empty">Loading Org parser...</div>`;
+    return "";
   }
   return renderLoadedView({ ...options, document: options.document });
 };

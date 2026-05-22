@@ -92,8 +92,8 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
   #documentView: OrgizeDocumentView | null = null;
   #semanticSectionsReady = false;
   #renderedHtml = "";
-  #pendingMessage = "Loading Org parser...";
-  #articleMessage = "Rendering article...";
+  #pendingMessage = "";
+  #articleMessage = "";
   #documentVersion = 0;
   #sourceOrg = "";
   #showPerformance = true;
@@ -117,7 +117,6 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     this.#root.innerHTML = renderAppShell();
     this.#dom = bindAppDom(this.#root);
     this.#bindEvents();
-    this.#render();
     void this.#boot();
   }
 

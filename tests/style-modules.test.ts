@@ -12,6 +12,7 @@ describe("style module boundaries", () => {
     expect(entry).toEqual([
       '@import "photoswipe/style.css";',
       '@import "./styles/theme.css";',
+      '@import "../.cache/org-zhixing/tailwind.css";',
       '@import "./styles/foundation.css";',
       '@import "./styles/blog.css";',
       '@import "./styles/attachments.css";',
@@ -73,6 +74,7 @@ describe("style module boundaries", () => {
 
   it("keeps generated theme variables aligned with the token contract", () => {
     const theme = readFileSync("src/styles/theme.css", "utf8");
+    const tailwind = readFileSync("src/styles/tailwind.css", "utf8");
     const tokens = JSON.parse(readFileSync("tokens/elegant.json", "utf8")) as Record<
       string,
       { value: string }
@@ -83,10 +85,16 @@ describe("style module boundaries", () => {
     }
 
     const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+      devDependencies: Record<string, string>;
       scripts: Record<string, string>;
     };
+    expect(packageJson.devDependencies.tailwindcss).toBeTruthy();
+    expect(packageJson.devDependencies["@tailwindcss/cli"]).toBeTruthy();
     expect(packageJson.scripts["generate:theme"]).toBe("node scripts/build-elegant-theme.mjs");
     expect(packageJson.scripts.build).toContain("npm run generate:theme");
+    expect(tailwind).toContain('@import "tailwindcss/utilities.css"');
+    expect(tailwind).toContain("@theme inline");
+    expect(tailwind).toContain(".org-timestamp");
   });
 
   it("keeps typography and product surfaces on semantic tokens", () => {
@@ -153,11 +161,12 @@ describe("style module boundaries", () => {
 
   it("keeps rendered Org styled by semantic elements, not page-specific cards", () => {
     const renderedOrg = readFileSync("src/styles/rendered-org.css", "utf8");
+    const tailwind = readFileSync("src/styles/tailwind.css", "utf8");
 
     expect(renderedOrg).toContain(".rendered-html h2::before");
     expect(renderedOrg).toContain(".org-heading-todo--focus");
     expect(renderedOrg).toContain(".org-priority--a");
-    expect(renderedOrg).toContain(".org-timestamp--active");
+    expect(tailwind).toContain(".org-timestamp--active");
     expect(renderedOrg).toContain(".org-table-frame");
     expect(renderedOrg).toContain(".org-block-name");
     expect(renderedOrg).toContain(".org-meta-chip--deadline");

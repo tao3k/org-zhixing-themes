@@ -1,5 +1,7 @@
+import { execFile } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { createStyleObject } from "@capsizecss/core";
 import { entireMetricsCollection } from "@capsizecss/metrics/entireMetricsCollection";
@@ -7,7 +9,15 @@ import StyleDictionary from "style-dictionary";
 
 const projectRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const generatedVarsPath = resolve(projectRoot, ".cache/org-zhixing/elegant-theme-vars.css");
+const generatedTailwindPath = resolve(projectRoot, ".cache/org-zhixing/tailwind.css");
 const themePath = resolve(projectRoot, "src/styles/theme.css");
+const tailwindInputPath = resolve(projectRoot, "src/styles/tailwind.css");
+const tailwindBinaryPath = resolve(
+  projectRoot,
+  "node_modules/.bin",
+  process.platform === "win32" ? "tailwindcss.cmd" : "tailwindcss",
+);
+const execFileAsync = promisify(execFile);
 
 const radixImports = [
   "@radix-ui/colors/slate.css",
@@ -170,3 +180,9 @@ const themeCss = [
 ].join("\n");
 
 await writeFile(themePath, themeCss, "utf8");
+
+await execFileAsync(
+  tailwindBinaryPath,
+  ["-i", tailwindInputPath, "-o", generatedTailwindPath, "--minify"],
+  { cwd: projectRoot },
+);

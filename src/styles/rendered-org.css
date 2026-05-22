@@ -253,19 +253,6 @@ code {
   text-transform: uppercase;
 }
 
-.org-timestamp {
-  color: inherit;
-  white-space: nowrap;
-}
-
-.org-timestamp--active {
-  color: var(--face-salient);
-}
-
-.org-timestamp--inactive {
-  color: var(--face-faded);
-}
-
 .org-meta-chip--scheduled {
   border-color: var(--green-6);
   color: var(--face-success);

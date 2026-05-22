@@ -17,6 +17,7 @@ export const enhanceOrgNativeAesthetics = (
   documentView: OrgizeDocumentView,
 ): void => {
   decorateHeadings(root, documentView);
+  enhanceInlineTimestamps(root);
   enhanceOrgTables(root);
   enhanceOrgBlocks(root);
   enhanceAttributeBackedCheckboxes(root);
@@ -70,6 +71,52 @@ const decorateHeading = (heading: HTMLHeadingElement, record: SectionRecord): vo
     title.append(heading.firstChild);
   }
   heading.append(markers, title);
+};
+
+const enhanceInlineTimestamps = (root: ParentNode): void => {
+  for (const timestamp of root.querySelectorAll<HTMLElement>(".timestamp-wrapper > .timestamp")) {
+    if (timestamp.classList.contains("org-timestamp")) {
+      continue;
+    }
+    const raw = (timestamp.textContent ?? "").trim();
+    const semantic = timestamp.ownerDocument.createElement(
+      timestampDatetime(raw) ? "time" : "span",
+    );
+    for (const attribute of timestamp.getAttributeNames()) {
+      semantic.setAttribute(attribute, timestamp.getAttribute(attribute) ?? "");
+    }
+    semantic.className = timestamp.className;
+    semantic.classList.add("org-timestamp", `org-timestamp--${timestampKind(raw)}`);
+    semantic.textContent = raw;
+    semantic.dataset.orgTimestamp = "inline";
+    const datetime = timestampDatetime(raw);
+    if (datetime) {
+      semantic.setAttribute("datetime", datetime);
+    }
+    timestamp.replaceWith(semantic);
+    semantic.parentElement?.classList.add("org-timestamp-wrapper");
+  }
+};
+
+const timestampKind = (raw: string): "active" | "inactive" | "raw" => {
+  if (raw.startsWith("<")) {
+    return "active";
+  }
+  if (raw.startsWith("[")) {
+    return "inactive";
+  }
+  return "raw";
+};
+
+const timestampDatetime = (raw: string): string | null => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})\s+\S+(?:\s+(\d{1,2}):(\d{2}))?/.exec(raw.slice(1));
+  if (!match) {
+    return null;
+  }
+  const [, year, month, day, hour, minute] = match;
+  return hour
+    ? `${year}-${month}-${day}T${hour.padStart(2, "0")}:${minute}`
+    : `${year}-${month}-${day}`;
 };
 
 const enhanceOrgTables = (root: ParentNode): void => {

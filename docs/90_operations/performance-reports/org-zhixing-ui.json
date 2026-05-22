@@ -14,12 +14,15 @@
     "largestSourceShardBytes": 800000,
     "initialScriptBytes": 1500000,
     "initialScriptCount": 4,
+    "generatedTailwindCssBytes": 50000,
     "travelPlacesBeforeVirtualization": 80,
     "staticManifestParseP50Ms": 15,
     "staticManifestParseP95Ms": 80,
     "travelProjectionReadP95Ms": 1,
     "eagerPhotoSwipeLightbox": false,
     "eagerCssLineBreak": false,
+    "eagerEffectRuntime": false,
+    "eagerTanStackQueryCore": false,
     "eagerTanStackVirtual": false,
     "eagerBlogVirtualList": false,
     "eagerTravelVirtualList": false,
@@ -133,13 +136,14 @@
       "sourceId": 135,
       "schemaVersion": 8
     },
-    "initialScriptBytes": 1163366,
+    "initialScriptBytes": 988325,
     "initialScriptCount": 3,
     "initialScripts": [
-      "assets/runtime.7db58fb7.js",
-      "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-b4fb51.1e419265.js",
-      "assets/app.53136183.js"
+      "assets/runtime.32ec875b.js",
+      "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
+      "assets/app.760eebcd.js"
     ],
+    "generatedTailwindCssBytes": 4479,
     "parserWorkerScriptBytes": 119867,
     "wasmAssetBytes": 2158753,
     "largestAsyncAssets": [
@@ -150,6 +154,10 @@
       {
         "path": "assets/vendors-node_modules_photoswipe_dist_photoswipe_esm_js.937f6f46.js",
         "bytes": 509404
+      },
+      {
+        "path": "assets/vendors-node_modules_tanstack_query-core_build_modern_index_js.e354a251.js",
+        "bytes": 305112
       },
       {
         "path": "assets/vendors-node_modules_zag-js_floating-panel_dist_index_mjs.9c71c061.js",
@@ -170,10 +178,6 @@
       {
         "path": "assets/vendors-node_modules_tanstack_virtual-core_dist_esm_index_js.4da5d33b.js",
         "bytes": 111303
-      },
-      {
-        "path": "assets/vendors-node_modules_zag-js_vanilla_dist_index_mjs.6ea589a9.js",
-        "bytes": 81284
       }
     ],
     "blogArticles": 8,
@@ -186,6 +190,8 @@
     "travelRegions": 11,
     "eagerPhotoSwipeLightbox": false,
     "eagerCssLineBreak": false,
+    "eagerEffectRuntime": false,
+    "eagerTanStackQueryCore": false,
     "eagerTanStackVirtual": false,
     "eagerBlogVirtualList": false,
     "eagerTravelVirtualList": false,
@@ -193,6 +199,8 @@
     "eagerFloatingPanel": false,
     "eagerZagSelect": false,
     "dynamicTanStackChunk": true,
+    "dynamicEffectRuntimeChunk": false,
+    "dynamicTanStackQueryChunk": true,
     "dynamicBlogVirtualListChunk": true,
     "dynamicTravelVirtualListChunk": true,
     "dynamicMasonryChunk": true,
@@ -205,10 +213,10 @@
     "staticManifestParse": {
       "name": "staticManifestParse",
       "minMs": 0.13,
-      "p50Ms": 0.14,
-      "p95Ms": 0.16,
-      "maxMs": 0.55,
-      "avgMs": 0.14
+      "p50Ms": 0.13,
+      "p95Ms": 0.14,
+      "maxMs": 0.22,
+      "avgMs": 0.13
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
@@ -256,7 +264,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 1163366,
+      "actual": 988325,
       "budget": 1500000,
       "pass": true
     },
@@ -265,13 +273,18 @@
       "budget": 4,
       "pass": true
     },
+    "generatedTailwindCssBytes": {
+      "actual": 4479,
+      "budget": 50000,
+      "pass": true
+    },
     "staticManifestParseP50Ms": {
-      "actual": 0.14,
+      "actual": 0.13,
       "budget": 15,
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.16,
+      "actual": 0.14,
       "budget": 80,
       "pass": true
     },
@@ -290,12 +303,22 @@
       "budget": false,
       "pass": true
     },
+    "eagerEffectRuntime": {
+      "actual": false,
+      "budget": false,
+      "pass": true
+    },
     "travelVirtualizationThreshold": {
       "actual": 22,
       "budget": 80,
       "pass": true
     },
     "eagerTanStackVirtual": {
+      "actual": false,
+      "budget": false,
+      "pass": true
+    },
+    "eagerTanStackQueryCore": {
       "actual": false,
       "budget": false,
       "pass": true
@@ -373,9 +396,19 @@
       "action": "Keep Gallery, Notes, Memory, and Zen link rewriting on the attachment-shard path while preserving lighter source shards for other views."
     },
     {
-      "area": "initial-bundle",
-      "signal": "initial scripts total 1.1 MiB",
-      "action": "Inspect the shared vendor chunk and keep TanStack Virtual, parser runtime, and map code out of eager scripts."
+      "area": "static-shard-query-runtime",
+      "signal": "TanStack Query Core stays behind the static shard boundary",
+      "action": "Keep query caching for source/agenda/attachment/memory/section shards lazy so static manifest-only refreshes do not pay the query runtime."
+    },
+    {
+      "area": "typed-async-effect-node-boundary",
+      "signal": "Effect is absent from browser assets",
+      "action": "Keep Effect on static generation and other Node orchestration boundaries until the browser bundle cost is justified by a domain effect surface."
+    },
+    {
+      "area": "tailwind-design-token-runtime",
+      "signal": "generated Tailwind utilities are 4 KiB",
+      "action": "Keep Tailwind on token-backed Org semantic atoms first, then migrate repeated hand-written component rules when the utility form is clearer."
     },
     {
       "area": "parser-worker-startup",

@@ -1,0 +1,36 @@
+@layer theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-face-faded: var(--face-faded);
+  --color-face-salient: var(--face-salient);
+  --color-surface-quiet: var(--surface-quiet);
+  --color-surface-salient: var(--surface-salient);
+  --radius-org-label: var(--radius-label);
+}
+
+@layer components {
+  .org-timestamp {
+    @apply inline-flex items-baseline whitespace-nowrap rounded-[var(--radius-label)] px-1.5 py-0.5 font-mono text-[var(--type-label-size)] leading-[var(--type-label-leading)];
+  }
+
+  .org-timestamp--active {
+    @apply bg-[var(--surface-salient)] text-[var(--face-salient)];
+  }
+
+  .org-timestamp--inactive {
+    @apply bg-[var(--surface-quiet)] text-[var(--face-faded)];
+  }
+
+  .org-timestamp--raw {
+    @apply text-[var(--face-faded)];
+  }
+
+  .org-id-link {
+    @apply underline decoration-[var(--blue-a7)] decoration-1 underline-offset-4;
+  }
+}

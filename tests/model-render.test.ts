@@ -498,7 +498,10 @@ describe("Org source view projections", () => {
             rangeStatus: "inRange",
             profile: { highest: "A", lowest: "C", default: "B" },
           },
-          properties: [{ key: "AREA", value: "reader", source: sourceRange(11) }],
+          properties: [
+            { key: "AREA", value: "reader", source: sourceRange(11) },
+            { key: "ID", value: "native-org-surface", source: sourceRange(11) },
+          ],
           rangeStart: 10,
           title: "Native Org surface",
           todo: "NEXT",
@@ -517,6 +520,7 @@ describe("Org source view projections", () => {
           <h1>Native Org surface</h1>
           <section>
             <table><thead><tr><td>Syntax family</td><td>Risk</td></tr></thead><tbody><tr><td>Planning</td><td>flat text</td></tr></tbody></table>
+            <p><span class="timestamp-wrapper"><span class="timestamp">[2020-11-30 Mon 22:18]</span></span> -&gt; <a href="id:native-org-surface">佛光寺</a></p>
             <pre class="example">example block</pre>
             <pre><code class="language-typescript">type Native = true;</code></pre>
           </section>
@@ -531,6 +535,12 @@ describe("Org source view projections", () => {
     expect(html).toContain("[#A]");
     expect(html).toContain("org-planning-chip org-planning-chip--scheduled");
     expect(html).toContain('datetime="2026-05-16T11:00"');
+    expect(html).toContain("org-timestamp--inactive");
+    expect(html).toContain('data-org-timestamp="inline"');
+    expect(html).toContain('datetime="2020-11-30T22:18"');
+    expect(html).toContain('href="#native-org-surface"');
+    expect(html).toContain('data-org-link="id"');
+    expect(html).toContain("佛光寺");
     expect(html).toContain("org-planning-chip org-planning-chip--deadline");
     expect(html).toContain("org-table-frame");
     expect(html).toContain('<th scope="col">Syntax family</th>');

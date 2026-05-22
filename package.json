@@ -5,7 +5,7 @@
   "type": "module",
   "description": "A browser demo for viewing Org blog, records, and agenda data through orgize WASM.",
   "scripts": {
-    "dev": "rspack serve --host 127.0.0.1",
+    "dev": "npm run generate:theme && rspack serve --host 127.0.0.1",
     "generate:theme": "node scripts/build-elegant-theme.mjs",
     "generate:static": "node scripts/generate-static-site.mjs",
     "build": "npm run generate:theme && npm run generate:static && tsc -b && rspack build",
@@ -19,7 +19,7 @@
     "perf:wasm": "node scripts/bench-orgize-wasm.mjs",
     "perf:ui": "npm run build && node scripts/bench-org-zhixing-ui.mjs",
     "perf:all": "npm run perf:wasm -- --source=blog/travel.org && npm run perf:ui",
-    "preview": "rspack serve --mode production --host 127.0.0.1"
+    "preview": "npm run generate:theme && rspack serve --mode production --host 127.0.0.1"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
@@ -30,6 +30,7 @@
     "@zag-js/floating-panel": "^1.41.0",
     "@zag-js/select": "^1.41.0",
     "@zag-js/vanilla": "^1.41.0",
+    "effect": "^3.21.2",
     "masonry-layout": "^4.2.2",
     "orgize": "github:tao3k/orgize-wasm#2807b600c5e9908078443b4cb408c39cee9c06e6",
     "photoswipe": "^5.4.4",
@@ -41,9 +42,11 @@
     "@rspack/cli": "^2.0.3",
     "@rspack/core": "^2.0.3",
     "@rspack/dev-server": "^2.0.1",
+    "@tailwindcss/cli": "^4.3.0",
     "@types/masonry-layout": "^4.2.8",
     "happy-dom": "^20.9.0",
     "style-dictionary": "^5.4.1",
+    "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
     "typescript-lang-project-harness": "git+https://github.com/tao3k/typescript-lang-project-harness.git#04524b55706e77080e30795b9b7cfe014d24cfce",
     "vitest": "^4.1.7"

@@ -181,7 +181,8 @@ facts, not by reparsing Org text in TypeScript.
 | Headline stars | CSS structural markers on rendered headings |
 | TODO and DONE states | =sectionIndex= TODO fields become heading markers with semantic tones |
 | Priority cookies | parser priority DTO becomes compact =[#A]/[#B]/[#C]= heading markers |
-| Planning timestamps | =OrgizeTimestampDto= becomes =time.org-timestamp= with active/inactive/range state |
+| Planning timestamps | =OrgizeTimestampDto= and exporter-owned inline timestamps become =time.org-timestamp= with active/inactive/range state |
+| ID links | parser property DTOs provide =ID=/=CUSTOM_ID= targets; rendered =id:= links become local anchors when the target exists |
 | Tags | effective parser tags become compact Org meta labels |
 | Property drawers | parser property DTOs become structural =dl= rows, not body text |
 | Tables | exported tables are wrapped in =.org-table-frame= and header cells are promoted to semantic =th= |
@@ -195,7 +196,10 @@ The same visual atoms must be shared across views.  Agenda rows, record cards,
 memory cards, Travel cards, attachment cards, and rendered articles should not
 each invent a private TODO or planning badge.  The common classes are the
 contract: =org-heading-todo=, =org-heading-priority=, =org-planning-chip=,
-=org-timestamp=, =org-meta-tag=, and =org-native-table=.
+=org-timestamp=, =org-id-link=, =org-meta-tag=, and =org-native-table=.
+Tailwind CSS owns the small repeated utility composition for these atoms; larger
+view layouts stay in scoped CSS modules until a utility migration removes real
+duplication without flattening Org semantics.
 
 ** Tests
 

@@ -1,4 +1,3 @@
-import { QueryClient } from "@tanstack/query-core";
 import type {
   OrgizeAttachmentInventoryResponseDto,
   OrgizeMemoryResponseDto,
@@ -14,7 +13,11 @@ import type {
   StaticSourceProjection,
 } from "./staticSiteData";
 
-const queryClients = new WeakMap<StaticSiteData, QueryClient>();
+type QueryCoreRuntime = typeof import("@tanstack/query-core");
+type StaticShardQueryClient = import("@tanstack/query-core").QueryClient;
+
+const queryClients = new WeakMap<StaticSiteData, StaticShardQueryClient>();
+let queryCoreRuntimePromise: Promise<QueryCoreRuntime> | null = null;
 
 export const loadCachedStaticSourceShard = (
   staticSite: StaticSiteData,
@@ -58,18 +61,21 @@ const loadCachedShard = <T>(
   shardPath: string,
   fetchShard: (shardPath: string) => Promise<T | null>,
 ): Promise<T | null> =>
-  queryClientFor(staticSite).fetchQuery({
-    queryKey: ["org-zhixing-static-shard", staticSite.generatedAt, kind, key, shardPath],
-    queryFn: () => fetchShard(shardPath),
-    staleTime: Infinity,
-    gcTime: Infinity,
-  });
+  queryClientFor(staticSite).then((client) =>
+    client.fetchQuery({
+      queryKey: ["org-zhixing-static-shard", staticSite.generatedAt, kind, key, shardPath],
+      queryFn: () => fetchShard(shardPath),
+      staleTime: Infinity,
+      gcTime: Infinity,
+    }),
+  );
 
-const queryClientFor = (staticSite: StaticSiteData): QueryClient => {
+const queryClientFor = async (staticSite: StaticSiteData): Promise<StaticShardQueryClient> => {
   const cached = queryClients.get(staticSite);
   if (cached) {
     return cached;
   }
+  const { QueryClient } = await queryCoreRuntime();
   const next = new QueryClient({
     defaultOptions: {
       queries: {
@@ -81,6 +87,11 @@ const queryClientFor = (staticSite: StaticSiteData): QueryClient => {
   });
   queryClients.set(staticSite, next);
   return next;
+};
+
+const queryCoreRuntime = (): Promise<QueryCoreRuntime> => {
+  queryCoreRuntimePromise ??= import("@tanstack/query-core");
+  return queryCoreRuntimePromise;
 };
 
 const fetchStaticSourceShard = async (

@@ -16,6 +16,7 @@ import {
   sectionTitle,
   type SectionRecord,
 } from "./orgHtmlMetadata";
+import { orgIdTargetsForRecord, rewriteOrgIdLinks } from "./orgIdLinks";
 import { enhanceOrgNativeAesthetics } from "./orgNativeAesthetics";
 import type { StaticBlogArticle, StaticBlogIndex } from "./staticSiteData";
 
@@ -402,6 +403,7 @@ const prepareArticleHtml = (
   const body = parsed.body;
   const headings = [...body.querySelectorAll<HTMLHeadingElement>("h1,h2,h3,h4,h5,h6")];
   const usedIds = new Set<string>();
+  const orgIdTargets = new Map<string, string>();
   const records = sectionRecords(document);
   const usedRecords = new Set<SectionRecord>();
 
@@ -413,9 +415,15 @@ const prepareArticleHtml = (
     const title = tocHeadingTitle(heading, record);
     if (title) {
       heading.id = uniqueHeadingId(title, usedIds);
+      if (record) {
+        for (const [id, target] of orgIdTargetsForRecord(record, `#${heading.id}`)) {
+          orgIdTargets.set(id, target);
+        }
+      }
     }
   }
   rewriteAttachmentLinks(body, document, sourceFile);
+  rewriteOrgIdLinks(body, orgIdTargets);
   applyHtmlEmbedPolicy(body);
   augmentOrgHtmlMetadata(body, document);
   enhanceOrgNativeAesthetics(body, document);

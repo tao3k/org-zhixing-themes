@@ -29,12 +29,15 @@ const budgets = {
   largestSourceShardBytes: 800_000,
   initialScriptBytes: 1_500_000,
   initialScriptCount: 4,
+  generatedTailwindCssBytes: 50_000,
   travelPlacesBeforeVirtualization: 80,
   staticManifestParseP50Ms: 15,
   staticManifestParseP95Ms: 80,
   travelProjectionReadP95Ms: 1,
   eagerPhotoSwipeLightbox: false,
   eagerCssLineBreak: false,
+  eagerEffectRuntime: false,
+  eagerTanStackQueryCore: false,
   eagerTanStackVirtual: false,
   eagerBlogVirtualList: false,
   eagerTravelVirtualList: false,
@@ -74,7 +77,13 @@ const initialScriptBytes = initialScripts.reduce(
   (sum, script) => sum + (assets.get(script) ?? 0),
   0,
 );
-const staticManifestParse = sample("staticManifestParse", () => JSON.parse(staticManifestText));
+const generatedTailwindCssText = await readFile(
+  resolve(projectRoot, ".cache/org-zhixing/tailwind.css"),
+  "utf8",
+);
+const staticManifestParse = sample("staticManifestParse", () => JSON.parse(staticManifestText), {
+  batchSize: 20,
+});
 const travelProjectionRead = sample(
   "travelProjectionRead",
   () => staticManifest.travel?.places?.length ?? 0,
@@ -112,6 +121,7 @@ const metrics = {
   initialScriptBytes,
   initialScriptCount: initialScripts.length,
   initialScripts,
+  generatedTailwindCssBytes: Buffer.byteLength(generatedTailwindCssText),
   parserWorkerScriptBytes: assetBytesMatching(/orgize_worker_js/),
   wasmAssetBytes: assetBytesMatching(/orgize_bg\..+\.wasm$/),
   largestAsyncAssets: largestAsyncAssets(initialScripts, assets, 8),
@@ -129,6 +139,8 @@ const metrics = {
     /node_modules\/photoswipe\/dist\/photoswipe-lightbox/,
   ),
   eagerCssLineBreak: initialScriptsContainModule(/node_modules\/css-line-break/),
+  eagerEffectRuntime: initialScriptsContainModule(/node_modules\/effect\//),
+  eagerTanStackQueryCore: initialScriptsContainModule(/node_modules\/@tanstack\/query-core/),
   eagerTanStackVirtual: initialScriptsContainModule(/node_modules\/@tanstack\/virtual-core/),
   eagerBlogVirtualList: initialScriptsContainModule(/src\/blogVirtualList\.ts/),
   eagerTravelVirtualList: initialScriptsContainModule(/src\/travelVirtualList\.ts/),
@@ -136,6 +148,12 @@ const metrics = {
   eagerFloatingPanel: initialScriptsContainModule(/node_modules\/@zag-js\/floating-panel/),
   eagerZagSelect: initialScriptsContainModule(/node_modules\/@zag-js\/select/),
   dynamicTanStackChunk: [...assets.keys()].some((script) => /tanstack_virtual-core/.test(script)),
+  dynamicEffectRuntimeChunk: [...assets.keys()].some((script) =>
+    /node_modules_effect/.test(script),
+  ),
+  dynamicTanStackQueryChunk: [...assets.keys()].some((script) =>
+    /tanstack_query-core|query-core/.test(script),
+  ),
   dynamicBlogVirtualListChunk: [...assets.keys()].some((script) => /blogVirtualList/.test(script)),
   dynamicTravelVirtualListChunk: [...assets.keys()].some((script) =>
     /travelVirtualList/.test(script),
@@ -187,6 +205,7 @@ console.log(
 console.log(
   `initial scripts ${metrics.initialScriptCount} files ${formatBytes(metrics.initialScriptBytes)}`,
 );
+console.log(`tailwind utilities ${formatBytes(metrics.generatedTailwindCssBytes)}`);
 console.log(`blog ${metrics.blogArticles} Org files from ${metrics.blogSourceCount} Org files`);
 console.log(
   `static manifest parse p50 ${formatMs(staticManifestParse.p50Ms)} p95 ${formatMs(
@@ -371,15 +390,20 @@ function scriptSrcs(html) {
   return [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((match) => match[1]);
 }
 
-function sample(name, fn) {
+function sample(name, fn, options = {}) {
+  const batchSize = options.batchSize ?? 1;
   for (let index = 0; index < warmups; index += 1) {
-    fn();
+    for (let batch = 0; batch < batchSize; batch += 1) {
+      fn();
+    }
   }
   const values = [];
   for (let index = 0; index < iterations; index += 1) {
     const startedAt = performance.now();
-    fn();
-    values.push(performance.now() - startedAt);
+    for (let batch = 0; batch < batchSize; batch += 1) {
+      fn();
+    }
+    values.push((performance.now() - startedAt) / batchSize);
   }
   values.sort((left, right) => left - right);
   return {
@@ -409,6 +433,10 @@ function evaluateBudgets(metrics, budgetConfig) {
     ),
     initialScriptBytes: passMetric(metrics.initialScriptBytes, budgetConfig.initialScriptBytes),
     initialScriptCount: passMetric(metrics.initialScriptCount, budgetConfig.initialScriptCount),
+    generatedTailwindCssBytes: passMetric(
+      metrics.generatedTailwindCssBytes,
+      budgetConfig.generatedTailwindCssBytes,
+    ),
     staticManifestParseP50Ms: passMetric(
       metrics.staticManifestParse.p50Ms,
       budgetConfig.staticManifestParseP50Ms,
@@ -431,6 +459,11 @@ function evaluateBudgets(metrics, budgetConfig) {
       budget: budgetConfig.eagerCssLineBreak,
       pass: metrics.eagerCssLineBreak === budgetConfig.eagerCssLineBreak,
     },
+    eagerEffectRuntime: {
+      actual: metrics.eagerEffectRuntime,
+      budget: budgetConfig.eagerEffectRuntime,
+      pass: metrics.eagerEffectRuntime === budgetConfig.eagerEffectRuntime,
+    },
     travelVirtualizationThreshold: {
       actual: metrics.travelPlaces,
       budget: budgetConfig.travelPlacesBeforeVirtualization,
@@ -440,6 +473,11 @@ function evaluateBudgets(metrics, budgetConfig) {
       actual: metrics.eagerTanStackVirtual,
       budget: budgetConfig.eagerTanStackVirtual,
       pass: metrics.eagerTanStackVirtual === budgetConfig.eagerTanStackVirtual,
+    },
+    eagerTanStackQueryCore: {
+      actual: metrics.eagerTanStackQueryCore,
+      budget: budgetConfig.eagerTanStackQueryCore,
+      pass: metrics.eagerTanStackQueryCore === budgetConfig.eagerTanStackQueryCore,
     },
     eagerBlogVirtualList: {
       actual: metrics.eagerBlogVirtualList,
@@ -609,6 +647,38 @@ function recommendationsFor(metrics) {
       signal: `initial scripts total ${formatBytes(metrics.initialScriptBytes)}`,
       action:
         "Inspect the shared vendor chunk and keep TanStack Virtual, parser runtime, and map code out of eager scripts.",
+    });
+  }
+  if (!metrics.eagerTanStackQueryCore && metrics.dynamicTanStackQueryChunk) {
+    recommendations.push({
+      area: "static-shard-query-runtime",
+      signal: "TanStack Query Core stays behind the static shard boundary",
+      action:
+        "Keep query caching for source/agenda/attachment/memory/section shards lazy so static manifest-only refreshes do not pay the query runtime.",
+    });
+  }
+  if (!metrics.eagerEffectRuntime && metrics.dynamicEffectRuntimeChunk) {
+    recommendations.push({
+      area: "typed-async-effect-runtime",
+      signal: "Effect stays behind the static shard async boundary",
+      action:
+        "Keep typed async fetch/error handling out of the static entry path; use it at domain boundaries where failure shape matters.",
+    });
+  }
+  if (!metrics.eagerEffectRuntime && !metrics.dynamicEffectRuntimeChunk) {
+    recommendations.push({
+      area: "typed-async-effect-node-boundary",
+      signal: "Effect is absent from browser assets",
+      action:
+        "Keep Effect on static generation and other Node orchestration boundaries until the browser bundle cost is justified by a domain effect surface.",
+    });
+  }
+  if (metrics.generatedTailwindCssBytes > 0) {
+    recommendations.push({
+      area: "tailwind-design-token-runtime",
+      signal: `generated Tailwind utilities are ${formatBytes(metrics.generatedTailwindCssBytes)}`,
+      action:
+        "Keep Tailwind on token-backed Org semantic atoms first, then migrate repeated hand-written component rules when the utility form is clearer.",
     });
   }
   if (metrics.parserWorkerScriptBytes > 0 && metrics.lazyParserWorker) {
