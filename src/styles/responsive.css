@@ -79,15 +79,6 @@
     width: 100%;
   }
 
-  .travel-glance-layer {
-    width: calc(100vw - 20px);
-    max-width: calc(100vw - 20px);
-  }
-
-  .travel-glance-positioner {
-    padding: 0 10px;
-  }
-
   .agenda-metrics {
     grid-template-columns: repeat(3, 1fr);
   }

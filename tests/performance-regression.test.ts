@@ -51,16 +51,23 @@ describe("Org Zhixing performance regression gates", () => {
     expect(travelRender).toContain("travel.places.length >= virtualListThreshold");
   });
 
-  it("keeps Travel Zen Glance masonry behind the dialog lazy boundary", () => {
+  it("keeps Travel Zen Glance window and masonry runtimes behind lazy boundaries", () => {
     const appEvents = readFileSync("src/appEvents.ts", "utf8");
     const travelGlance = readFileSync("src/travelGlance.ts", "utf8");
+    const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
 
     expect(appEvents).toContain('import("./travelVirtualList")');
     expect(appEvents).not.toContain("masonry-layout");
+    expect(appEvents).not.toContain("@zag-js/floating-panel");
+    expect(travelGlance).not.toMatch(/import\s+\{?\s*machine/);
+    expect(travelGlance).not.toContain("@zag-js/dialog");
+    expect(travelGlance).toContain('import("@zag-js/floating-panel")');
     expect(travelGlance).not.toMatch(/import\s+Masonry/);
     expect(travelGlance).toContain('import("masonry-layout")');
     expect(travelGlance).toContain('itemSelector: ".travel-glance-flow-item"');
     expect(travelGlance).not.toContain('flow.dataset.layout = "single"');
+    expect(perfScript).toContain("eagerFloatingPanel: false");
+    expect(perfScript).toContain("dynamicFloatingPanelChunk");
   });
 
   it("keeps attachment lightbox code behind an image-opener lazy boundary", () => {

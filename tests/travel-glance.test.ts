@@ -22,11 +22,15 @@ describe("Travel Zen Glance interactions", () => {
     dom.view.querySelector<HTMLElement>("[data-travel-card]")?.click();
 
     const layer = await waitForElement('.travel-glance-layer[role="dialog"]');
+    const positioner = await waitForElement(".travel-glance-positioner");
     const backdrop = await waitForElement(".travel-glance-backdrop");
     expect(layer?.getAttribute("role")).toBe("dialog");
-    expect(layer?.getAttribute("aria-modal")).toBe("true");
     expect(layer?.getAttribute("data-state")).toBe("open");
     expect(backdrop?.getAttribute("data-state")).toBe("open");
+    expect(positioner.style.position).toBe("fixed");
+    expect(positioner.style.getPropertyValue("--height")).toBe(`${window.innerHeight}px`);
+    expect(layer.style.width).toBe("var(--width)");
+    expect(layer.style.height).toBe("var(--height)");
     expect(layer?.textContent).toContain("丽水站");
     const flow = await waitForElement("[data-travel-glance-flow]");
     await waitForLayout(flow);
@@ -54,21 +58,20 @@ describe("Travel Zen Glance interactions", () => {
     const entryStyles = readFileSync("src/styles.css", "utf8");
     const positioner = cssBlock(styles, ".travel-glance-positioner");
     const layer = cssBlock(styles, ".travel-glance-layer");
+    const shell = cssBlock(styles, ".travel-glance-shell");
     const body = cssBlock(styles, ".travel-glance-body");
     const flow = cssBlock(styles, ".travel-glance-flow");
     const flowItem = cssBlock(styles, ".travel-glance-flow-item");
     const glanceMap = cssBlock(styles, ".travel-inline-map--glance");
     const mediaFlow = cssBlock(styles, ".travel-media-flow");
     const enrichCode = cssBlock(styles, ".travel-tags span,\n.travel-enrich code");
-    const mobileLayer = styles.slice(styles.lastIndexOf(".travel-glance-layer"));
 
-    expect(positioner).toContain("align-items: stretch;");
-    expect(positioner).toContain("justify-items: center;");
-    expect(positioner).toContain("padding: 0 22px;");
-    expect(layer).toContain("width: min(80vw, 1360px);");
-    expect(layer).toContain("height: 100dvh;");
-    expect(layer).toContain("max-height: 100dvh;");
+    expect(positioner).not.toContain("inset:");
+    expect(positioner).not.toContain("padding:");
+    expect(layer).not.toContain("width:");
+    expect(layer).not.toContain("height:");
     expect(layer).toContain("border-radius: 0;");
+    expect(shell).toContain("position: relative;");
     expect(body).toContain("overflow: auto;");
     expect(flow).toContain("position: relative;");
     expect(styles).toContain('.travel-glance-flow[data-layout="pending"]');
@@ -90,8 +93,8 @@ describe("Travel Zen Glance interactions", () => {
     expect(mediaFlow).not.toContain("box-shadow:");
     expect(enrichCode).toContain("overflow-wrap: anywhere;");
     expect(enrichCode).toContain("max-width: 100%;");
-    expect(mobileLayer).toContain("max-width: calc(100vw - 20px);");
-    expect(mobileLayer).toContain("padding: 0 10px;");
+    expect(styles).toContain(".travel-glance-controls");
+    expect(styles).toContain(".travel-glance-resize-trigger");
     expect(styles).toContain(".travel-glance-flow");
     expect(styles).toContain("width: 100%;");
     expect(entryStyles).toContain('@import "./styles/travel.css";');

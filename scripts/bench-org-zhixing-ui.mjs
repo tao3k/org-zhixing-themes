@@ -34,6 +34,7 @@ const budgets = {
   eagerTanStackVirtual: false,
   eagerTravelVirtualList: false,
   eagerMasonryLayout: false,
+  eagerFloatingPanel: false,
 };
 
 const indexHtml = await readFile(resolve(distRoot, "index.html"), "utf8");
@@ -75,11 +76,15 @@ const metrics = {
   eagerTanStackVirtual: initialScriptsContainModule(/node_modules\/@tanstack\/virtual-core/),
   eagerTravelVirtualList: initialScriptsContainModule(/src\/travelVirtualList\.ts/),
   eagerMasonryLayout: initialScriptsContainModule(/node_modules\/masonry-layout/),
+  eagerFloatingPanel: initialScriptsContainModule(/node_modules\/@zag-js\/floating-panel/),
   dynamicTanStackChunk: [...assets.keys()].some((script) => /tanstack_virtual-core/.test(script)),
   dynamicTravelVirtualListChunk: [...assets.keys()].some((script) =>
     /travelVirtualList/.test(script),
   ),
   dynamicMasonryChunk: [...assets.keys()].some((script) => /masonry-layout/.test(script)),
+  dynamicFloatingPanelChunk: [...assets.keys()].some((script) =>
+    /zag-js_floating-panel/.test(script),
+  ),
   staticManifestParse,
   travelProjectionRead,
 };
@@ -234,6 +239,11 @@ function evaluateBudgets(metrics, budgetConfig) {
       budget: budgetConfig.eagerMasonryLayout,
       pass: metrics.eagerMasonryLayout === budgetConfig.eagerMasonryLayout,
     },
+    eagerFloatingPanel: {
+      actual: metrics.eagerFloatingPanel,
+      budget: budgetConfig.eagerFloatingPanel,
+      pass: metrics.eagerFloatingPanel === budgetConfig.eagerFloatingPanel,
+    },
   };
 }
 
@@ -303,6 +313,14 @@ function recommendationsFor(metrics) {
       area: "virtual-list-boundary",
       signal: "TanStack Virtual exists only as an on-demand chunk",
       action: "Keep Travel lists below the virtualization threshold on the plain static CSS path.",
+    });
+  }
+  if (metrics.dynamicFloatingPanelChunk && !metrics.eagerFloatingPanel) {
+    recommendations.push({
+      area: "zen-glance-window-runtime",
+      signal: "Zag Floating Panel exists only as an on-demand chunk",
+      action:
+        "Keep Zen Glance window control behind the card-open boundary instead of adding it to initial navigation.",
     });
   }
   return recommendations;

@@ -358,9 +358,17 @@
 .travel-glance-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 79;
+  z-index: 0;
   background: color-mix(in srgb, var(--surface-canvas) 48%, transparent);
   backdrop-filter: blur(10px) saturate(1.08);
+  pointer-events: auto;
+}
+
+.travel-glance-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
 }
 
 .travel-glance-backdrop[hidden] {
@@ -368,22 +376,12 @@
 }
 
 .travel-glance-positioner {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: grid;
-  align-items: stretch;
-  justify-items: center;
-  padding: 0 22px;
+  z-index: 1;
   pointer-events: none;
 }
 
 .travel-glance-layer {
   display: grid;
-  width: min(80vw, 1360px);
-  max-width: calc(100vw - 44px);
-  height: 100dvh;
-  max-height: 100dvh;
   overflow: hidden;
   border: 0;
   border-radius: 0;
@@ -397,6 +395,7 @@
 }
 
 .travel-glance-shell {
+  position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
@@ -439,7 +438,13 @@
   scrollbar-gutter: stable;
 }
 
-.travel-glance-toolbar button {
+.travel-glance-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.travel-glance-controls button {
   border: 0;
   border-radius: var(--radius-ui);
   padding: 7px 10px;
@@ -448,6 +453,11 @@
   cursor: pointer;
   font-size: 0.76rem;
   font-weight: 850;
+}
+
+.travel-glance-resize-trigger {
+  position: absolute;
+  z-index: 2;
 }
 
 .travel-glance-article {

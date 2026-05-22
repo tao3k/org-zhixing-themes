@@ -18,7 +18,8 @@
     "eagerCssLineBreak": false,
     "eagerTanStackVirtual": false,
     "eagerTravelVirtualList": false,
-    "eagerMasonryLayout": false
+    "eagerMasonryLayout": false,
+    "eagerFloatingPanel": false
   },
   "metrics": {
     "staticManifestBytes": 55767,
@@ -26,12 +27,12 @@
     "sourceShardCount": 8,
     "largestSourceShardBytes": 407338,
     "largestSourceShard": "org-zhixing.sources/wallpaper-gallery.json",
-    "initialScriptBytes": 795028,
+    "initialScriptBytes": 805303,
     "initialScriptCount": 3,
     "initialScripts": [
-      "assets/runtime.2acf34eb.js",
+      "assets/runtime.1ea3f64c.js",
       "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.94a8d4f7.js"
+      "assets/app.85d264b6.js"
     ],
     "travelPlaces": 22,
     "travelSourceCount": 1,
@@ -42,23 +43,25 @@
     "eagerTanStackVirtual": false,
     "eagerTravelVirtualList": false,
     "eagerMasonryLayout": false,
+    "eagerFloatingPanel": false,
     "dynamicTanStackChunk": true,
     "dynamicTravelVirtualListChunk": true,
     "dynamicMasonryChunk": true,
+    "dynamicFloatingPanelChunk": true,
     "staticManifestParse": {
       "name": "staticManifestParse",
-      "minMs": 0.1,
+      "minMs": 0.09,
       "p50Ms": 0.1,
-      "p95Ms": 0.27,
-      "maxMs": 0.68,
-      "avgMs": 0.13
+      "p95Ms": 0.13,
+      "maxMs": 0.22,
+      "avgMs": 0.1
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
       "minMs": 0,
       "p50Ms": 0,
       "p95Ms": 0,
-      "maxMs": 0,
+      "maxMs": 0.01,
       "avgMs": 0
     }
   },
@@ -79,7 +82,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 795028,
+      "actual": 805303,
       "budget": 1500000,
       "pass": true
     },
@@ -94,7 +97,7 @@
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.27,
+      "actual": 0.13,
       "budget": 80,
       "pass": true
     },
@@ -132,6 +135,11 @@
       "actual": false,
       "budget": false,
       "pass": true
+    },
+    "eagerFloatingPanel": {
+      "actual": false,
+      "budget": false,
+      "pass": true
     }
   },
   "recommendations": [
@@ -144,6 +152,11 @@
       "area": "virtual-list-boundary",
       "signal": "TanStack Virtual exists only as an on-demand chunk",
       "action": "Keep Travel lists below the virtualization threshold on the plain static CSS path."
+    },
+    {
+      "area": "zen-glance-window-runtime",
+      "signal": "Zag Floating Panel exists only as an on-demand chunk",
+      "action": "Keep Zen Glance window control behind the card-open boundary instead of adding it to initial navigation."
     }
   ]
 }
