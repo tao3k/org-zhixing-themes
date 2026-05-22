@@ -205,10 +205,36 @@ describe("Org source view projections", () => {
     expect(erhai?.query).toBe("洱海 云南");
     expect(erhai?.enrichFields).toContain("GEO_LAT");
 
-    const html = renderView({ view: "travel", document, sourceFile: "blog/travel.org" });
+    const html = renderView({
+      view: "travel",
+      document,
+      articleHtml: `
+        <main>
+          <h1>游山玩水-&gt;云南</h1>
+          <section>
+            <p>云南 region intro.</p>
+          </section>
+          <h2>民宿｜200 戶人的島上</h2>
+          <section>
+            <div class="videoWrapper mb-4">
+              <iframe src="https://www.youtube.com/embed/CIZZiV7knVM"></iframe>
+              <iframe src="https://evil.example/embed/CIZZiV7knVM"></iframe>
+            </div>
+          </section>
+        </main>
+      `,
+      sourceFile: "blog/travel.org",
+    });
     expect(html).toContain("data-travel-card");
     expect(html).toContain("data-travel-map-toggle");
     expect(html).toContain("data-travel-glance-template");
+    expect(html).toContain("travel-glance-flow");
+    expect(html).toContain("travel-media-flow");
+    expect(html).toContain("travel-glance-flow-item");
+    expect(html).toContain('src="https://www.youtube.com/embed/CIZZiV7knVM"');
+    expect(html).toContain('sandbox="allow-scripts allow-same-origin allow-presentation"');
+    expect((html.match(/youtube\.com\/embed\/CIZZiV7knVM/g) ?? []).length).toBe(1);
+    expect(html).not.toContain("evil.example");
     expect(html).toContain("maps.google.com/maps");
     expect(html).not.toContain("Open in Google Maps");
     expect(html).toContain("丽水站");

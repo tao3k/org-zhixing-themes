@@ -82,7 +82,12 @@ export const renderView = (options: RenderViewOptions): string => {
 
 const renderSiteWideView = (options: RenderViewOptions): string | null => {
   if (options.view === "travel" && options.travelView) {
-    return renderTravel(options.document, options.sourceFile, options.travelView);
+    return renderTravel(
+      options.document,
+      options.sourceFile,
+      options.travelView,
+      options.articleHtml,
+    );
   }
   if (options.view === "gallery" && options.attachmentGallery !== undefined) {
     return renderAttachmentGallery(options.attachmentGallery ?? null);
@@ -140,7 +145,7 @@ const renderLoadedView = ({
         sourceFile,
       });
     case "travel":
-      return renderTravel(document, sourceFile, travelView);
+      return renderTravel(document, sourceFile, travelView, articleHtml);
     case "agenda":
       return renderAgenda(document, agendaMode, agendaPanel, agendaRuleId);
     case "capture":

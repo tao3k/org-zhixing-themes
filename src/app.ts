@@ -301,7 +301,11 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     if (this.#currentView === "blog" || this.#currentView === "gallery") {
       await this.#refreshAttachmentInventoryIfNeeded();
     }
-    if (this.#currentView === "records" || this.#currentView === "memory") {
+    if (
+      this.#currentView === "records" ||
+      this.#currentView === "memory" ||
+      this.#currentView === "travel"
+    ) {
       await this.#refreshAttachmentInventoryIfNeeded();
       await this.#refreshArticleHtmlIfNeeded(version);
     }
@@ -468,11 +472,13 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     this.#articleMessage = "";
     this.#viewCache.delete("records");
     this.#viewCache.delete("memory");
+    this.#viewCache.delete("travel");
     clearBlogCache(this.#viewCache);
     if (
       this.#currentView === "blog" ||
       this.#currentView === "records" ||
-      this.#currentView === "memory"
+      this.#currentView === "memory" ||
+      this.#currentView === "travel"
     ) {
       this.#render();
     }

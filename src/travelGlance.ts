@@ -14,6 +14,24 @@ type DialogRuntime = {
   spreadProps: VanillaModule["spreadProps"];
 };
 
+type MasonryInstance = {
+  destroy?: () => void;
+  layout?: () => void;
+  reloadItems?: () => void;
+};
+
+type MasonryConstructor = new (
+  element: Element,
+  options?: {
+    columnWidth?: string;
+    gutter?: number;
+    horizontalOrder?: boolean;
+    itemSelector?: string;
+    percentPosition?: boolean;
+    transitionDuration?: number | string;
+  },
+) => MasonryInstance;
+
 type ActiveGlance = {
   close: () => void;
   destroy: () => void;
@@ -22,6 +40,7 @@ type ActiveGlance = {
 let activeGlance: ActiveGlance | null = null;
 let openRequest = 0;
 let dialogRuntimePromise: Promise<DialogRuntime> | null = null;
+let masonryRuntimePromise: Promise<MasonryConstructor> | null = null;
 
 export const bindTravelGlance = (dom: AppDomNodes, signal: AbortSignal): void => {
   dom.view.addEventListener("click", handleTravelClick, { signal });
@@ -103,13 +122,11 @@ const openTravelGlance = async (card: HTMLElement): Promise<void> => {
     return;
   }
 
-  nodes.body.append(template.content.cloneNode(true));
-  document.body.append(root);
-  loadMapFrames(root);
-
   const cleanups: Array<() => void> = [];
+  const propCleanups: Array<() => void> = [];
   let unsubscribe = (): void => {};
   let destroyed = false;
+  let stopMachine = (): void => {};
 
   const destroy = (): void => {
     if (destroyed) {
@@ -117,13 +134,24 @@ const openTravelGlance = async (card: HTMLElement): Promise<void> => {
     }
     destroyed = true;
     cleanups.splice(0).forEach((cleanup) => cleanup());
+    propCleanups.splice(0).forEach((cleanup) => cleanup());
     unsubscribe();
-    machine.stop();
+    stopMachine();
     root.remove();
     if (activeGlance?.destroy === destroy) {
       activeGlance = null;
     }
   };
+
+  nodes.body.append(template.content.cloneNode(true));
+  root.style.visibility = "hidden";
+  document.body.append(root);
+  loadMapFrames(root);
+  await initializeTravelMasonry(root, cleanups);
+  if (request !== openRequest || !card.isConnected) {
+    destroy();
+    return;
+  }
 
   const machine = new runtime.VanillaMachine(runtime.dialog.machine, {
     id: "travel-glance",
@@ -141,11 +169,12 @@ const openTravelGlance = async (card: HTMLElement): Promise<void> => {
       }
     },
   });
+  stopMachine = () => machine.stop();
 
   const syncDialogProps = (): void => {
-    cleanups.splice(0).forEach((cleanup) => cleanup());
+    propCleanups.splice(0).forEach((cleanup) => cleanup());
     const api = runtime.dialog.connect(machine.service, runtime.normalizeProps);
-    cleanups.push(
+    propCleanups.push(
       runtime.spreadProps(nodes.backdrop, api.getBackdropProps()),
       runtime.spreadProps(nodes.positioner, api.getPositionerProps()),
       runtime.spreadProps(nodes.content, api.getContentProps()),
@@ -163,6 +192,7 @@ const openTravelGlance = async (card: HTMLElement): Promise<void> => {
     destroy,
   };
   runtime.dialog.connect(machine.service, runtime.normalizeProps).setOpen(true);
+  root.style.visibility = "";
 };
 
 const loadDialogRuntime = (): Promise<DialogRuntime> => {
@@ -175,6 +205,70 @@ const loadDialogRuntime = (): Promise<DialogRuntime> => {
     }),
   );
   return dialogRuntimePromise;
+};
+
+const loadMasonryRuntime = (): Promise<MasonryConstructor> => {
+  masonryRuntimePromise ??= import("masonry-layout").then((module) => {
+    const runtime = module as unknown as { default?: MasonryConstructor };
+    return runtime.default ?? (module as unknown as MasonryConstructor);
+  });
+  return masonryRuntimePromise;
+};
+
+const initializeTravelMasonry = async (
+  root: HTMLElement,
+  cleanups: Array<() => void>,
+): Promise<void> => {
+  const flow = root.querySelector<HTMLElement>("[data-travel-glance-flow]");
+  if (!flow) {
+    return;
+  }
+
+  let cleaned = false;
+  let masonry: MasonryInstance | null = null;
+  const layout = (): void => {
+    masonry?.reloadItems?.();
+    masonry?.layout?.();
+  };
+  try {
+    const Masonry = await loadMasonryRuntime();
+    if (cleaned || !flow.isConnected) {
+      return;
+    }
+    masonry = new Masonry(flow, {
+      columnWidth: ".travel-glance-sizer",
+      gutter: 14,
+      horizontalOrder: true,
+      itemSelector: ".travel-glance-flow-item",
+      percentPosition: true,
+      transitionDuration: 0,
+    });
+    flow.dataset.layout = "ready";
+    flow.setAttribute("aria-busy", "false");
+    layout();
+  } catch {
+    if (cleaned || !flow.isConnected) {
+      return;
+    }
+    flow.dataset.layout = "single";
+    flow.setAttribute("aria-busy", "false");
+  }
+
+  const mediaCleanups = [...flow.querySelectorAll("iframe,img,video")].map((element) => {
+    element.addEventListener("load", layout);
+    element.addEventListener("error", layout);
+    return (): void => {
+      element.removeEventListener("load", layout);
+      element.removeEventListener("error", layout);
+    };
+  });
+
+  cleanups.push(() => {
+    cleaned = true;
+    mediaCleanups.forEach((cleanup) => cleanup());
+    masonry?.destroy?.();
+    masonry = null;
+  });
 };
 
 const glanceNodes = (

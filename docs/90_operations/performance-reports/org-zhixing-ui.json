@@ -17,20 +17,21 @@
     "eagerPhotoSwipeLightbox": false,
     "eagerCssLineBreak": false,
     "eagerTanStackVirtual": false,
-    "eagerTravelVirtualList": false
+    "eagerTravelVirtualList": false,
+    "eagerMasonryLayout": false
   },
   "metrics": {
-    "staticManifestBytes": 53927,
-    "sourceShardBytes": 1296018,
+    "staticManifestBytes": 55767,
+    "sourceShardBytes": 1289988,
     "sourceShardCount": 8,
     "largestSourceShardBytes": 407338,
     "largestSourceShard": "org-zhixing.sources/wallpaper-gallery.json",
-    "initialScriptBytes": 771675,
+    "initialScriptBytes": 794707,
     "initialScriptCount": 3,
     "initialScripts": [
-      "assets/runtime.e359d4ef.js",
+      "assets/runtime.a682dbda.js",
       "assets/vendors-node_modules_smol-toml_dist_index_js.69fd2a69.js",
-      "assets/app.78aa8212.js"
+      "assets/app.eec80489.js"
     ],
     "travelPlaces": 22,
     "travelSourceCount": 1,
@@ -40,15 +41,17 @@
     "eagerCssLineBreak": false,
     "eagerTanStackVirtual": false,
     "eagerTravelVirtualList": false,
+    "eagerMasonryLayout": false,
     "dynamicTanStackChunk": true,
     "dynamicTravelVirtualListChunk": true,
+    "dynamicMasonryChunk": true,
     "staticManifestParse": {
       "name": "staticManifestParse",
       "minMs": 0.1,
-      "p50Ms": 0.11,
-      "p95Ms": 1.65,
-      "maxMs": 5.99,
-      "avgMs": 0.39
+      "p50Ms": 0.1,
+      "p95Ms": 0.13,
+      "maxMs": 0.2,
+      "avgMs": 0.11
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
@@ -61,12 +64,12 @@
   },
   "budgetResults": {
     "staticManifestBytes": {
-      "actual": 53927,
+      "actual": 55767,
       "budget": 500000,
       "pass": true
     },
     "sourceShardBytes": {
-      "actual": 1296018,
+      "actual": 1289988,
       "budget": 2000000,
       "pass": true
     },
@@ -76,7 +79,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 771675,
+      "actual": 794707,
       "budget": 1500000,
       "pass": true
     },
@@ -86,12 +89,12 @@
       "pass": true
     },
     "staticManifestParseP50Ms": {
-      "actual": 0.11,
+      "actual": 0.1,
       "budget": 15,
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 1.65,
+      "actual": 0.13,
       "budget": 80,
       "pass": true
     },
@@ -124,12 +127,17 @@
       "actual": false,
       "budget": false,
       "pass": true
+    },
+    "eagerMasonryLayout": {
+      "actual": false,
+      "budget": false,
+      "pass": true
     }
   },
   "recommendations": [
     {
       "area": "static-manifest-shards",
-      "signal": "entry manifest is 53 KiB; 8 source shards are 1.2 MiB",
+      "signal": "entry manifest is 54 KiB; 8 source shards are 1.2 MiB",
       "action": "Keep site-wide Gallery and Travel on compact projections; load full source shards only for source-scoped or Records views."
     },
     {

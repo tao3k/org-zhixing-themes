@@ -1,0 +1,19 @@
+.blog-article h1 {
+  margin-top: 0;
+  line-height: 1.08;
+}
+
+.blog-article h2 {
+  margin-top: 2.8rem;
+}
+
+.blog-article p,
+.blog-article li {
+  color: #263545;
+  font-size: 1.02rem;
+  line-height: 1.88;
+}
+
+.blog-reader.is-zen .blog-article h1 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+}

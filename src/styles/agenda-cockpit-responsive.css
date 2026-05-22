@@ -1,0 +1,10 @@
+@media (max-width: 1180px) {
+  .agenda-cockpit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-ai-panel {
+    order: -1;
+    position: static;
+  }
+}

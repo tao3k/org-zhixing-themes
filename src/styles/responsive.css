@@ -1,0 +1,103 @@
+@media (max-width: 900px) {
+  .shell {
+    min-height: 100vh;
+  }
+
+  .viewer-pane {
+    width: min(100% - 24px, 1120px);
+  }
+
+  .site-header {
+    position: static;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .site-hero {
+    grid-template-columns: 1fr;
+    padding-top: 34px;
+  }
+
+  .knowledge-map {
+    min-height: 240px;
+  }
+
+  header:not(.site-header) {
+    flex-direction: column;
+  }
+
+  .blog-reader-bar,
+  .blog-reader-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .blog-reader-bar {
+    flex-direction: column;
+  }
+
+  .blog-toc {
+    position: static;
+    max-height: none;
+  }
+
+  #status {
+    max-width: none;
+    text-align: left;
+  }
+
+  .agenda-hero,
+  .attachment-gallery-header,
+  .memory-header,
+  .memory-layout,
+  .memory-card-grid,
+  .agenda-command-center,
+  .agenda-cockpit-grid,
+  .agenda-card-main,
+  .agenda-evidence-grid,
+  .travel-header,
+  .travel-layout,
+  .travel-glance-facts,
+  .agenda-skipped li {
+    grid-template-columns: 1fr;
+  }
+
+  .travel-glance-flow[data-layout="ready"] .travel-glance-sizer,
+  .travel-glance-flow[data-layout="ready"] .travel-glance-flow-item,
+  .travel-glance-flow[data-layout="ready"] .travel-glance-flow-item--wide {
+    width: 100%;
+  }
+
+  .travel-glance-layer {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+  }
+
+  .travel-glance-positioner {
+    padding: 0 10px;
+  }
+
+  .agenda-metrics {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .agenda-mode-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-ai-panel {
+    order: -1;
+    position: static;
+  }
+
+  .memory-inspector {
+    position: static;
+  }
+
+  .selector-rule {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .selector-rule code {
+    grid-column: 2 / 4;
+  }
+}

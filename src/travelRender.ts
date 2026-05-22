@@ -1,4 +1,5 @@
 import type { OrgizeDocumentView } from "./model";
+import { embedHtmlByRangeStart } from "./orgRenderedSections";
 import {
   createTravelView,
   type TravelEvidence,
@@ -12,8 +13,17 @@ export const renderTravel = (
   document: OrgizeDocumentView | null,
   sourceFile?: string,
   travelView?: TravelView,
+  articleHtml = "",
 ): string => {
-  const travel = travelView ?? createTravelView(document, sourceFile);
+  const travel =
+    travelView ??
+    createTravelView(
+      document,
+      sourceFile,
+      document && articleHtml
+        ? embedHtmlByRangeStart({ articleHtml, document, sourceFile })
+        : undefined,
+    );
   if (travel.places.length === 0) {
     return `<div class="empty">${travel.siteWide ? "No travel places in indexed Org sources." : "No travel places in this Org source."}</div>`;
   }
@@ -95,31 +105,22 @@ const renderEmbeddedMap = (
 
 const renderTravelGlanceTemplate = (place: TravelPlace): string => `
   <template data-travel-glance-template>
-    <section class="travel-glance-card">
+    <article class="travel-glance-article">
       <header>
         <span>${escapeHtml(kindLabel(place.kind))}</span>
         <h3>${escapeHtml(place.title)}</h3>
         <p>${escapeHtml(place.outline)}</p>
       </header>
-      <div class="travel-glance-detail">
-        <div class="travel-glance-info">
-          <dl class="travel-glance-facts">
-            <div><dt>Map query</dt><dd>${escapeHtml(place.query)}</dd></div>
-            ${place.sourceName || place.sourceFile ? `<div><dt>Source</dt><dd>${escapeHtml(place.sourceName ?? place.sourceFile ?? "")}</dd></div>` : ""}
-            ${place.region ? `<div><dt>Region</dt><dd>${escapeHtml(place.region)}</dd></div>` : ""}
-            ${
-              place.coordinates
-                ? `<div><dt>Coordinates</dt><dd>${escapeHtml(`${place.coordinates.lat}, ${place.coordinates.lon}`)}</dd></div>`
-                : ""
-            }
-          </dl>
-          ${renderEvidence(place.evidence)}
-          ${renderSourceLinks(place)}
-          ${renderEnrichFields(place)}
-        </div>
-        ${renderEmbeddedMap(place, `travel-glance-map-${place.id}`, "travel-inline-map--glance", false)}
+      <div class="travel-glance-flow" data-travel-glance-flow data-layout="pending" aria-busy="true">
+        <span class="travel-glance-sizer" aria-hidden="true"></span>
+        ${renderGlanceFacts(place)}
+        ${renderTravelEmbeds(place)}
+        ${renderEmbeddedMap(place, `travel-glance-map-${place.id}`, "travel-inline-map--glance travel-glance-flow-item travel-glance-flow-item--wide travel-glance-flow-item--map", false)}
+        ${renderEvidence(place.evidence)}
+        ${renderSourceLinks(place)}
+        ${renderEnrichFields(place)}
       </div>
-    </section>
+    </article>
   </template>
 `;
 
@@ -133,7 +134,7 @@ const renderTravelTags = (place: TravelPlace): string =>
 
 const renderEvidence = (items: TravelEvidence[]): string =>
   items.length > 0
-    ? `<dl class="travel-evidence">${items
+    ? `<dl class="travel-evidence travel-glance-flow-item">${items
         .map(
           (item) => `
             <div>
@@ -147,7 +148,7 @@ const renderEvidence = (items: TravelEvidence[]): string =>
 
 const renderSourceLinks = (place: TravelPlace): string =>
   place.sourceLinks.length > 0
-    ? `<div class="travel-source-links">${place.sourceLinks
+    ? `<div class="travel-source-links travel-glance-flow-item">${place.sourceLinks
         .slice(0, 4)
         .map(
           (link) =>
@@ -156,9 +157,27 @@ const renderSourceLinks = (place: TravelPlace): string =>
         .join("")}</div>`
     : "";
 
+const renderGlanceFacts = (place: TravelPlace): string => `
+  <dl class="travel-glance-facts travel-glance-flow-item">
+    <div><dt>Map query</dt><dd>${escapeHtml(place.query)}</dd></div>
+    ${place.sourceName || place.sourceFile ? `<div><dt>Source</dt><dd>${escapeHtml(place.sourceName ?? place.sourceFile ?? "")}</dd></div>` : ""}
+    ${place.region ? `<div><dt>Region</dt><dd>${escapeHtml(place.region)}</dd></div>` : ""}
+    ${
+      place.coordinates
+        ? `<div><dt>Coordinates</dt><dd>${escapeHtml(`${place.coordinates.lat}, ${place.coordinates.lon}`)}</dd></div>`
+        : ""
+    }
+  </dl>
+`;
+
+const renderTravelEmbeds = (place: TravelPlace): string =>
+  place.embedHtml
+    ? `<section class="travel-media-flow travel-glance-flow-item travel-glance-flow-item--wide rendered-html" aria-label="Embedded travel media">${place.embedHtml}</section>`
+    : "";
+
 const renderEnrichFields = (place: TravelPlace): string =>
   place.enrichFields.length > 0
-    ? `<div class="travel-enrich">
+    ? `<div class="travel-enrich travel-glance-flow-item">
         <span>Enrich contract</span>
         ${place.enrichFields.map((field) => `<code>${escapeHtml(field)}</code>`).join("")}
       </div>`

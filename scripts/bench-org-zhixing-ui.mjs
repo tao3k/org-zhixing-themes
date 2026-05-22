@@ -33,6 +33,7 @@ const budgets = {
   eagerCssLineBreak: false,
   eagerTanStackVirtual: false,
   eagerTravelVirtualList: false,
+  eagerMasonryLayout: false,
 };
 
 const indexHtml = await readFile(resolve(distRoot, "index.html"), "utf8");
@@ -73,10 +74,12 @@ const metrics = {
   eagerCssLineBreak: initialScriptsContainModule(/node_modules\/css-line-break/),
   eagerTanStackVirtual: initialScriptsContainModule(/node_modules\/@tanstack\/virtual-core/),
   eagerTravelVirtualList: initialScriptsContainModule(/src\/travelVirtualList\.ts/),
+  eagerMasonryLayout: initialScriptsContainModule(/node_modules\/masonry-layout/),
   dynamicTanStackChunk: [...assets.keys()].some((script) => /tanstack_virtual-core/.test(script)),
   dynamicTravelVirtualListChunk: [...assets.keys()].some((script) =>
     /travelVirtualList/.test(script),
   ),
+  dynamicMasonryChunk: [...assets.keys()].some((script) => /masonry-layout/.test(script)),
   staticManifestParse,
   travelProjectionRead,
 };
@@ -225,6 +228,11 @@ function evaluateBudgets(metrics, budgetConfig) {
       actual: metrics.eagerTravelVirtualList,
       budget: budgetConfig.eagerTravelVirtualList,
       pass: metrics.eagerTravelVirtualList === budgetConfig.eagerTravelVirtualList,
+    },
+    eagerMasonryLayout: {
+      actual: metrics.eagerMasonryLayout,
+      budget: budgetConfig.eagerMasonryLayout,
+      pass: metrics.eagerMasonryLayout === budgetConfig.eagerMasonryLayout,
     },
   };
 }

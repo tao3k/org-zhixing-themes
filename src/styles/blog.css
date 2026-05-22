@@ -1,0 +1,232 @@
+.blog-reader {
+  display: grid;
+  gap: 18px;
+}
+
+.blog-reader-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 16px 0 4px;
+}
+
+.blog-reader-bar h2 {
+  max-width: 760px;
+  margin: 0;
+  color: #101820;
+  font-size: clamp(1.5rem, 3vw, 2.45rem);
+  line-height: 1.12;
+}
+
+.blog-reader-bar p:not(.eyebrow) {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: #596779;
+  line-height: 1.62;
+}
+
+.reader-mode-button {
+  flex: 0 0 auto;
+  border: 1px solid #cfd8e4;
+  border-radius: 8px;
+  padding: 9px 13px;
+  color: #172026;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 850;
+  box-shadow: 0 8px 22px rgb(22 33 49 / 7%);
+}
+
+.reader-mode-button:hover {
+  border-color: #9eb0c5;
+}
+
+.blog-reader-layout {
+  display: grid;
+  grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.article-switcher {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 0 6px;
+  scrollbar-width: thin;
+}
+
+.article-tab {
+  display: grid;
+  gap: 3px;
+  flex: 0 0 min(280px, 76vw);
+  min-width: 0;
+  border: 1px solid #d5dee9;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #273544;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.article-tab:hover,
+.article-tab.active {
+  border-color: #2b6f9f;
+  background: #f6fbff;
+}
+
+.article-tab span {
+  color: #687789;
+  font-size: 0.66rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.article-tab strong {
+  overflow: hidden;
+  color: #101820;
+  font-size: 0.84rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blog-toc {
+  position: sticky;
+  top: 84px;
+  display: grid;
+  gap: 10px;
+  max-height: calc(100vh - 110px);
+  overflow: auto;
+  border-left: 2px solid #dce4ee;
+  padding-left: 14px;
+}
+
+.blog-toc-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #596779;
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.blog-toc-summary strong {
+  color: #172026;
+  font-size: 0.9rem;
+}
+
+.blog-toc ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.blog-toc li {
+  padding-left: calc((var(--toc-depth, 1) - 1) * 10px);
+}
+
+.blog-toc .toc-level-3,
+.blog-toc .toc-level-4,
+.blog-toc .toc-level-5,
+.blog-toc .toc-level-6 {
+  --toc-depth: 2;
+}
+
+.blog-toc a {
+  display: grid;
+  gap: 5px;
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #415064;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.blog-toc a > span:first-child {
+  min-width: 0;
+}
+
+.toc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.toc-tags em {
+  border-radius: 999px;
+  padding: 2px 6px;
+  color: #5e4508;
+  background: #fff2cc;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 820;
+}
+
+.blog-toc a:hover {
+  color: #172026;
+  background: #f2f6fb;
+}
+
+.blog-toc-empty {
+  padding: 12px;
+  font-size: 0.82rem;
+}
+
+.blog-article,
+.blog-article-empty {
+  min-width: 0;
+}
+
+.blog-reader:not(.is-zen) .blog-article {
+  max-width: none;
+  border: 1px solid #dce4ee;
+  border-radius: 8px;
+  padding: 36px clamp(22px, 5vw, 58px) 54px;
+  background: #ffffff;
+  box-shadow: 0 18px 46px rgb(22 33 49 / 8%);
+}
+
+.zen-toolbar {
+  display: none;
+}
+
+.blog-reader.is-zen .blog-reader-bar,
+.blog-reader.is-zen .article-switcher,
+.blog-reader.is-zen .blog-toc {
+  display: none;
+}
+
+.blog-reader.is-zen .blog-reader-layout {
+  display: block;
+}
+
+.blog-reader.is-zen .zen-toolbar {
+  position: sticky;
+  z-index: 2;
+  top: 72px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  width: min(760px, calc(100% - 28px));
+  margin: 0 auto -8px;
+  padding: 10px 0;
+  color: #6a7787;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.blog-reader.is-zen .blog-article {
+  width: min(760px, calc(100% - 28px));
+  max-width: none;
+  margin: 0 auto;
+  padding: 58px 0 92px;
+}

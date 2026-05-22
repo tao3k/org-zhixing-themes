@@ -1,10 +1,7 @@
 import type { OrgizeMemoryRecordDto, OrgizeViewIndexRecordDto } from "orgize/dto";
-import { rewriteAttachmentLinks } from "./attachmentHtmlRewrite";
-import { applyHtmlEmbedPolicy } from "./htmlEmbedPolicy";
 import { type OrgizeDocumentView } from "./model";
+import { renderedOrgSections, type RenderedOrgSection } from "./orgRenderedSections";
 import {
-  augmentOrgHtmlMetadata,
-  matchHeadingRecord,
   normalizeDisplayText,
   sectionRecords,
   sectionTitle,
@@ -18,11 +15,7 @@ export type OrgRecordRenderContext = {
   sourceFile?: string;
 };
 
-export type RenderedOrgRecord = {
-  bodyHtml: string;
-  rangeStart: number;
-  title: string;
-};
+export type RenderedOrgRecord = RenderedOrgSection;
 
 export type OrgRecordRenderer = {
   rendered: ReadonlyMap<number, RenderedOrgRecord>;
@@ -116,38 +109,7 @@ export const orgRecordDisplayTitle = (
 
 export const renderedOrgRecords = (
   context: OrgRecordRenderContext,
-): ReadonlyMap<number, RenderedOrgRecord> => {
-  if (!context.articleHtml || typeof DOMParser === "undefined") {
-    return new Map();
-  }
-
-  const parser = new DOMParser();
-  const parsed = parser.parseFromString(context.articleHtml, "text/html");
-  const root = parsed.querySelector("main") ?? parsed.body;
-  const records = sectionRecords(context.document);
-  const used = new Set<SectionRecord>();
-  const rendered = new Map<number, RenderedOrgRecord>();
-
-  for (const heading of root.querySelectorAll<HTMLHeadingElement>("h1,h2,h3,h4,h5,h6")) {
-    const record = matchHeadingRecord(heading, records, used);
-    if (!record) {
-      continue;
-    }
-    used.add(record);
-    const section = cloneSection(heading, parsed);
-    rewriteAttachmentLinks(section, context.document, context.sourceFile);
-    applyHtmlEmbedPolicy(section);
-    augmentOrgHtmlMetadata(section, context.document);
-    section.querySelector("h1,h2,h3,h4,h5,h6")?.remove();
-    rendered.set(record.source.rangeStart, {
-      bodyHtml: section.innerHTML.trim(),
-      rangeStart: record.source.rangeStart,
-      title: sectionTitle(record),
-    });
-  }
-
-  return rendered;
-};
+): ReadonlyMap<number, RenderedOrgRecord> => renderedOrgSections(context);
 
 const renderOrgRecordCard = (
   record: OrgizeViewIndexRecordDto,
@@ -227,18 +189,6 @@ const recordOutlineText = (
   return orgTitleText(record.outline || record.title);
 };
 
-const cloneSection = (heading: HTMLHeadingElement, parsed: Document): HTMLElement => {
-  const container = parsed.createElement("div");
-  const level = headingLevel(heading);
-  container.append(heading.cloneNode(true));
-  let next = heading.nextElementSibling;
-  while (next && !(isHeading(next) && headingLevel(next) <= level)) {
-    container.append(next.cloneNode(true));
-    next = next.nextElementSibling;
-  }
-  return container;
-};
-
 const renderProperties = (record: OrgRecordLike): string => {
   const visible = record.properties.slice(0, 4);
   if (visible.length === 0) {
@@ -292,10 +242,6 @@ const orgTitleText = (value: string): string =>
   normalizeDisplayText(
     value.replace(/\[\[([^\]]+)\]\[([^\]]+)\]\]/g, "$2").replace(/\[\[([^\]]+)\]\]/g, "$1"),
   );
-
-const isHeading = (element: Element): boolean => /^H[1-6]$/.test(element.tagName);
-
-const headingLevel = (element: Element): number => Number(element.tagName.replace("H", "")) || 1;
 
 const escapeHtml = (value: string | number): string =>
   String(value)

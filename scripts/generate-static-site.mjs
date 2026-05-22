@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Window } from "happy-dom";
 import init, { Org } from "orgize";
 import { parse } from "smol-toml";
 
@@ -14,6 +15,14 @@ const outputPath = resolve(outputRoot, "static-site.json");
 const sourceShardPublicDir = "org-zhixing.sources";
 const sourceShardRoot = resolve(outputRoot, sourceShardPublicDir);
 const configPath = "org-zhixing.toml";
+const htmlWindow = new Window({
+  settings: {
+    navigation: {
+      disableChildFrameNavigation: true,
+      disableFallbackToSetURL: true,
+    },
+  },
+});
 
 const main = async () => {
   const configText = await readFile(resolve(publicRoot, configPath), "utf8");
@@ -214,6 +223,10 @@ const projectTravelView = (sources) => {
 const projectTravelSource = (source) => {
   let currentRegion = null;
   const places = [];
+  const embedHtmlByRangeStart = travelEmbedHtmlByRangeStart(
+    source.html,
+    source.sectionIndex.records,
+  );
   for (const record of source.sectionIndex.records.filter(isTravelCandidate)) {
     const title = sectionTitle(record);
     if (!title) {
@@ -223,12 +236,12 @@ const projectTravelSource = (source) => {
     if (headingRegion) {
       currentRegion = headingRegion;
     }
-    places.push(createTravelPlace(record, currentRegion, source));
+    places.push(createTravelPlace(record, currentRegion, source, embedHtmlByRangeStart));
   }
   return places;
 };
 
-const createTravelPlace = (record, currentRegion, source) => {
+const createTravelPlace = (record, currentRegion, source, embedHtmlByRangeStart) => {
   const title = sectionTitle(record);
   const headingRegion = regionFromHeading(title);
   const tags = [...new Set((record.effectiveTags ?? []).filter(Boolean))];
@@ -263,11 +276,141 @@ const createTravelPlace = (record, currentRegion, source) => {
     googleMapsUrl: googleMapsSearchUrl(query, placeId),
     googleMapsEmbedUrl: googleMapsEmbedUrl(query),
     sourceLinks: sourceLinksFromRecord(record),
+    embedHtml: embedHtmlByRangeStart.get(record.source.rangeStart) ?? "",
     evidence: evidenceFromRecord(record, coordinates, placeHints),
     enrichFields,
     needsEnrichment: enrichFields.length > 0,
   };
 };
+
+const travelEmbedHtmlByRangeStart = (html, records) => {
+  if (!html || records.length === 0) {
+    return new Map();
+  }
+  const document = htmlWindow.document.implementation.createHTMLDocument("");
+  document.body.innerHTML = html;
+  const root = document.querySelector("main") ?? document.body;
+  const used = new Set();
+  const rendered = new Map();
+  for (const heading of root.querySelectorAll("h1,h2,h3,h4,h5,h6")) {
+    const record = matchHeadingRecord(heading, records, used);
+    if (!record) {
+      continue;
+    }
+    used.add(record);
+    const section = cloneOwnHtmlSection(heading, document);
+    applyHtmlEmbedPolicy(section);
+    const embedHtml = extractEmbedHtml(section);
+    if (embedHtml) {
+      rendered.set(record.source.rangeStart, embedHtml);
+    }
+  }
+  return rendered;
+};
+
+const matchHeadingRecord = (heading, records, used) => {
+  const headingText = normalizeDisplayText(heading.textContent ?? "");
+  const level = headingLevel(heading);
+  const textMatched =
+    headingText.length > 0
+      ? (records.find(
+          (record) =>
+            !used.has(record) &&
+            normalizeDisplayText(sectionTitle(record)) === headingText &&
+            level >= Math.min(record.level, 6),
+        ) ??
+        records.find(
+          (record) =>
+            !used.has(record) && normalizeDisplayText(sectionTitle(record)) === headingText,
+        ))
+      : null;
+  return (
+    textMatched ??
+    records.find((record) => !used.has(record) && level >= Math.min(record.level, 6)) ??
+    null
+  );
+};
+
+const cloneOwnHtmlSection = (heading, document) => {
+  const container = document.createElement("div");
+  container.append(heading.cloneNode(true));
+  let next = heading.nextElementSibling;
+  while (next && !isHeading(next)) {
+    container.append(next.cloneNode(true));
+    next = next.nextElementSibling;
+  }
+  return container;
+};
+
+const applyHtmlEmbedPolicy = (root) => {
+  for (const frame of root.querySelectorAll("iframe")) {
+    const src = frame.getAttribute("src");
+    if (!src || !isAllowedIframeSrc(src)) {
+      frame.remove();
+      continue;
+    }
+    frame.setAttribute("loading", "lazy");
+    frame.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+    frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation");
+    if (!frame.getAttribute("title")) {
+      frame.setAttribute("title", iframeTitle(src));
+    }
+  }
+};
+
+const isAllowedIframeSrc = (src) => {
+  try {
+    const url = new URL(src);
+    if (url.protocol !== "https:") {
+      return false;
+    }
+    return isAllowedYouTubeEmbed(url) || isAllowedGoogleMapsEmbed(url);
+  } catch {
+    return false;
+  }
+};
+
+const isAllowedYouTubeEmbed = (url) =>
+  /(^|\.)youtube(?:-nocookie)?\.com$/.test(url.hostname) &&
+  /^\/embed\/[A-Za-z0-9_-]+$/.test(url.pathname);
+
+const isAllowedGoogleMapsEmbed = (url) =>
+  (url.hostname === "maps.google.com" && url.pathname === "/maps") ||
+  (url.hostname === "www.google.com" && url.pathname.startsWith("/maps/embed"));
+
+const iframeTitle = (src) => {
+  const url = new URL(src);
+  if (isAllowedYouTubeEmbed(url)) return "YouTube video";
+  if (isAllowedGoogleMapsEmbed(url)) return "Google Maps preview";
+  return "Embedded content";
+};
+
+const extractEmbedHtml = (root) => {
+  const embeds = [...root.querySelectorAll(".videoWrapper, iframe, video, audio")].filter(
+    (element) => !hasEmbedAncestor(element),
+  );
+  return embeds.map((element) => element.outerHTML).join("");
+};
+
+const hasEmbedAncestor = (element) => {
+  let parent = element.parentElement;
+  while (parent) {
+    if (
+      parent.classList.contains("videoWrapper") ||
+      parent.tagName === "IFRAME" ||
+      parent.tagName === "VIDEO" ||
+      parent.tagName === "AUDIO"
+    ) {
+      return true;
+    }
+    parent = parent.parentElement;
+  }
+  return false;
+};
+
+const isHeading = (element) => /^H[1-6]$/.test(element.tagName);
+
+const headingLevel = (element) => Number(element.tagName.replace(/^H/i, "")) || 1;
 
 const isTravelCandidate = (record) => {
   if ((record.effectiveTags ?? []).some((tag) => tag.toLowerCase() === "travel")) {

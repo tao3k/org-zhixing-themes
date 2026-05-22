@@ -44,6 +44,7 @@ export type TravelPlace = {
   googleMapsUrl: GoogleMapsUrl;
   googleMapsEmbedUrl: GoogleMapsUrl;
   sourceLinks: TravelSourceLink[];
+  embedHtml: string;
   evidence: TravelEvidence[];
   enrichFields: string[];
   needsEnrichment: boolean;
@@ -61,6 +62,7 @@ export type TravelView = {
 
 export type TravelSourceInput = {
   document?: OrgizeDocumentView | null;
+  embedHtmlByRangeStart?: ReadonlyMap<number, string>;
   records?: SectionRecord[];
   sourceFile?: string;
   sourceName?: string;
@@ -69,8 +71,9 @@ export type TravelSourceInput = {
 export const createTravelView = (
   document: OrgizeDocumentView | null,
   sourceFile?: string,
+  embedHtmlByRangeStart?: ReadonlyMap<number, string>,
 ): TravelView => {
-  return createTravelViewFromSources([{ document, sourceFile }], false);
+  return createTravelViewFromSources([{ document, embedHtmlByRangeStart, sourceFile }], false);
 };
 
 export const createTravelViewFromSources = (
@@ -100,6 +103,7 @@ export const buildGoogleMapsEmbedUrl = (query: string): GoogleMapsUrl => {
 
 const createTravelPlacesFromSource = ({
   document,
+  embedHtmlByRangeStart,
   records,
   sourceFile,
   sourceName,
@@ -121,7 +125,9 @@ const createTravelPlacesFromSource = ({
     if (headingRegion) {
       currentRegion = headingRegion;
     }
-    places.push(createTravelPlace(record, currentRegion, { sourceFile, sourceName }));
+    places.push(
+      createTravelPlace(record, currentRegion, { embedHtmlByRangeStart, sourceFile, sourceName }),
+    );
   }
 
   return places;
@@ -150,7 +156,11 @@ const summarizeTravelPlaces = (
 const createTravelPlace = (
   record: SectionRecord,
   currentRegion: string | null,
-  source: { sourceFile?: string; sourceName?: string },
+  source: {
+    embedHtmlByRangeStart?: ReadonlyMap<number, string>;
+    sourceFile?: string;
+    sourceName?: string;
+  },
 ): TravelPlace => {
   const title = sectionTitle(record);
   const headingRegion = regionFromHeading(title);
@@ -189,6 +199,7 @@ const createTravelPlace = (
     googleMapsUrl: buildGoogleMapsSearchUrl(query, placeId ?? undefined),
     googleMapsEmbedUrl: buildGoogleMapsEmbedUrl(query),
     sourceLinks: sourceLinksFromRecord(record),
+    embedHtml: source.embedHtmlByRangeStart?.get(record.source.rangeStart) ?? "",
     evidence,
     enrichFields,
     needsEnrichment: enrichFields.length > 0,

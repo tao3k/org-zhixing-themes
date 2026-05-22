@@ -1,0 +1,30 @@
+@media (max-width: 1280px) {
+  .agenda-program-header,
+  .agenda-program-layout,
+  .capture-header,
+  .capture-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-inspector {
+    position: static;
+  }
+}
+
+@media (max-width: 1050px) {
+  .agenda-program-switcher,
+  .agenda-metrics--program,
+  .agenda-rule-microscope,
+  .agenda-source-grid,
+  .agenda-row,
+  .trace-step-body dl,
+  .agenda-rule-microscope dl,
+  .agenda-source-grid dl,
+  .capture-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .agenda-row-evidence[open] {
+    grid-column: auto;
+  }
+}

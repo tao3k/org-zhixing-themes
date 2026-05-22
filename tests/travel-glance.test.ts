@@ -21,14 +21,23 @@ describe("Travel Zen Glance interactions", () => {
 
     dom.view.querySelector<HTMLElement>("[data-travel-card]")?.click();
 
-    const layer = await waitForElement(".travel-glance-layer");
+    const layer = await waitForElement('.travel-glance-layer[role="dialog"]');
     const backdrop = await waitForElement(".travel-glance-backdrop");
     expect(layer?.getAttribute("role")).toBe("dialog");
     expect(layer?.getAttribute("aria-modal")).toBe("true");
     expect(layer?.getAttribute("data-state")).toBe("open");
     expect(backdrop?.getAttribute("data-state")).toBe("open");
     expect(layer?.textContent).toContain("丽水站");
-    expect(layer?.querySelector("iframe")?.getAttribute("src")).toContain("maps.google.com/maps");
+    const flow = await waitForElement("[data-travel-glance-flow]");
+    await waitForLayout(flow);
+    expect(flow.getAttribute("data-layout")).not.toBe("pending");
+    expect(flow.getAttribute("aria-busy")).toBe("false");
+    expect(
+      layer?.querySelector('iframe[title="Google Maps preview for 丽水站"]')?.getAttribute("src"),
+    ).toContain("maps.google.com/maps");
+    expect(layer?.querySelector(".videoWrapper iframe")?.getAttribute("src")).toBe(
+      "https://www.youtube.com/embed/vb1-lHR7kRM",
+    );
 
     layer?.querySelector<HTMLButtonElement>("[data-travel-glance-close]")?.click();
     await waitForEmpty(".travel-glance-layer");
@@ -38,9 +47,19 @@ describe("Travel Zen Glance interactions", () => {
   });
 
   it("keeps the glance layer full-height while preserving the desktop width contract", () => {
-    const styles = readFileSync("src/styles.css", "utf8");
+    const styles = [
+      readFileSync("src/styles/travel.css", "utf8"),
+      readFileSync("src/styles/responsive.css", "utf8"),
+    ].join("\n");
+    const entryStyles = readFileSync("src/styles.css", "utf8");
     const positioner = cssBlock(styles, ".travel-glance-positioner");
     const layer = cssBlock(styles, ".travel-glance-layer");
+    const body = cssBlock(styles, ".travel-glance-body");
+    const flow = cssBlock(styles, ".travel-glance-flow");
+    const flowItem = cssBlock(styles, ".travel-glance-flow-item");
+    const glanceMap = cssBlock(styles, ".travel-inline-map--glance");
+    const mediaFlow = cssBlock(styles, ".travel-media-flow");
+    const enrichCode = cssBlock(styles, ".travel-tags span,\n.travel-enrich code");
     const mobileLayer = styles.slice(styles.lastIndexOf(".travel-glance-layer"));
 
     expect(positioner).toContain("align-items: stretch;");
@@ -50,8 +69,29 @@ describe("Travel Zen Glance interactions", () => {
     expect(layer).toContain("height: 100dvh;");
     expect(layer).toContain("max-height: 100dvh;");
     expect(layer).toContain("border-radius: 0;");
+    expect(body).toContain("overflow: auto;");
+    expect(flow).toContain("position: relative;");
+    expect(styles).toContain('.travel-glance-flow[data-layout="pending"]');
+    expect(styles).toContain("opacity: 0;");
+    expect(styles).toContain('.travel-glance-flow[data-layout="ready"] .travel-glance-flow-item');
+    expect(styles).toContain("width: calc(33.333% - 10px);");
+    expect(styles).toContain("width: calc(66.666% - 5px);");
+    expect(flowItem).toContain("break-inside: avoid;");
+    expect(flowItem).toContain("overflow: hidden;");
+    expect(flowItem).not.toContain("box-shadow:");
+    expect(flowItem).not.toContain("border:");
+    expect(glanceMap).toContain("border: 0;");
+    expect(glanceMap).toContain("border-radius: 0;");
+    expect(mediaFlow).not.toContain("border:");
+    expect(mediaFlow).not.toContain("box-shadow:");
+    expect(enrichCode).toContain("overflow-wrap: anywhere;");
+    expect(enrichCode).toContain("max-width: 100%;");
     expect(mobileLayer).toContain("max-width: calc(100vw - 20px);");
     expect(mobileLayer).toContain("padding: 0 10px;");
+    expect(styles).toContain(".travel-glance-flow");
+    expect(styles).toContain("width: 100%;");
+    expect(entryStyles).toContain('@import "./styles/travel.css";');
+    expect(entryStyles).toContain('@import "./styles/responsive.css";');
   });
 });
 
@@ -73,12 +113,20 @@ const mountTravelDom = (): AppDomNodes => {
           <iframe title="Google Maps preview for 丽水站" data-map-src="about:blank#maps.google.com/maps"></iframe>
         </div>
         <template data-travel-glance-template>
-          <section class="travel-glance-card">
+          <article class="travel-glance-article">
             <h3>丽水站</h3>
-            <div data-travel-map>
-              <iframe title="Google Maps preview for 丽水站" data-map-src="about:blank#maps.google.com/maps"></iframe>
+            <div class="travel-glance-flow" data-travel-glance-flow data-layout="pending" aria-busy="true">
+              <span class="travel-glance-sizer" aria-hidden="true"></span>
+              <section class="travel-media-flow travel-glance-flow-item travel-glance-flow-item--wide rendered-html">
+                <div class="videoWrapper mb-4">
+                  <iframe title="YouTube video" src="https://www.youtube.com/embed/vb1-lHR7kRM"></iframe>
+                </div>
+              </section>
+              <div class="travel-glance-flow-item" data-travel-map>
+                <iframe title="Google Maps preview for 丽水站" data-map-src="about:blank#maps.google.com/maps"></iframe>
+              </div>
             </div>
-          </section>
+          </article>
         </template>
       </article>
     </div>
@@ -114,4 +162,14 @@ const waitForEmpty = async (selector: string): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
   throw new Error(`Expected ${selector} to be unmounted`);
+};
+
+const waitForLayout = async (element: HTMLElement): Promise<void> => {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    if (element.dataset.layout !== "pending") {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  throw new Error("Expected travel glance layout to leave pending state");
 };
