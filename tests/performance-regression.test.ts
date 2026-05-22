@@ -90,31 +90,58 @@ describe("Org Zhixing performance regression gates", () => {
     expect(perfScript).toContain("idleInteractionChunkPrefetch: true");
   });
 
-  it("keeps static Agent memory and section indexes behind dedicated lazy shards", () => {
+  it("keeps static agenda, attachments, Agent memory, and section indexes behind dedicated lazy shards", () => {
     const app = readFileSync("src/app.ts", "utf8");
     const generator = readFileSync("scripts/generate-static-site.mjs", "utf8");
     const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
     const rspackConfig = readFileSync("rspack.config.mjs", "utf8");
     const staticSiteData = readFileSync("src/staticSiteData.ts", "utf8");
+    const staticSiteShards = readFileSync("src/staticSiteShards.ts", "utf8");
 
     expect(generator).toContain('const sourceMemoryShardPublicDir = "org-zhixing.memory";');
     expect(generator).toContain('const sourceSectionShardPublicDir = "org-zhixing.sections";');
+    expect(generator).toContain(
+      'const sourceAttachmentShardPublicDir = "org-zhixing.attachments";',
+    );
+    expect(generator).toContain('const sourceAgendaShardPublicDir = "org-zhixing.agenda";');
     expect(generator).toContain("sourceProjectionShard(source)");
-    expect(generator).toContain("const { memory, sectionIndex, ...projection } = source;");
+    expect(generator).toContain(
+      "const { agendaRange, agendaView, attachmentInventory, memory, sectionIndex, ...projection } =",
+    );
+    expect(generator).toContain("agendaShardPath: sourceAgendaShardPublicPath(source)");
+    expect(generator).toContain("attachmentShardPath: sourceAttachmentShardPublicPath(source)");
     expect(generator).toContain("memoryShardPath: sourceMemoryShardPublicPath(source)");
     expect(generator).toContain("sectionShardPath: sourceSectionShardPublicPath(source)");
+    expect(staticSiteData).toContain("loadStaticAgendaForSource");
+    expect(staticSiteData).toContain("loadStaticAttachmentInventoryForSource");
     expect(staticSiteData).toContain("loadStaticMemoryForSource");
     expect(staticSiteData).toContain("loadStaticSectionIndexForSource");
-    expect(staticSiteData).toContain("fetchStaticMemoryShard");
-    expect(staticSiteData).toContain("fetchStaticSectionShard");
+    expect(staticSiteData).toContain("loadCachedStaticAgendaShard");
+    expect(staticSiteData).toContain("loadCachedStaticAttachmentShard");
+    expect(staticSiteData).toContain("loadCachedStaticMemoryShard");
+    expect(staticSiteData).toContain("loadCachedStaticSectionShard");
+    expect(staticSiteShards).toContain("fetchStaticAgendaShard");
+    expect(staticSiteShards).toContain("fetchStaticAttachmentShard");
+    expect(staticSiteShards).toContain("fetchStaticMemoryShard");
+    expect(staticSiteShards).toContain("fetchStaticSectionShard");
+    expect(app).toContain("loadStaticAgendaForSource(this.#staticSite, this.#sourceItem)");
+    expect(app).toContain("loadStaticAttachmentInventoryForSource(");
     expect(app).toContain("loadStaticMemoryForSource(this.#staticSite, this.#sourceItem)");
-    expect(app).toContain("loadStaticSectionIndexForSource(this.#staticSite, this.#sourceItem)");
+    expect(app).toContain("loadStaticSectionIndexForSource(");
+    expect(rspackConfig).toContain("staticAgendaShardRoot");
+    expect(rspackConfig).toContain("staticAttachmentShardRoot");
     expect(rspackConfig).toContain("staticMemoryShardRoot");
     expect(rspackConfig).toContain("staticSectionShardRoot");
+    expect(rspackConfig).toContain("org-zhixing.agenda/[name][ext]");
+    expect(rspackConfig).toContain("org-zhixing.attachments/[name][ext]");
     expect(rspackConfig).toContain("org-zhixing.memory/[name][ext]");
     expect(rspackConfig).toContain("org-zhixing.sections/[name][ext]");
+    expect(perfScript).toContain("agendaShardBytes");
+    expect(perfScript).toContain("attachmentShardBytes");
     expect(perfScript).toContain("memoryShardBytes");
     expect(perfScript).toContain("sectionShardBytes");
+    expect(perfScript).toContain("static-agenda-shards");
+    expect(perfScript).toContain("static-attachment-shards");
     expect(perfScript).toContain("static-memory-shards");
     expect(perfScript).toContain("static-section-shards");
   });

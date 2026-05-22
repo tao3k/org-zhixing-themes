@@ -1131,19 +1131,26 @@ describe("Org source view projections", () => {
       mode: "classic",
     } as const;
     const leanStaticSource = structuredClone(staticSource);
+    delete leanStaticSource.agendaRange;
+    delete leanStaticSource.agendaView;
+    delete leanStaticSource.attachmentInventory;
     delete leanStaticSource.memory;
     delete leanStaticSource.sectionIndex;
 
-    const leanDocument = documentViewFromStaticSource(leanStaticSource, agenda);
+    const leanDocument = documentViewFromStaticSource(leanStaticSource, { agenda });
     expect(leanDocument.agentMemory).toBeNull();
+    expect(leanDocument.attachmentInventory).toBeNull();
+    expect(leanDocument.agendaView).toBeNull();
     expect(leanDocument.semanticSections).toHaveLength(0);
 
-    const document = documentViewFromStaticSource(
-      leanStaticSource,
+    const document = documentViewFromStaticSource(leanStaticSource, {
       agenda,
-      staticSource.memory,
-      staticSource.sectionIndex,
-    );
+      memory: staticSource.memory,
+      sectionIndex: staticSource.sectionIndex,
+      attachmentInventory: staticSource.attachmentInventory,
+      agendaView: staticSource.agendaView,
+      agendaRange: staticSource.agendaRange,
+    });
 
     expect(document.counts.attachments).toBe(1);
     expect(document.counts.memory).toBe(1);
@@ -1166,10 +1173,11 @@ describe("Org source view projections", () => {
     unavailable.id = "missing-image";
     unavailable.name = "Missing Image Source";
     unavailable.sourceFile = "blog/missing-image.org";
-    unavailable.attachmentInventory.display[0] = {
-      ...unavailable.attachmentInventory.display[0],
+    const unavailableDisplay = unavailable.attachmentInventory!.display;
+    unavailableDisplay[0] = {
+      ...unavailableDisplay[0],
       publicExists: false,
-    } as (typeof unavailable.attachmentInventory.display)[number] & { publicExists: boolean };
+    } as (typeof unavailableDisplay)[number] & { publicExists: boolean };
 
     const gallery = attachmentGalleryFromSources([available, unavailable]);
 

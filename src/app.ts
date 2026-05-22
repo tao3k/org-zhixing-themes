@@ -30,6 +30,7 @@ import { createCaptureApplyPreview } from "./captureApplyPreview";
 import { createAgentCaptureRequest } from "./captureModel";
 import {
   createDocumentView,
+  withAgendaView,
   withAgentMemory,
   withAttachmentInventory,
   withCapturePlan,
@@ -45,6 +46,8 @@ import { renderStats, renderView } from "./render";
 import {
   documentViewFromStaticSource,
   loadAllStaticSources,
+  loadStaticAgendaForSource,
+  loadStaticAttachmentInventoryForSource,
   loadStaticMemoryForSource,
   loadStaticSectionIndexForSource,
   loadStaticSourceFor,
@@ -250,7 +253,9 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     }
     if (staticSource && this.#siteConfig) {
       const startedAt = performance.now();
-      this.#documentView = documentViewFromStaticSource(staticSource, this.#siteConfig.agenda);
+      this.#documentView = documentViewFromStaticSource(staticSource, {
+        agenda: this.#siteConfig.agenda,
+      });
       this.#semanticSectionsReady = Boolean(staticSource.sectionIndex);
       this.#renderedHtml = staticSource.html;
       syncBlogArticleSelection(this.#documentView, this.#blog);
@@ -393,6 +398,28 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     const documentView = this.#documentView;
     this.#pendingMessage = "Projecting agenda intelligence...";
     this.#render();
+    if (this.#staticSite && this.#sourceItem) {
+      const startedAt = performance.now();
+      const agenda = await loadStaticAgendaForSource(this.#staticSite, this.#sourceItem);
+      if (version !== this.#documentVersion) {
+        return;
+      }
+      if (agenda) {
+        this.#timings = { ...this.#timings, agendaMs: performance.now() - startedAt };
+        this.#documentView = withAgendaView(
+          documentView,
+          agenda.agendaView,
+          agenda.agendaRange ?? this.#siteConfig.agenda,
+        );
+        this.#clearAgendaCache();
+        this.#pendingMessage = "";
+        return;
+      }
+      if (!this.#sourceOrg) {
+        this.#pendingMessage = "";
+        return;
+      }
+    }
     const agenda = await projectAgendaDocument(
       this.#session,
       documentView,
@@ -476,12 +503,40 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
   }
 
   async #refreshAttachmentInventoryIfNeeded(): Promise<void> {
-    if (!this.#documentView || this.#documentView.attachmentInventory || !this.#siteConfig) {
+    if (!this.#documentView || this.#documentView.attachmentInventory) {
       return;
     }
     const version = this.#documentVersion;
     this.#pendingMessage = "Projecting attachment gallery...";
     this.#render();
+    if (this.#staticSite && this.#sourceItem) {
+      const startedAt = performance.now();
+      const attachments = await loadStaticAttachmentInventoryForSource(
+        this.#staticSite,
+        this.#sourceItem,
+      );
+      if (version !== this.#documentVersion) {
+        return;
+      }
+      if (attachments) {
+        this.#timings = { ...this.#timings, attachmentMs: performance.now() - startedAt };
+        this.#documentView = withAttachmentInventory(this.#documentView, attachments);
+        this.#viewCache.delete("gallery");
+        this.#viewCache.delete("records");
+        this.#viewCache.delete("memory");
+        clearBlogCache(this.#viewCache);
+        this.#pendingMessage = "";
+        return;
+      }
+      if (!this.#sourceOrg) {
+        this.#pendingMessage = "";
+        return;
+      }
+    }
+    if (!this.#siteConfig) {
+      this.#pendingMessage = "";
+      return;
+    }
     const attachments = await this.#session.attachmentInventory({
       attachIdDir: this.#siteConfig.attachments.attachIdDir,
       checkVcs: this.#siteConfig.attachments.checkVcs,
@@ -508,7 +563,7 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     }
     this.#pendingMessage = "Loading static attachment gallery...";
     this.#render();
-    const sources = await this.#loadAllStaticSources();
+    const sources = await this.#loadAllStaticSources({ attachmentInventory: true });
     this.#siteAttachmentGallery = attachmentGalleryFromSources(sources);
     this.#viewCache.clear();
     this.#pendingMessage = "";
@@ -520,16 +575,19 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
     }
     this.#pendingMessage = "Loading static notes...";
     this.#render();
-    const sources = await this.#loadAllStaticSources({ sectionIndex: true });
+    const sources = await this.#loadAllStaticSources({
+      attachmentInventory: true,
+      sectionIndex: true,
+    });
     this.#siteNotes = siteNoteSources(sources, this.#siteConfig.agenda);
     this.#viewCache.clear();
     this.#pendingMessage = "";
   }
 
   async #loadAllStaticSources(
-    options: { sectionIndex?: boolean } = {},
+    options: { attachmentInventory?: boolean; sectionIndex?: boolean } = {},
   ): Promise<StaticSourceProjection[]> {
-    if (this.#staticSources && !options.sectionIndex) {
+    if (this.#staticSources && !options.attachmentInventory && !options.sectionIndex) {
       return this.#staticSources;
     }
     const sources = await loadAllStaticSources(this.#staticSite, options);

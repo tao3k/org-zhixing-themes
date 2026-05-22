@@ -45,8 +45,14 @@ The static generator owns:
 - writing =org-zhixing.static.json= as the compact entry manifest with
   =sourceFile= values such as =blog/travel.org=;
 - writing per-source projections under =org-zhixing.sources/*.json= so large
-  HTML, agenda, lint, and attachment DTOs can be loaded only when a view needs
-  them;
+  HTML, =viewIndex=, lint, and shard-path contracts can be loaded only when a
+  source-scoped view needs them;
+- writing agenda projections under =org-zhixing.agenda/*.json= so Agenda can
+  load planning intelligence without forcing Blog, Gallery, Notes, Memory, or
+  Travel to pay that JSON cost;
+- writing attachment projections under =org-zhixing.attachments/*.json= so
+  Gallery, Notes, Memory, and Zen article link rewriting can opt into attachment
+  metadata without forcing source-scoped Blog or Agenda to pay that JSON cost;
 - writing Agent memory projections under =org-zhixing.memory/*.json= so Memory
   can load historical decision context without forcing Blog, Gallery, Notes,
   or Travel to pay that JSON cost;

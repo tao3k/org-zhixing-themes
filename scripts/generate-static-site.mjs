@@ -18,6 +18,10 @@ const sourceMemoryShardPublicDir = "org-zhixing.memory";
 const sourceMemoryShardRoot = resolve(outputRoot, sourceMemoryShardPublicDir);
 const sourceSectionShardPublicDir = "org-zhixing.sections";
 const sourceSectionShardRoot = resolve(outputRoot, sourceSectionShardPublicDir);
+const sourceAttachmentShardPublicDir = "org-zhixing.attachments";
+const sourceAttachmentShardRoot = resolve(outputRoot, sourceAttachmentShardPublicDir);
+const sourceAgendaShardPublicDir = "org-zhixing.agenda";
+const sourceAgendaShardRoot = resolve(outputRoot, sourceAgendaShardPublicDir);
 const configPath = "org-zhixing.toml";
 const htmlWindow = new Window({
   settings: {
@@ -95,9 +99,13 @@ const writeSourceShards = async (sources) => {
   await rm(sourceShardRoot, { recursive: true, force: true });
   await rm(sourceMemoryShardRoot, { recursive: true, force: true });
   await rm(sourceSectionShardRoot, { recursive: true, force: true });
+  await rm(sourceAttachmentShardRoot, { recursive: true, force: true });
+  await rm(sourceAgendaShardRoot, { recursive: true, force: true });
   await mkdir(sourceShardRoot, { recursive: true });
   await mkdir(sourceMemoryShardRoot, { recursive: true });
   await mkdir(sourceSectionShardRoot, { recursive: true });
+  await mkdir(sourceAttachmentShardRoot, { recursive: true });
+  await mkdir(sourceAgendaShardRoot, { recursive: true });
   await Promise.all(
     sources.flatMap((source) => [
       writeFile(
@@ -115,6 +123,16 @@ const writeSourceShards = async (sources) => {
         `${JSON.stringify(sourceSectionShard(source))}\n`,
         "utf8",
       ),
+      writeFile(
+        sourceAttachmentShardPath(source),
+        `${JSON.stringify(sourceAttachmentShard(source))}\n`,
+        "utf8",
+      ),
+      writeFile(
+        sourceAgendaShardPath(source),
+        `${JSON.stringify(sourceAgendaShard(source))}\n`,
+        "utf8",
+      ),
     ]),
   );
 };
@@ -127,8 +145,10 @@ const sourceSummary = (source) => ({
   sourceFile: source.sourceFile,
   sourceBytes: source.sourceBytes,
   shardPath: joinPath(sourceShardPublicDir, `${safeShardId(source.id)}.json`),
+  agendaShardPath: sourceAgendaShardPublicPath(source),
   memoryShardPath: sourceMemoryShardPublicPath(source),
   sectionShardPath: sourceSectionShardPublicPath(source),
+  attachmentShardPath: sourceAttachmentShardPublicPath(source),
 });
 
 const sourceShardPath = (source) => resolve(sourceShardRoot, `${safeShardId(source.id)}.json`);
@@ -136,16 +156,27 @@ const sourceMemoryShardPath = (source) =>
   resolve(sourceMemoryShardRoot, `${safeShardId(source.id)}.json`);
 const sourceSectionShardPath = (source) =>
   resolve(sourceSectionShardRoot, `${safeShardId(source.id)}.json`);
+const sourceAttachmentShardPath = (source) =>
+  resolve(sourceAttachmentShardRoot, `${safeShardId(source.id)}.json`);
+const sourceAgendaShardPath = (source) =>
+  resolve(sourceAgendaShardRoot, `${safeShardId(source.id)}.json`);
 
 const sourceMemoryShardPublicPath = (source) =>
   joinPath(sourceMemoryShardPublicDir, `${safeShardId(source.id)}.json`);
 const sourceSectionShardPublicPath = (source) =>
   joinPath(sourceSectionShardPublicDir, `${safeShardId(source.id)}.json`);
+const sourceAttachmentShardPublicPath = (source) =>
+  joinPath(sourceAttachmentShardPublicDir, `${safeShardId(source.id)}.json`);
+const sourceAgendaShardPublicPath = (source) =>
+  joinPath(sourceAgendaShardPublicDir, `${safeShardId(source.id)}.json`);
 
 const sourceProjectionShard = (source) => {
-  const { memory, sectionIndex, ...projection } = source;
+  const { agendaRange, agendaView, attachmentInventory, memory, sectionIndex, ...projection } =
+    source;
   return {
     ...projection,
+    agendaShardPath: sourceAgendaShardPublicPath(source),
+    attachmentShardPath: sourceAttachmentShardPublicPath(source),
     memoryShardPath: sourceMemoryShardPublicPath(source),
     sectionShardPath: sourceSectionShardPublicPath(source),
   };
@@ -163,6 +194,21 @@ const sourceSectionShard = (source) => ({
   sourceId: source.id,
   sourceFile: source.sourceFile,
   sectionIndex: source.sectionIndex,
+});
+
+const sourceAttachmentShard = (source) => ({
+  schemaVersion: 1,
+  sourceId: source.id,
+  sourceFile: source.sourceFile,
+  attachmentInventory: source.attachmentInventory,
+});
+
+const sourceAgendaShard = (source) => ({
+  schemaVersion: 1,
+  sourceId: source.id,
+  sourceFile: source.sourceFile,
+  agendaRange: source.agendaRange,
+  agendaView: source.agendaView,
 });
 
 const safeShardId = (value) =>

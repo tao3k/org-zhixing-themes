@@ -10,6 +10,11 @@ const staticManifestPath = resolve(projectRoot, ".cache/org-zhixing/static-site.
 const staticSourceShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.sources");
 const staticMemoryShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.memory");
 const staticSectionShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.sections");
+const staticAttachmentShardRoot = resolve(
+  projectRoot,
+  ".cache/org-zhixing/org-zhixing.attachments",
+);
+const staticAgendaShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.agenda");
 const orgizePackageWatchFiles = existsSync(orgizePackageRoot)
   ? [
       resolve(orgizePackageRoot, "worker.js"),
@@ -100,6 +105,22 @@ export default (_env, argv) => {
                 {
                   from: resolve(staticSectionShardRoot, "*.json"),
                   to: "org-zhixing.sections/[name][ext]",
+                },
+              ]
+            : []),
+          ...(existsSync(staticAttachmentShardRoot)
+            ? [
+                {
+                  from: resolve(staticAttachmentShardRoot, "*.json"),
+                  to: "org-zhixing.attachments/[name][ext]",
+                },
+              ]
+            : []),
+          ...(existsSync(staticAgendaShardRoot)
+            ? [
+                {
+                  from: resolve(staticAgendaShardRoot, "*.json"),
+                  to: "org-zhixing.agenda/[name][ext]",
                 },
               ]
             : []),

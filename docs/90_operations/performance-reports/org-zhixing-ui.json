@@ -7,6 +7,8 @@
   "budgets": {
     "staticManifestBytes": 500000,
     "sourceShardBytes": 2000000,
+    "agendaShardBytes": 1000000,
+    "attachmentShardBytes": 1000000,
     "memoryShardBytes": 1000000,
     "sectionShardBytes": 1000000,
     "largestSourceShardBytes": 800000,
@@ -30,9 +32,17 @@
     "idleInteractionChunkPrefetch": true
   },
   "metrics": {
-    "staticManifestBytes": 65427,
-    "sourceShardBytes": 315983,
+    "staticManifestBytes": 66457,
+    "sourceShardBytes": 65704,
     "sourceShardCount": 8,
+    "agendaShardBytes": 79188,
+    "agendaShardCount": 8,
+    "largestAgendaShardBytes": 21440,
+    "largestAgendaShard": "org-zhixing.agenda/org-zhixing-demo.json",
+    "attachmentShardBytes": 173541,
+    "attachmentShardCount": 8,
+    "largestAttachmentShardBytes": 107275,
+    "largestAttachmentShard": "org-zhixing.attachments/wallpaper-gallery.json",
     "memoryShardBytes": 517761,
     "memoryShardCount": 8,
     "largestMemoryShardBytes": 155469,
@@ -41,62 +51,75 @@
     "sectionShardCount": 8,
     "largestSectionShardBytes": 133648,
     "largestSectionShard": "org-zhixing.sections/wallpaper-gallery.json",
-    "largestSourceShardBytes": 118557,
-    "largestSourceShard": "org-zhixing.sources/wallpaper-gallery.json",
+    "largestSourceShardBytes": 13300,
+    "largestSourceShard": "org-zhixing.sources/org-syntax-atlas.json",
     "largestSourceShardFields": [
       {
-        "field": "attachmentInventory",
-        "bytes": 107159
+        "field": "viewIndex",
+        "bytes": 7489
       },
       {
         "field": "html",
-        "bytes": 7527
-      },
-      {
-        "field": "agendaView",
-        "bytes": 2070
-      },
-      {
-        "field": "viewIndex",
-        "bytes": 1238
-      },
-      {
-        "field": "agendaRange",
-        "bytes": 152
-      },
-      {
-        "field": "sectionShardPath",
-        "bytes": 45
-      },
-      {
-        "field": "memoryShardPath",
-        "bytes": 43
+        "bytes": 5113
       },
       {
         "field": "lint",
-        "bytes": 33
+        "bytes": 241
+      },
+      {
+        "field": "attachmentShardPath",
+        "bytes": 47
+      },
+      {
+        "field": "sectionShardPath",
+        "bytes": 44
+      },
+      {
+        "field": "agendaShardPath",
+        "bytes": 42
+      },
+      {
+        "field": "memoryShardPath",
+        "bytes": 42
       },
       {
         "field": "sourceFile",
-        "bytes": 28
+        "bytes": 27
       },
       {
         "field": "file",
-        "bytes": 23
+        "bytes": 22
+      },
+      {
+        "field": "id",
+        "bytes": 18
       }
     ],
     "sourceShardFieldBytes": {
-      "attachmentInventory": 172647,
-      "agendaView": 77030,
       "html": 31913,
       "viewIndex": 29398,
-      "agendaRange": 1216,
       "lint": 812,
+      "attachmentShardPath": 367,
       "sectionShardPath": 343,
+      "agendaShardPath": 327,
       "memoryShardPath": 327,
       "sourceFile": 207,
-      "file": 136,
-      "orgTitle": 34
+      "file": 167,
+      "id": 78,
+      "orgTitle": 74
+    },
+    "agendaShardFieldBytes": {
+      "agendaView": 77030,
+      "agendaRange": 1216,
+      "sourceFile": 207,
+      "sourceId": 135,
+      "schemaVersion": 8
+    },
+    "attachmentShardFieldBytes": {
+      "attachmentInventory": 172647,
+      "sourceFile": 207,
+      "sourceId": 135,
+      "schemaVersion": 8
     },
     "memoryShardFieldBytes": {
       "memory": 516971,
@@ -110,12 +133,12 @@
       "sourceId": 135,
       "schemaVersion": 8
     },
-    "initialScriptBytes": 959150,
+    "initialScriptBytes": 978160,
     "initialScriptCount": 3,
     "initialScripts": [
       "assets/runtime.545635b2.js",
       "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.e54c37ed.js"
+      "assets/app.a15d2e93.js"
     ],
     "parserWorkerScriptBytes": 119867,
     "wasmAssetBytes": 2158753,
@@ -182,9 +205,9 @@
     "staticManifestParse": {
       "name": "staticManifestParse",
       "minMs": 0.13,
-      "p50Ms": 0.13,
-      "p95Ms": 0.14,
-      "maxMs": 0.38,
+      "p50Ms": 0.14,
+      "p95Ms": 0.16,
+      "maxMs": 0.39,
       "avgMs": 0.14
     },
     "travelProjectionRead": {
@@ -192,19 +215,29 @@
       "minMs": 0,
       "p50Ms": 0,
       "p95Ms": 0,
-      "maxMs": 0.01,
+      "maxMs": 0,
       "avgMs": 0
     }
   },
   "budgetResults": {
     "staticManifestBytes": {
-      "actual": 65427,
+      "actual": 66457,
       "budget": 500000,
       "pass": true
     },
     "sourceShardBytes": {
-      "actual": 315983,
+      "actual": 65704,
       "budget": 2000000,
+      "pass": true
+    },
+    "agendaShardBytes": {
+      "actual": 79188,
+      "budget": 1000000,
+      "pass": true
+    },
+    "attachmentShardBytes": {
+      "actual": 173541,
+      "budget": 1000000,
       "pass": true
     },
     "memoryShardBytes": {
@@ -218,12 +251,12 @@
       "pass": true
     },
     "largestSourceShardBytes": {
-      "actual": 118557,
+      "actual": 13300,
       "budget": 800000,
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 959150,
+      "actual": 978160,
       "budget": 1500000,
       "pass": true
     },
@@ -233,12 +266,12 @@
       "pass": true
     },
     "staticManifestParseP50Ms": {
-      "actual": 0.13,
+      "actual": 0.14,
       "budget": 15,
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.14,
+      "actual": 0.16,
       "budget": 80,
       "pass": true
     },
@@ -316,7 +349,7 @@
   "recommendations": [
     {
       "area": "static-manifest-shards",
-      "signal": "entry manifest is 64 KiB; 8 source shards are 309 KiB",
+      "signal": "entry manifest is 65 KiB; 8 source shards are 64 KiB",
       "action": "Keep site-wide Gallery and Travel on compact projections; load full source shards only for source-scoped or Records views."
     },
     {
@@ -325,14 +358,19 @@
       "action": "Keep Memory view on the dedicated shard path; do not merge memory back into source shards for Blog, Gallery, Records, or Travel."
     },
     {
+      "area": "static-agenda-shards",
+      "signal": "8 agenda shards are 77 KiB and source shards contain no agendaView field",
+      "action": "Keep Agenda on the agenda-shard path while preserving lighter source shards for Blog, Records, and static article reads."
+    },
+    {
       "area": "static-section-shards",
       "signal": "8 section shards are 448 KiB and source shards contain no sectionIndex field",
       "action": "Keep Records, Memory, and Zen article rendering on the section-shard path while preserving lighter source shards for other views."
     },
     {
-      "area": "attachment-inventory-shard-split",
-      "signal": "attachmentInventory accounts for 169 KiB of 309 KiB source shards",
-      "action": "Consider splitting attachmentInventory next if source-scoped Blog or Agenda should load without gallery metadata."
+      "area": "static-attachment-shards",
+      "signal": "8 attachment shards are 169 KiB and source shards contain no attachmentInventory field",
+      "action": "Keep Gallery, Notes, Memory, and Zen link rewriting on the attachment-shard path while preserving lighter source shards for other views."
     },
     {
       "area": "parser-worker-startup",

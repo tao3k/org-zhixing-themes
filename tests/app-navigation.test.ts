@@ -241,6 +241,9 @@ describe("Org Zhixing navigator", () => {
         "/org-zhixing.sources/wallpaper-gallery.json",
         "/org-zhixing.sources/demo.json",
         "/org-zhixing.sources/travel.json",
+        "/org-zhixing.attachments/wallpaper-gallery.json",
+        "/org-zhixing.attachments/demo.json",
+        "/org-zhixing.attachments/travel.json",
         "/org-zhixing.sections/wallpaper-gallery.json",
         "/org-zhixing.sections/demo.json",
         "/org-zhixing.sections/travel.json",
@@ -312,6 +315,29 @@ const fetchShardedStaticFixture = () => {
       },
     ]),
   );
+  const attachmentShards = new Map(
+    sources.map((source) => [
+      `/org-zhixing.attachments/${source.id}.json`,
+      {
+        schemaVersion: 1,
+        sourceId: source.id,
+        sourceFile: source.sourceFile,
+        attachmentInventory: source.attachmentInventory,
+      },
+    ]),
+  );
+  const agendaShards = new Map(
+    sources.map((source) => [
+      `/org-zhixing.agenda/${source.id}.json`,
+      {
+        schemaVersion: 1,
+        sourceId: source.id,
+        sourceFile: source.sourceFile,
+        agendaRange: source.agendaRange,
+        agendaView: source.agendaView,
+      },
+    ]),
+  );
   return async (input: RequestInfo | URL) => {
     const url = input instanceof URL ? input : new URL(String(input), window.location.href);
     if (url.pathname.endsWith("/org-zhixing.toml")) {
@@ -331,6 +357,14 @@ const fetchShardedStaticFixture = () => {
     const sectionShard = sectionShards.get(url.pathname);
     if (sectionShard) {
       return jsonResponse(sectionShard);
+    }
+    const attachmentShard = attachmentShards.get(url.pathname);
+    if (attachmentShard) {
+      return jsonResponse(attachmentShard);
+    }
+    const agendaShard = agendaShards.get(url.pathname);
+    if (agendaShard) {
+      return jsonResponse(agendaShard);
     }
     return new Response("not found", { status: 404 });
   };
@@ -389,6 +423,8 @@ const shardedStaticSiteFixture = (sources: StaticSourceProjection[]): StaticSite
     sourceFile: source.sourceFile,
     sourceBytes: source.sourceBytes,
     shardPath: `org-zhixing.sources/${source.id}.json`,
+    agendaShardPath: `org-zhixing.agenda/${source.id}.json`,
+    attachmentShardPath: `org-zhixing.attachments/${source.id}.json`,
     memoryShardPath: `org-zhixing.memory/${source.id}.json`,
     sectionShardPath: `org-zhixing.sections/${source.id}.json`,
   })),
@@ -396,8 +432,13 @@ const shardedStaticSiteFixture = (sources: StaticSourceProjection[]): StaticSite
 
 const sourceShardFixture = (source: StaticSourceProjection): StaticSourceProjection => {
   const projection = structuredClone(source);
+  delete projection.agendaRange;
+  delete projection.agendaView;
+  delete projection.attachmentInventory;
   delete projection.memory;
   delete projection.sectionIndex;
+  projection.agendaShardPath = `org-zhixing.agenda/${source.id}.json`;
+  projection.attachmentShardPath = `org-zhixing.attachments/${source.id}.json`;
   projection.memoryShardPath = `org-zhixing.memory/${source.id}.json`;
   projection.sectionShardPath = `org-zhixing.sections/${source.id}.json`;
   return projection;
@@ -433,10 +474,10 @@ const travelProjection = (): StaticSourceProjection => {
       title: "丽水站",
     }),
   ];
-  projection.attachmentInventory.entries = [];
-  projection.attachmentInventory.display = [];
-  projection.agendaView.cards = [];
-  projection.agendaView.totalCandidates = 0;
+  projection.attachmentInventory!.entries = [];
+  projection.attachmentInventory!.display = [];
+  projection.agendaView!.cards = [];
+  projection.agendaView!.totalCandidates = 0;
   projection.memory!.stats.totalRecords = 0;
   projection.memory!.stats.currentRecords = 0;
   projection.memory!.records = [];
@@ -455,17 +496,17 @@ const demoProjection = (): StaticSourceProjection => {
   projection.sectionIndex!.records[0].titleText = "Demo Source";
   projection.sectionIndex!.records[0].outlinePath = ["Demo Source"];
   projection.sectionIndex!.records[0].outlinePathText = ["Demo Source"];
-  projection.attachmentInventory.entries[0].sectionTitle = "Demo Source";
-  projection.attachmentInventory.display[0].sectionTitle = "Demo Source";
-  projection.attachmentInventory.display[0].sectionTitleText = "Demo Source";
-  projection.attachmentInventory.entries.push({
-    ...projection.attachmentInventory.entries[0],
+  projection.attachmentInventory!.entries[0].sectionTitle = "Demo Source";
+  projection.attachmentInventory!.display[0].sectionTitle = "Demo Source";
+  projection.attachmentInventory!.display[0].sectionTitleText = "Demo Source";
+  projection.attachmentInventory!.entries.push({
+    ...projection.attachmentInventory!.entries[0],
     path: "demo.pdf",
     absolutePath: "/tmp/demo.pdf",
     kind: { label: "link", link: { path: "demo.pdf" } },
   });
-  projection.attachmentInventory.display.push({
-    ...projection.attachmentInventory.display[0],
+  projection.attachmentInventory!.display.push({
+    ...projection.attachmentInventory!.display[0],
     sectionTitle: "Demo PDF",
     sectionTitleText: "Demo PDF",
     linkPath: "demo.pdf",
@@ -521,10 +562,10 @@ const blogProjection = (): StaticSourceProjection => {
       title: "Second Article",
     }),
   ];
-  projection.attachmentInventory.entries = [];
-  projection.attachmentInventory.display = [];
-  projection.agendaView.cards = [];
-  projection.agendaView.totalCandidates = 0;
+  projection.attachmentInventory!.entries = [];
+  projection.attachmentInventory!.display = [];
+  projection.agendaView!.cards = [];
+  projection.agendaView!.totalCandidates = 0;
   projection.memory!.stats.totalRecords = 0;
   projection.memory!.stats.currentRecords = 0;
   projection.memory!.records = [];

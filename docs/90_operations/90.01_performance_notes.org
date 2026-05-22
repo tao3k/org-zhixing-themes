@@ -120,38 +120,39 @@ indexing path for the first screen.  The same 100x fixture currently measures
 ms.
 
 The current UI performance receipt shows the entry manifest at about 64 KiB,
-with eight source shards totaling about 309 KiB, eight lazy memory shards
-totaling about 506 KiB, and eight lazy section shards totaling about 448 KiB.
-Initial scripts are about 937 KiB across three files,
+with eight source shards totaling about 64 KiB, eight lazy agenda shards
+totaling about 77 KiB, eight lazy attachment shards totaling about 169 KiB,
+eight lazy memory shards totaling about 506 KiB, and eight lazy section shards
+totaling about 448 KiB.  Initial scripts are about 955 KiB across three files,
 with PhotoSwipe, TanStack Virtual, Masonry, Zag
 Floating Panel, and Zag Select all behind dynamic chunks.  Static manifest
-parse currently measures p50 0.13 ms / p95 0.14 ms on this fixture, so the
+parse currently measures p50 0.14 ms / p95 0.16 ms on this fixture, so the
 former entry-manifest bottleneck has moved into shard-level DTO shape and first
 interaction chunk strategy.
 
 The current source-shard field breakdown is now focused on view-local payloads:
-=memory= has moved into =org-zhixing.memory/*.json=, and =sectionIndex= has moved
-into =org-zhixing.sections/*.json=.  Source shards no longer contain either
-field.  The remaining source-shard hotspot is =attachmentInventory= at about
-169 KiB, followed by =agendaView= at about 75 KiB.  The largest source shard is
-=org-zhixing.sources/wallpaper-gallery.json= at about 116 KiB; the largest
-memory shard is =org-zhixing.memory/wallpaper-gallery.json= at about 152 KiB;
-the largest section shard is =org-zhixing.sections/wallpaper-gallery.json= at
-about 131 KiB.  The largest async interaction chunks are =@zag-js/select= at
-about 634 KiB, PhotoSwipe at about 497 KiB, Zag Floating Panel at about 213 KiB,
-and Masonry at about 160 KiB.
+=agendaView= has moved into =org-zhixing.agenda/*.json=, =attachmentInventory=
+has moved into =org-zhixing.attachments/*.json=, =memory= has moved into
+=org-zhixing.memory/*.json=, and =sectionIndex= has moved into
+=org-zhixing.sections/*.json=.  Source shards no longer contain those fields.
+The remaining source-shard payload is mainly =html= at about 31 KiB and
+=viewIndex= at about 29 KiB.  The largest source shard is
+=org-zhixing.sources/org-syntax-atlas.json= at about 13 KiB; the largest memory
+shard is =org-zhixing.memory/wallpaper-gallery.json= at about 152 KiB; the
+largest section shard is =org-zhixing.sections/wallpaper-gallery.json= at about
+131 KiB.  The largest async interaction chunks are =@zag-js/select= at about
+634 KiB, PhotoSwipe at about 497 KiB, Zag Floating Panel at about 213 KiB, and
+Masonry at about 160 KiB.
 The report now gates =deferredSourcePickerRuntime= and
 =idleInteractionChunkPrefetch= so these large chunks remain outside the boot
 path while still being warmed before likely first use.
 
 ** Next Performance Milestones
 
-- Split the largest source shards by projection if Records, Blog, and Agenda
-  begin needing independent load paths.  The current largest shard is the
-  wallpaper gallery source, because it owns many attachment display records.
-- Consider splitting =attachmentInventory= next if source-scoped Blog or Agenda
-  should load without gallery metadata.  =memory= and =sectionIndex= are already
-  isolated behind their view-specific shard paths.
+- Keep source shards as the lightweight article/source projection boundary.  At
+  this point the larger semantic DTOs are isolated behind view-specific shard
+  paths, and source shards are down to the HTML, =viewIndex=, =lint=, and shard
+  path contract.
 - Add route-aware idle prefetch for large first-interaction chunks, especially
   Zag Select, PhotoSwipe, Zag Floating Panel, and Masonry.  Keep them out of
   initial scripts, but avoid making the first user click pay the entire network

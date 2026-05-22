@@ -22,6 +22,8 @@ const warmups = numberArg("warmups", 5);
 const budgets = {
   staticManifestBytes: 500_000,
   sourceShardBytes: 2_000_000,
+  agendaShardBytes: 1_000_000,
+  attachmentShardBytes: 1_000_000,
   memoryShardBytes: 1_000_000,
   sectionShardBytes: 1_000_000,
   largestSourceShardBytes: 800_000,
@@ -50,12 +52,18 @@ const staticManifestText = await readFile(resolve(distRoot, "org-zhixing.static.
 const staticManifest = JSON.parse(staticManifestText);
 const assets = await assetInventory();
 const sourceShards = await sourceShardInventory();
+const agendaShards = await agendaShardInventory();
+const attachmentShards = await attachmentShardInventory();
 const memoryShards = await memoryShardInventory();
 const sectionShards = await sectionShardInventory();
 const sourceShardBreakdown = await sourceShardProjectionBreakdown(sourceShards);
+const agendaShardBreakdown = await sourceShardProjectionBreakdown(agendaShards);
+const attachmentShardBreakdown = await sourceShardProjectionBreakdown(attachmentShards);
 const memoryShardBreakdown = await sourceShardProjectionBreakdown(memoryShards);
 const sectionShardBreakdown = await sourceShardProjectionBreakdown(sectionShards);
 const sourceShardFieldBytes = aggregateShardFieldBytes(sourceShardBreakdown);
+const agendaShardFieldBytes = aggregateShardFieldBytes(agendaShardBreakdown);
+const attachmentShardFieldBytes = aggregateShardFieldBytes(attachmentShardBreakdown);
 const memoryShardFieldBytes = aggregateShardFieldBytes(memoryShardBreakdown);
 const sectionShardFieldBytes = aggregateShardFieldBytes(sectionShardBreakdown);
 const initialScripts = scriptSrcs(indexHtml);
@@ -77,6 +85,14 @@ const metrics = {
   staticManifestBytes: Buffer.byteLength(staticManifestText),
   sourceShardBytes: sourceShards.reduce((sum, shard) => sum + shard.bytes, 0),
   sourceShardCount: sourceShards.length,
+  agendaShardBytes: agendaShards.reduce((sum, shard) => sum + shard.bytes, 0),
+  agendaShardCount: agendaShards.length,
+  largestAgendaShardBytes: agendaShards[0]?.bytes ?? 0,
+  largestAgendaShard: agendaShards[0]?.path ?? null,
+  attachmentShardBytes: attachmentShards.reduce((sum, shard) => sum + shard.bytes, 0),
+  attachmentShardCount: attachmentShards.length,
+  largestAttachmentShardBytes: attachmentShards[0]?.bytes ?? 0,
+  largestAttachmentShard: attachmentShards[0]?.path ?? null,
   memoryShardBytes: memoryShards.reduce((sum, shard) => sum + shard.bytes, 0),
   memoryShardCount: memoryShards.length,
   largestMemoryShardBytes: memoryShards[0]?.bytes ?? 0,
@@ -89,6 +105,8 @@ const metrics = {
   largestSourceShard: sourceShards[0]?.path ?? null,
   largestSourceShardFields: sourceShardBreakdown[0]?.fields ?? [],
   sourceShardFieldBytes,
+  agendaShardFieldBytes,
+  attachmentShardFieldBytes,
   memoryShardFieldBytes,
   sectionShardFieldBytes,
   initialScriptBytes,
@@ -155,6 +173,12 @@ console.log(
   `source shards ${metrics.sourceShardCount} files ${formatBytes(metrics.sourceShardBytes)}`,
 );
 console.log(
+  `agenda shards ${metrics.agendaShardCount} files ${formatBytes(metrics.agendaShardBytes)}`,
+);
+console.log(
+  `attachment shards ${metrics.attachmentShardCount} files ${formatBytes(metrics.attachmentShardBytes)}`,
+);
+console.log(
   `memory shards ${metrics.memoryShardCount} files ${formatBytes(metrics.memoryShardBytes)}`,
 );
 console.log(
@@ -207,6 +231,42 @@ async function sourceShardInventory() {
       const item = await stat(path);
       if (item.isFile()) {
         sizes.push({ path: `org-zhixing.sources/${entry}`, bytes: item.size });
+      }
+    }
+    return sizes.sort((left, right) => right.bytes - left.bytes);
+  } catch {
+    return [];
+  }
+}
+
+async function agendaShardInventory() {
+  const shardRoot = resolve(distRoot, "org-zhixing.agenda");
+  try {
+    const entries = await readdir(shardRoot);
+    const sizes = [];
+    for (const entry of entries) {
+      const path = resolve(shardRoot, entry);
+      const item = await stat(path);
+      if (item.isFile()) {
+        sizes.push({ path: `org-zhixing.agenda/${entry}`, bytes: item.size });
+      }
+    }
+    return sizes.sort((left, right) => right.bytes - left.bytes);
+  } catch {
+    return [];
+  }
+}
+
+async function attachmentShardInventory() {
+  const shardRoot = resolve(distRoot, "org-zhixing.attachments");
+  try {
+    const entries = await readdir(shardRoot);
+    const sizes = [];
+    for (const entry of entries) {
+      const path = resolve(shardRoot, entry);
+      const item = await stat(path);
+      if (item.isFile()) {
+        sizes.push({ path: `org-zhixing.attachments/${entry}`, bytes: item.size });
       }
     }
     return sizes.sort((left, right) => right.bytes - left.bytes);
@@ -336,6 +396,11 @@ function evaluateBudgets(metrics, budgetConfig) {
   return {
     staticManifestBytes: passMetric(metrics.staticManifestBytes, budgetConfig.staticManifestBytes),
     sourceShardBytes: passMetric(metrics.sourceShardBytes, budgetConfig.sourceShardBytes),
+    agendaShardBytes: passMetric(metrics.agendaShardBytes, budgetConfig.agendaShardBytes),
+    attachmentShardBytes: passMetric(
+      metrics.attachmentShardBytes,
+      budgetConfig.attachmentShardBytes,
+    ),
     memoryShardBytes: passMetric(metrics.memoryShardBytes, budgetConfig.memoryShardBytes),
     sectionShardBytes: passMetric(metrics.sectionShardBytes, budgetConfig.sectionShardBytes),
     largestSourceShardBytes: passMetric(
@@ -463,6 +528,23 @@ function recommendationsFor(metrics) {
         "Keep Memory view on the dedicated shard path; do not merge memory back into source shards for Blog, Gallery, Records, or Travel.",
     });
   }
+  const agendaBytes = metrics.sourceShardFieldBytes.agendaView ?? 0;
+  if (agendaBytes > 0) {
+    recommendations.push({
+      area: "agenda-view-shard-split",
+      signal: `agendaView still accounts for ${formatBytes(agendaBytes)} inside source shards`,
+      action:
+        "Keep agendaView as an on-demand shard so source-scoped Blog and Records can load without agenda metadata.",
+    });
+  }
+  if (metrics.agendaShardCount > 0 && agendaBytes === 0) {
+    recommendations.push({
+      area: "static-agenda-shards",
+      signal: `${metrics.agendaShardCount} agenda shards are ${formatBytes(metrics.agendaShardBytes)} and source shards contain no agendaView field`,
+      action:
+        "Keep Agenda on the agenda-shard path while preserving lighter source shards for Blog, Records, and static article reads.",
+    });
+  }
   const sectionIndexBytes = metrics.sourceShardFieldBytes.sectionIndex ?? 0;
   if (sectionIndexBytes > 0) {
     recommendations.push({
@@ -481,12 +563,20 @@ function recommendationsFor(metrics) {
     });
   }
   const attachmentBytes = metrics.sourceShardFieldBytes.attachmentInventory ?? 0;
-  if (attachmentBytes > metrics.sourceShardBytes * 0.25) {
+  if (attachmentBytes > 0) {
     recommendations.push({
       area: "attachment-inventory-shard-split",
-      signal: `attachmentInventory accounts for ${formatBytes(attachmentBytes)} of ${formatBytes(metrics.sourceShardBytes)} source shards`,
+      signal: `attachmentInventory still accounts for ${formatBytes(attachmentBytes)} inside source shards`,
       action:
-        "Consider splitting attachmentInventory next if source-scoped Blog or Agenda should load without gallery metadata.",
+        "Keep attachmentInventory as an on-demand shard so source-scoped Blog and Agenda can load without gallery metadata.",
+    });
+  }
+  if (metrics.attachmentShardCount > 0 && attachmentBytes === 0) {
+    recommendations.push({
+      area: "static-attachment-shards",
+      signal: `${metrics.attachmentShardCount} attachment shards are ${formatBytes(metrics.attachmentShardBytes)} and source shards contain no attachmentInventory field`,
+      action:
+        "Keep Gallery, Notes, Memory, and Zen link rewriting on the attachment-shard path while preserving lighter source shards for other views.",
     });
   }
   if (metrics.sourceShardCount > 0 && metrics.blogSourceCount < metrics.sourceShardCount) {

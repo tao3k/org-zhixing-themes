@@ -19,6 +19,13 @@ import {
 } from "./model";
 import type { AttachmentGalleryView } from "./attachmentGalleryModel";
 import type { TravelView } from "./travelModel";
+import {
+  loadCachedStaticAgendaShard,
+  loadCachedStaticAttachmentShard,
+  loadCachedStaticMemoryShard,
+  loadCachedStaticSectionShard,
+  loadCachedStaticSourceShard,
+} from "./staticSiteShards";
 
 export type StaticSourceSummary = {
   id: string;
@@ -28,6 +35,8 @@ export type StaticSourceSummary = {
   sourceFile: string;
   sourceBytes: number;
   shardPath?: string;
+  agendaShardPath?: string;
+  attachmentShardPath?: string;
   memoryShardPath?: string;
   sectionShardPath?: string;
 };
@@ -40,15 +49,25 @@ export type StaticSourceProjection = {
   sourceFile: string;
   sourceBytes: number;
   agendaRange?: AgendaSettings;
+  agendaShardPath?: string;
   viewIndex: OrgizeViewIndexResponseDto;
   sectionIndex?: OrgizeSectionIndexResponseDto;
   sectionShardPath?: string;
   html: string;
-  attachmentInventory: OrgizeAttachmentInventoryResponseDto;
+  attachmentInventory?: OrgizeAttachmentInventoryResponseDto;
+  attachmentShardPath?: string;
   memory?: OrgizeMemoryResponseDto;
   memoryShardPath?: string;
-  agendaView: OrgizeAgendaViewResponseDto;
+  agendaView?: OrgizeAgendaViewResponseDto;
   lint: OrgizeLintResponseDto;
+};
+
+export type StaticAgendaShard = {
+  schemaVersion: 1;
+  sourceId: string;
+  sourceFile: string;
+  agendaRange?: AgendaSettings;
+  agendaView: OrgizeAgendaViewResponseDto;
 };
 
 export type StaticMemoryShard = {
@@ -63,6 +82,13 @@ export type StaticSectionShard = {
   sourceId: string;
   sourceFile: string;
   sectionIndex: OrgizeSectionIndexResponseDto;
+};
+
+export type StaticAttachmentShard = {
+  schemaVersion: 1;
+  sourceId: string;
+  sourceFile: string;
+  attachmentInventory: OrgizeAttachmentInventoryResponseDto;
 };
 
 export type StaticBlogArticle = BlogArticleRecord & {
@@ -97,18 +123,14 @@ export type StaticSiteData = {
 
 export type StaticSource = StaticSourceProjection | StaticSourceSummary;
 
-const sourceCache = new WeakMap<
-  StaticSiteData,
-  Map<string, Promise<StaticSourceProjection | null>>
->();
-const memoryCache = new WeakMap<
-  StaticSiteData,
-  Map<string, Promise<OrgizeMemoryResponseDto | null>>
->();
-const sectionCache = new WeakMap<
-  StaticSiteData,
-  Map<string, Promise<OrgizeSectionIndexResponseDto | null>>
->();
+export type StaticDocumentViewOptions = {
+  agenda: AgendaSettings;
+  memory?: OrgizeMemoryResponseDto | null;
+  sectionIndex?: OrgizeSectionIndexResponseDto | null;
+  attachmentInventory?: OrgizeAttachmentInventoryResponseDto | null;
+  agendaView?: OrgizeAgendaViewResponseDto | null;
+  agendaRange?: AgendaSettings | null;
+};
 
 export const loadStaticSiteData = async (): Promise<StaticSiteData | null> => {
   try {
@@ -156,15 +178,8 @@ export const loadStaticMemoryForSource = async (
   if (!shardPath) {
     return null;
   }
-  const cache = memoryCacheFor(staticSite);
   const key = matched?.sourceFile ?? source.sourceFile;
-  const cached = cache.get(key);
-  if (cached) {
-    return cached;
-  }
-  const loaded = fetchStaticMemoryShard(shardPath);
-  cache.set(key, loaded);
-  return loaded;
+  return loadCachedStaticMemoryShard(staticSite, key, shardPath);
 };
 
 export const loadStaticSectionIndexForSource = async (
@@ -187,31 +202,93 @@ export const loadStaticSectionIndexForSource = async (
   if (!shardPath) {
     return null;
   }
-  const cache = sectionCacheFor(staticSite);
   const key = matched?.sourceFile ?? source.sourceFile;
-  const cached = cache.get(key);
-  if (cached) {
-    return cached;
+  return loadCachedStaticSectionShard(staticSite, key, shardPath);
+};
+
+export const loadStaticAttachmentInventoryForSource = async (
+  staticSite: StaticSiteData | null,
+  source: SourceItem | StaticSource,
+): Promise<OrgizeAttachmentInventoryResponseDto | null> => {
+  if (!staticSite) {
+    return null;
   }
-  const loaded = fetchStaticSectionShard(shardPath);
-  cache.set(key, loaded);
-  return loaded;
+  if (isStaticSourceProjection(source) && source.attachmentInventory) {
+    return source.attachmentInventory;
+  }
+  const matched = findStaticSource(staticSite, source);
+  if (matched && isStaticSourceProjection(matched) && matched.attachmentInventory) {
+    return matched.attachmentInventory;
+  }
+  const shardPath =
+    matched?.attachmentShardPath ??
+    ("attachmentShardPath" in source ? source.attachmentShardPath : undefined);
+  if (!shardPath) {
+    return null;
+  }
+  const key = matched?.sourceFile ?? source.sourceFile;
+  return loadCachedStaticAttachmentShard(staticSite, key, shardPath);
+};
+
+export const loadStaticAgendaForSource = async (
+  staticSite: StaticSiteData | null,
+  source: SourceItem | StaticSource,
+): Promise<StaticAgendaShard | null> => {
+  if (!staticSite) {
+    return null;
+  }
+  if (isStaticSourceProjection(source) && source.agendaView) {
+    return {
+      schemaVersion: 1,
+      sourceId: source.id,
+      sourceFile: source.sourceFile,
+      agendaRange: source.agendaRange,
+      agendaView: source.agendaView,
+    };
+  }
+  const matched = findStaticSource(staticSite, source);
+  if (matched && isStaticSourceProjection(matched) && matched.agendaView) {
+    return {
+      schemaVersion: 1,
+      sourceId: matched.id,
+      sourceFile: matched.sourceFile,
+      agendaRange: matched.agendaRange,
+      agendaView: matched.agendaView,
+    };
+  }
+  const shardPath =
+    matched?.agendaShardPath ?? ("agendaShardPath" in source ? source.agendaShardPath : undefined);
+  if (!shardPath) {
+    return null;
+  }
+  const key = matched?.sourceFile ?? source.sourceFile;
+  return loadCachedStaticAgendaShard(staticSite, key, shardPath);
 };
 
 export const loadAllStaticSources = async (
   staticSite: StaticSiteData | null,
-  options: { sectionIndex?: boolean } = {},
+  options: { attachmentInventory?: boolean; sectionIndex?: boolean } = {},
 ): Promise<StaticSourceProjection[]> =>
   staticSite
     ? (
         await Promise.all(
           staticSite.sources.map(async (source) => {
-            const projection = await loadStaticSource(staticSite, source);
-            if (!projection || !options.sectionIndex) {
-              return projection;
+            let projection = await loadStaticSource(staticSite, source);
+            if (!projection) {
+              return null;
             }
-            const sectionIndex = await loadStaticSectionIndexForSource(staticSite, projection);
-            return withStaticSectionIndex(projection, sectionIndex);
+            if (options.sectionIndex) {
+              const sectionIndex = await loadStaticSectionIndexForSource(staticSite, projection);
+              projection = withStaticSectionIndex(projection, sectionIndex);
+            }
+            if (options.attachmentInventory) {
+              const attachmentInventory = await loadStaticAttachmentInventoryForSource(
+                staticSite,
+                projection,
+              );
+              projection = withStaticAttachmentInventory(projection, attachmentInventory);
+            }
+            return projection;
           }),
         )
       ).filter((source): source is StaticSourceProjection => Boolean(source))
@@ -244,26 +321,42 @@ export const isStaticSourceProjection = (
 
 export const documentViewFromStaticSource = (
   source: StaticSourceProjection,
-  agenda: AgendaSettings,
-  memory: OrgizeMemoryResponseDto | null = source.memory ?? null,
-  sectionIndex: OrgizeSectionIndexResponseDto | null = source.sectionIndex ?? null,
+  options: StaticDocumentViewOptions,
 ): OrgizeDocumentView => {
+  const memory = staticDocumentOption(options, "memory", source.memory ?? null);
+  const sectionIndex = staticDocumentOption(options, "sectionIndex", source.sectionIndex ?? null);
+  const attachmentInventory = staticDocumentOption(
+    options,
+    "attachmentInventory",
+    source.attachmentInventory ?? null,
+  );
+  const agendaView = staticDocumentOption(options, "agendaView", source.agendaView ?? null);
+  const agendaRange =
+    staticDocumentOption(options, "agendaRange", source.agendaRange ?? options.agenda) ??
+    options.agenda;
   let document = createDocumentView(
     source.viewIndex.records,
     source.lint.findings,
     sectionIndex?.records ?? [],
   );
-  document = withAttachmentInventory(document, source.attachmentInventory);
+  if (attachmentInventory) {
+    document = withAttachmentInventory(document, attachmentInventory);
+  }
   if (memory) {
     document = withAgentMemory(document, createAgentMemoryView(memory));
   }
-  return withAgendaView(document, source.agendaView, source.agendaRange ?? agenda);
+  return agendaView ? withAgendaView(document, agendaView, agendaRange) : document;
 };
 
 export const withStaticSectionIndex = (
   source: StaticSourceProjection,
   sectionIndex: OrgizeSectionIndexResponseDto | null,
 ): StaticSourceProjection => (sectionIndex ? { ...source, sectionIndex } : source);
+
+export const withStaticAttachmentInventory = (
+  source: StaticSourceProjection,
+  attachmentInventory: OrgizeAttachmentInventoryResponseDto | null,
+): StaticSourceProjection => (attachmentInventory ? { ...source, attachmentInventory } : source);
 
 const findStaticSource = (
   staticSite: StaticSiteData,
@@ -284,94 +377,15 @@ const loadStaticSource = async (
   if (!source.shardPath) {
     return null;
   }
-  const cache = sourceCacheFor(staticSite);
   const key = source.sourceFile;
-  const cached = cache.get(key);
-  if (cached) {
-    return cached;
-  }
-  const loaded = fetchStaticSourceShard(source.shardPath);
-  cache.set(key, loaded);
-  return loaded;
+  return loadCachedStaticSourceShard(staticSite, key, source.shardPath);
 };
 
-const sourceCacheFor = (
-  staticSite: StaticSiteData,
-): Map<string, Promise<StaticSourceProjection | null>> => {
-  const cached = sourceCache.get(staticSite);
-  if (cached) {
-    return cached;
-  }
-  const next = new Map<string, Promise<StaticSourceProjection | null>>();
-  sourceCache.set(staticSite, next);
-  return next;
-};
-
-const memoryCacheFor = (
-  staticSite: StaticSiteData,
-): Map<string, Promise<OrgizeMemoryResponseDto | null>> => {
-  const cached = memoryCache.get(staticSite);
-  if (cached) {
-    return cached;
-  }
-  const next = new Map<string, Promise<OrgizeMemoryResponseDto | null>>();
-  memoryCache.set(staticSite, next);
-  return next;
-};
-
-const sectionCacheFor = (
-  staticSite: StaticSiteData,
-): Map<string, Promise<OrgizeSectionIndexResponseDto | null>> => {
-  const cached = sectionCache.get(staticSite);
-  if (cached) {
-    return cached;
-  }
-  const next = new Map<string, Promise<OrgizeSectionIndexResponseDto | null>>();
-  sectionCache.set(staticSite, next);
-  return next;
-};
-
-const fetchStaticSourceShard = async (
-  shardPath: string,
-): Promise<StaticSourceProjection | null> => {
-  try {
-    const response = await fetch(publicAssetUrl(shardPath));
-    if (!response.ok) {
-      return null;
-    }
-    const value = (await response.json()) as Partial<StaticSourceProjection>;
-    return value.viewIndex && value.html !== undefined ? (value as StaticSourceProjection) : null;
-  } catch {
-    return null;
-  }
-};
-
-const fetchStaticSectionShard = async (
-  shardPath: string,
-): Promise<OrgizeSectionIndexResponseDto | null> => {
-  try {
-    const response = await fetch(publicAssetUrl(shardPath));
-    if (!response.ok) {
-      return null;
-    }
-    const value = (await response.json()) as Partial<StaticSectionShard>;
-    return value.schemaVersion === 1 && value.sectionIndex ? value.sectionIndex : null;
-  } catch {
-    return null;
-  }
-};
-
-const fetchStaticMemoryShard = async (
-  shardPath: string,
-): Promise<OrgizeMemoryResponseDto | null> => {
-  try {
-    const response = await fetch(publicAssetUrl(shardPath));
-    if (!response.ok) {
-      return null;
-    }
-    const value = (await response.json()) as Partial<StaticMemoryShard>;
-    return value.schemaVersion === 1 && value.memory ? value.memory : null;
-  } catch {
-    return null;
-  }
-};
+const staticDocumentOption = <Key extends keyof StaticDocumentViewOptions>(
+  options: StaticDocumentViewOptions,
+  key: Key,
+  fallback: NonNullable<StaticDocumentViewOptions[Key]> | null,
+): NonNullable<StaticDocumentViewOptions[Key]> | null =>
+  Object.prototype.hasOwnProperty.call(options, key)
+    ? ((options[key] ?? null) as NonNullable<StaticDocumentViewOptions[Key]> | null)
+    : fallback;

@@ -7,7 +7,7 @@ type AttachmentSourceProjection = {
   id: string;
   name: string;
   sourceFile: string;
-  attachmentInventory: OrgizeAttachmentInventoryResponseDto;
+  attachmentInventory?: OrgizeAttachmentInventoryResponseDto;
 };
 
 export type AttachmentGalleryRecord = {
@@ -49,7 +49,7 @@ export const attachmentGalleryFromSources = (
   sources: AttachmentSourceProjection[],
 ): AttachmentGalleryView => {
   const records = sources.flatMap((source) =>
-    source.attachmentInventory.display.filter(isImageRecord).map((record) => ({
+    (source.attachmentInventory?.display ?? []).filter(isImageRecord).map((record) => ({
       record,
       sourceFile: source.sourceFile,
       sourceId: source.id,
@@ -57,7 +57,7 @@ export const attachmentGalleryFromSources = (
     })),
   );
   const entryCount = sources.reduce(
-    (sum, source) => sum + source.attachmentInventory.entries.length,
+    (sum, source) => sum + (source.attachmentInventory?.entries.length ?? 0),
     0,
   );
   return {
