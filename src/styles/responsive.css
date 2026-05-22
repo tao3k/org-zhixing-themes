@@ -40,28 +40,24 @@
     min-width: 0;
   }
 
-  .blog-reader-bar,
-  .blog-reader-layout,
-  .life-index {
+  .blog-index-topline,
+  .blog-reasoning-path,
+  .blog-index-article {
     grid-template-columns: 1fr;
   }
 
-  .blog-reader-bar {
-    position: static;
-    flex-direction: column;
-    align-items: stretch;
+  .blog-index-topline {
+    align-items: start;
   }
 
-  .blog-rail {
-    position: static;
-    max-height: none;
-    border-right: 0;
-    border-bottom: var(--divider-width) solid var(--hairline);
-    padding: var(--space-4) 0;
+  .blog-index-topline p:not(.eyebrow),
+  .blog-reasoning-path small {
+    text-align: left;
   }
 
-  .blog-toc {
-    max-height: none;
+  .blog-index-article p,
+  .blog-index-tags {
+    grid-column: 1;
   }
 
   #status {

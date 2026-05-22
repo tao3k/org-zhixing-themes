@@ -44,6 +44,34 @@ export type StaticSourceProjection = {
   lint: OrgizeLintResponseDto;
 };
 
+export type StaticBlogArticle = Pick<
+  OrgizeViewIndexResponseDto["records"][number],
+  | "bodyPreview"
+  | "effectiveTags"
+  | "level"
+  | "outline"
+  | "planning"
+  | "properties"
+  | "rangeStart"
+  | "title"
+  | "todo"
+  | "todoState"
+> & {
+  file: string;
+  sourceFile: string;
+  sourceId: string;
+  sourceName: string;
+};
+
+export type StaticBlogIndex = {
+  articleCount: number;
+  articles: StaticBlogArticle[];
+  dateRange: { end: string; start: string } | null;
+  siteWide: true;
+  sourceCount: number;
+  tagFacets: Array<{ count: number; tag: string }>;
+};
+
 export type StaticSiteData = {
   schemaVersion: 1;
   generatedAt: string;
@@ -53,6 +81,7 @@ export type StaticSiteData = {
     gitHash: string;
   };
   attachmentGallery?: AttachmentGalleryView;
+  blog?: StaticBlogIndex;
   travel?: TravelView;
   sources: StaticSource[];
 };

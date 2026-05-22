@@ -17,23 +17,24 @@
     "eagerPhotoSwipeLightbox": false,
     "eagerCssLineBreak": false,
     "eagerTanStackVirtual": false,
+    "eagerBlogVirtualList": false,
     "eagerTravelVirtualList": false,
     "eagerMasonryLayout": false,
     "eagerFloatingPanel": false,
     "eagerZagSelect": false
   },
   "metrics": {
-    "staticManifestBytes": 55767,
+    "staticManifestBytes": 64881,
     "sourceShardBytes": 1289988,
     "sourceShardCount": 8,
     "largestSourceShardBytes": 407338,
     "largestSourceShard": "org-zhixing.sources/wallpaper-gallery.json",
-    "initialScriptBytes": 878650,
+    "initialScriptBytes": 920269,
     "initialScriptCount": 3,
     "initialScripts": [
-      "assets/runtime.c3721c97.js",
+      "assets/runtime.8e28beef.js",
       "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.b7456e88.js"
+      "assets/app.55103bb8.js"
     ],
     "travelPlaces": 22,
     "travelSourceCount": 1,
@@ -42,35 +43,37 @@
     "eagerPhotoSwipeLightbox": false,
     "eagerCssLineBreak": false,
     "eagerTanStackVirtual": false,
+    "eagerBlogVirtualList": false,
     "eagerTravelVirtualList": false,
     "eagerMasonryLayout": false,
     "eagerFloatingPanel": false,
     "eagerZagSelect": false,
     "dynamicTanStackChunk": true,
+    "dynamicBlogVirtualListChunk": true,
     "dynamicTravelVirtualListChunk": true,
     "dynamicMasonryChunk": true,
     "dynamicFloatingPanelChunk": true,
     "dynamicZagSelectChunk": true,
     "staticManifestParse": {
       "name": "staticManifestParse",
-      "minMs": 0.09,
-      "p50Ms": 0.1,
-      "p95Ms": 0.13,
+      "minMs": 0.12,
+      "p50Ms": 0.12,
+      "p95Ms": 0.15,
       "maxMs": 0.22,
-      "avgMs": 0.11
+      "avgMs": 0.13
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
       "minMs": 0,
       "p50Ms": 0,
       "p95Ms": 0,
-      "maxMs": 0.01,
+      "maxMs": 0,
       "avgMs": 0
     }
   },
   "budgetResults": {
     "staticManifestBytes": {
-      "actual": 55767,
+      "actual": 64881,
       "budget": 500000,
       "pass": true
     },
@@ -85,7 +88,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 878650,
+      "actual": 920269,
       "budget": 1500000,
       "pass": true
     },
@@ -95,12 +98,12 @@
       "pass": true
     },
     "staticManifestParseP50Ms": {
-      "actual": 0.1,
+      "actual": 0.12,
       "budget": 15,
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.13,
+      "actual": 0.15,
       "budget": 80,
       "pass": true
     },
@@ -129,6 +132,11 @@
       "budget": false,
       "pass": true
     },
+    "eagerBlogVirtualList": {
+      "actual": false,
+      "budget": false,
+      "pass": true
+    },
     "eagerTravelVirtualList": {
       "actual": false,
       "budget": false,
@@ -153,13 +161,13 @@
   "recommendations": [
     {
       "area": "static-manifest-shards",
-      "signal": "entry manifest is 54 KiB; 8 source shards are 1.2 MiB",
+      "signal": "entry manifest is 63 KiB; 8 source shards are 1.2 MiB",
       "action": "Keep site-wide Gallery and Travel on compact projections; load full source shards only for source-scoped or Records views."
     },
     {
       "area": "virtual-list-boundary",
       "signal": "TanStack Virtual exists only as an on-demand chunk",
-      "action": "Keep Travel lists below the virtualization threshold on the plain static CSS path."
+      "action": "Keep Blog and Travel lists below their virtualization thresholds on the plain static CSS path."
     },
     {
       "area": "zen-glance-window-runtime",

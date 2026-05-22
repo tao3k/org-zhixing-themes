@@ -84,10 +84,15 @@ into browser constraints instead of copied as Emacs Lisp.
 
 Blog is the first explicit frame translation.  The old product layout used a
 large library header plus a horizontal article switcher, which felt like a web
-dashboard.  The elegant layout uses a compact header-line, a left rail with the
-article list and TOC, and a centered 72-column article body.  Records follow the
-same direction: source-backed notes are a hairline-separated index, not a card
-wall.
+dashboard.  The elegant layout now treats the Blog surface as a compact index
+space: a header-line, a thin threshold-based time strip, clickable topic
+filters, a small association strip, and then the article list as the dominant
+content.  The filters must never become a sidebar or a second article wall.
+Clicking an article enters a centered 72-column Zen reading body.  Zen hides
+site navigation, source controls, and reader-local chrome; it is a pure reading
+surface.  =Esc= returns to the index, and arrow keys move to adjacent articles.
+Records follow the same direction: source-backed notes are a hairline-separated
+index, not a card wall.
 
 Large collections must not become large visual grids.  A workspace with 1000 or
 2000 Org files still gets a compact source picker, but source files are quiet
@@ -96,16 +101,28 @@ mental model used by Hugo: content-backed
 [[https://gohugo.io/methods/site/regularpages/][regular pages]] form page
 collections, and
 [[https://gohugo.io/quick-reference/page-collections/][collection methods]]
-can sort those pages by date.  Blog therefore presents a
-bounded article timeline sorted by article date, with a small window around the
-current article plus a count summary.  Bulk discovery belongs to search/command
-surfaces and virtualized lists, not to the reading frame.
+can sort those pages by date.  Blog therefore presents an index-first article
+collection sorted by article date, with time thresholds, topic facets, and
+article titles as the first visual unit.  The time rail must not render one
+cell per article.  For 1000 articles it becomes a small set of selectable date
+thresholds, while the article list uses the TanStack virtual-core boundary when
+the result set is large.  Bulk discovery belongs to search/command surfaces and
+virtualized lists, not to the reading frame.
 
 The first viewport should say "life archive" by structure, not by translating
 English labels to Chinese.  Navigation labels remain recognizable product
-surfaces, while the Blog frame adds a restrained =life-index=: writing, images,
-notes, journeys, memory, and time.  These are semantic lenses over the same Org
-facts, not separate decorative cards.
+surfaces, while Blog treats source files as quiet substrate.  The visible Blog
+unit is an article title with time, topic, and source trace; clicking it enters
+Zen reading.
+
+Agent-facing reading is not only a traditional blog index.  Human memory moves
+as an association network, while LLM reasoning often proceeds as a branching
+tree.  Blog therefore exposes an association lens derived from parser-owned Org
+tags and article roots: topic filters model the network entry points, and the
+association strip shows compact branches from a root topic to related topics.
+It must not repeat article titles or compete with the article index.  This
+remains a projection over Org facts; the frontend must not invent another parser
+or store agent-written categories as source truth.
 
 The practical test is simple: if a surface needs more elegance, first ask which
 Org semantic unit is missing or which frame rhythm is unstable.  Add a card,
@@ -145,16 +162,18 @@ The style tests protect the contract:
 - every token in =tokens/elegant.json= must appear in the generated theme;
 - elegant layout tokens such as =--frame-inset=, =--reader-gutter=,
   =--reader-width=, and =--divider-width= must stay in use by reader surfaces;
-- Blog must keep article navigation and TOC inside =.blog-rail=, with the
-  rendered article constrained by =--reader-width=;
-- source navigation and Blog article rails must stay bounded for large
+- Blog must render an index-first surface by default: dated article titles,
+  threshold time navigation, clickable topic filters, and association paths.
+  Clicking an article enters Zen reading, where the rendered article is
+  constrained by =--reader-width= and no top navigation is visible;
+- Zen keyboard controls must stay available: =Esc= exits to the index, and
+  arrow keys move through adjacent articles without showing reader chrome;
+- source navigation and Blog article indexes must stay bounded for large
   workspaces; tests cover 1000 source files and 20 article headings so the UI
-  cannot regress into an unbounded card/grid list;
-- Blog article rails are ordered as a dated article collection, not by source
-  file order;
-- the Blog frame exposes a small =life-index= over writing, images, notes,
-  journeys, memory, and time without changing stable view labels into a surface
-  translation exercise;
+  cannot regress into an unbounded source/file card wall;
+- Blog article indexes are ordered as a dated article collection, not by source
+  file order or source picker state;
+- Blog keeps large article indexes behind a lazy TanStack virtual-core boundary;
 - package-backed color and font imports must stay present;
 - core reader surfaces must not reintroduce hard-coded hex colors, very heavy
   font weights, =999px= label radii, local card shadows, or hover translation;

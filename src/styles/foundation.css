@@ -47,6 +47,10 @@ button {
   backdrop-filter: blur(14px);
 }
 
+#app[data-reader-mode="zen"] .site-header {
+  display: none;
+}
+
 .site-brand {
   display: grid;
   gap: 1px;
@@ -297,6 +301,7 @@ h1 {
   display: none;
 }
 
+#app[data-view="blog"] .blog-source-panel,
 #app:not([data-view="blog"]) .blog-source-panel,
 #app[data-reader-mode="zen"] .blog-source-panel {
   display: none;
@@ -323,7 +328,7 @@ h1 {
 }
 
 #app[data-reader-mode="zen"] .viewer-pane {
-  width: min(1120px, calc(100% - 36px));
+  width: 100%;
 }
 
 .source-feed-heading {

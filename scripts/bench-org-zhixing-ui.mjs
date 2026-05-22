@@ -32,6 +32,7 @@ const budgets = {
   eagerPhotoSwipeLightbox: false,
   eagerCssLineBreak: false,
   eagerTanStackVirtual: false,
+  eagerBlogVirtualList: false,
   eagerTravelVirtualList: false,
   eagerMasonryLayout: false,
   eagerFloatingPanel: false,
@@ -75,11 +76,13 @@ const metrics = {
   ),
   eagerCssLineBreak: initialScriptsContainModule(/node_modules\/css-line-break/),
   eagerTanStackVirtual: initialScriptsContainModule(/node_modules\/@tanstack\/virtual-core/),
+  eagerBlogVirtualList: initialScriptsContainModule(/src\/blogVirtualList\.ts/),
   eagerTravelVirtualList: initialScriptsContainModule(/src\/travelVirtualList\.ts/),
   eagerMasonryLayout: initialScriptsContainModule(/node_modules\/masonry-layout/),
   eagerFloatingPanel: initialScriptsContainModule(/node_modules\/@zag-js\/floating-panel/),
   eagerZagSelect: initialScriptsContainModule(/node_modules\/@zag-js\/select/),
   dynamicTanStackChunk: [...assets.keys()].some((script) => /tanstack_virtual-core/.test(script)),
+  dynamicBlogVirtualListChunk: [...assets.keys()].some((script) => /blogVirtualList/.test(script)),
   dynamicTravelVirtualListChunk: [...assets.keys()].some((script) =>
     /travelVirtualList/.test(script),
   ),
@@ -232,6 +235,11 @@ function evaluateBudgets(metrics, budgetConfig) {
       budget: budgetConfig.eagerTanStackVirtual,
       pass: metrics.eagerTanStackVirtual === budgetConfig.eagerTanStackVirtual,
     },
+    eagerBlogVirtualList: {
+      actual: metrics.eagerBlogVirtualList,
+      budget: budgetConfig.eagerBlogVirtualList,
+      pass: metrics.eagerBlogVirtualList === budgetConfig.eagerBlogVirtualList,
+    },
     eagerTravelVirtualList: {
       actual: metrics.eagerTravelVirtualList,
       budget: budgetConfig.eagerTravelVirtualList,
@@ -320,7 +328,8 @@ function recommendationsFor(metrics) {
     recommendations.push({
       area: "virtual-list-boundary",
       signal: "TanStack Virtual exists only as an on-demand chunk",
-      action: "Keep Travel lists below the virtualization threshold on the plain static CSS path.",
+      action:
+        "Keep Blog and Travel lists below their virtualization thresholds on the plain static CSS path.",
     });
   }
   if (metrics.dynamicFloatingPanelChunk && !metrics.eagerFloatingPanel) {

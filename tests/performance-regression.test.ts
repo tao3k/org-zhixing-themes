@@ -51,6 +51,20 @@ describe("Org Zhixing performance regression gates", () => {
     expect(travelRender).toContain("travel.places.length >= virtualListThreshold");
   });
 
+  it("keeps heavy Blog indexing behind an explicit lazy boundary", () => {
+    const appEvents = readFileSync("src/appEvents.ts", "utf8");
+    const blogRender = readFileSync("src/blogRender.ts", "utf8");
+    const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
+
+    expect(appEvents).not.toMatch(/import\s+\{?\s*bindBlogVirtualList/);
+    expect(appEvents).toContain('import("./blogVirtualList")');
+    expect(appEvents).toContain('querySelector("[data-blog-virtual-list]")');
+    expect(blogRender).toContain("export const blogVirtualListThreshold = 120;");
+    expect(blogRender).toContain("articles.length >= blogVirtualListThreshold");
+    expect(perfScript).toContain("eagerBlogVirtualList: false");
+    expect(perfScript).toContain("dynamicBlogVirtualListChunk");
+  });
+
   it("keeps Travel Zen Glance window and masonry runtimes behind lazy boundaries", () => {
     const appEvents = readFileSync("src/appEvents.ts", "utf8");
     const travelGlance = readFileSync("src/travelGlance.ts", "utf8");

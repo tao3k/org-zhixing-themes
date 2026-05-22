@@ -4,7 +4,9 @@ import {
   readerModeFor,
   syncBlogArticleSelection,
   type BlogReaderState,
+  type BlogKeyboardAction,
 } from "./blogState";
+import { adjacentBlogArticleSelection } from "./blogNavigation";
 import {
   publicAssetUrl,
   sourceFromUserPath,
@@ -126,6 +128,9 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
         }
         const nextSource = sourceFromUserPath(this.#siteConfig, sourceFile);
         this.#blog.articleRangeStart = null;
+        this.#blog.tagFilter = null;
+        this.#blog.timeFilter = null;
+        this.#blog.zenMode = false;
         this.#writeUrlState();
         void this.#loadSource(nextSource);
       },
@@ -134,6 +139,9 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
         const nextSource = sourceFromUserPath(this.#siteConfig, sourceId);
         this.#agendaRuleId = null;
         this.#blog.articleRangeStart = null;
+        this.#blog.tagFilter = null;
+        this.#blog.timeFilter = null;
+        this.#blog.zenMode = false;
         this.#writeUrlState();
         void this.#loadSource(nextSource);
       },
@@ -157,8 +165,20 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
         this.#render();
         scrollAgendaRuleIntoView(this.#dom, ruleId);
       },
-      onBlogArticle: (rangeStart) => {
-        this.#blog.articleRangeStart = rangeStart;
+      onBlogArticle: (selection) => this.#openBlogArticle(selection),
+      onBlogKeyboard: (action) => this.#handleBlogKeyboard(action),
+      onBlogTagFilter: (tag) => {
+        this.#blog.tagFilter = this.#blog.tagFilter === tag ? null : tag;
+        this.#blog.articleRangeStart = null;
+        this.#blog.zenMode = false;
+        clearBlogCache(this.#viewCache);
+        this.#writeUrlState();
+        this.#render();
+      },
+      onBlogTimeFilter: (time) => {
+        this.#blog.timeFilter = this.#blog.timeFilter === time ? null : time;
+        this.#blog.articleRangeStart = null;
+        this.#blog.zenMode = false;
         clearBlogCache(this.#viewCache);
         this.#writeUrlState();
         this.#render();
@@ -518,6 +538,10 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
             ? this.#siteAttachmentGallery
             : undefined,
         blogArticleRangeStart: this.#blog.articleRangeStart,
+        blogIndex:
+          this.#currentView === "blog" && this.#staticSite ? this.#staticSite.blog : undefined,
+        blogTagFilter: this.#blog.tagFilter,
+        blogTimeFilter: this.#blog.timeFilter,
         blogZenMode: this.#blog.zenMode,
         siteNotes:
           this.#currentView === "records" && this.#staticSite && this.#siteConfig
@@ -544,6 +568,47 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
         this.#viewCache.delete(key);
       }
     }
+  }
+
+  #openBlogArticle(selection: { rangeStart: number; sourceFile: string | null }): void {
+    this.#blog.articleRangeStart = selection.rangeStart;
+    this.#blog.zenMode = true;
+    clearBlogCache(this.#viewCache);
+    this.#writeUrlState();
+    if (selection.sourceFile && this.#siteConfig) {
+      const nextSource = sourceFromUserPath(this.#siteConfig, selection.sourceFile);
+      if (nextSource.sourceFile !== this.#sourceItem?.sourceFile) {
+        void this.#loadSource(nextSource);
+        return;
+      }
+    }
+    this.#render();
+  }
+
+  #handleBlogKeyboard(action: BlogKeyboardAction): boolean {
+    if (this.#currentView !== "blog" || !this.#blog.zenMode) {
+      return false;
+    }
+    if (action === "exit") {
+      this.#blog.zenMode = false;
+      this.#blog.articleRangeStart = null;
+      clearBlogCache(this.#viewCache);
+      this.#writeUrlState();
+      this.#render();
+      return true;
+    }
+    const selection = adjacentBlogArticleSelection({
+      currentRangeStart: this.#blog.articleRangeStart,
+      currentSourceFile: this.#sourceItem?.sourceFile,
+      direction: action === "next" ? 1 : -1,
+      document: this.#documentView,
+      staticBlogIndex: this.#staticSite?.blog,
+    });
+    if (!selection) {
+      return false;
+    }
+    this.#openBlogArticle(selection);
+    return true;
   }
 
   #updateStatus(): void {

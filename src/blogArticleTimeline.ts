@@ -2,6 +2,7 @@ import type { OrgizeViewIndexRecordDto } from "orgize/dto";
 import { blogArticles, type OrgizeDocumentView } from "./model";
 
 const articleRailLimit = 7;
+type DatedArticle = Pick<OrgizeViewIndexRecordDto, "planning" | "properties" | "rangeStart">;
 
 export const blogTimelineArticles = (document: OrgizeDocumentView): OrgizeViewIndexRecordDto[] =>
   [...blogArticles(document)].sort(compareArticleRecency);
@@ -21,8 +22,38 @@ export const blogRailItems = (
   return articles.slice(start, start + articleRailLimit);
 };
 
-export const articleDateLabel = (article: OrgizeViewIndexRecordDto): string =>
+export const articleDateLabel = (article: DatedArticle): string =>
   articleDateText(article) ?? "Article";
+
+export type BlogTagFacet = {
+  count: number;
+  tag: string;
+};
+
+export const blogTagFacets = (articles: OrgizeViewIndexRecordDto[]): BlogTagFacet[] => {
+  const counts = new Map<string, number>();
+  for (const article of articles) {
+    for (const tag of article.effectiveTags) {
+      const normalized = tag.toLowerCase();
+      if (normalized === "blog") {
+        continue;
+      }
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ count, tag }))
+    .sort((left, right) => right.count - left.count || left.tag.localeCompare(right.tag))
+    .slice(0, 10);
+};
+
+export const articleDateRankForIndex = (article: DatedArticle): number | null =>
+  articleDateRank(article);
+
+export const articleDateIsoForIndex = (article: DatedArticle): string | null => {
+  const rank = articleDateRank(article);
+  return rank === null ? null : new Date(rank).toISOString().slice(0, 10);
+};
 
 const compareArticleRecency = (
   left: OrgizeViewIndexRecordDto,
@@ -38,7 +69,7 @@ const compareArticleRecency = (
   return left.rangeStart - right.rangeStart;
 };
 
-const articleDateRank = (article: OrgizeViewIndexRecordDto): number | null => {
+const articleDateRank = (article: DatedArticle): number | null => {
   const text = articleDateText(article);
   if (!text) {
     return null;
@@ -51,7 +82,7 @@ const articleDateRank = (article: OrgizeViewIndexRecordDto): number | null => {
   return Number.isNaN(timestamp) ? null : timestamp;
 };
 
-const articleDateText = (article: OrgizeViewIndexRecordDto): string | null =>
+const articleDateText = (article: DatedArticle): string | null =>
   propertyValue(article, "CLOSED") ??
   propertyValue(article, "DATE") ??
   propertyValue(article, "SCHEDULED") ??
@@ -59,5 +90,5 @@ const articleDateText = (article: OrgizeViewIndexRecordDto): string | null =>
   article.planning.scheduled ??
   null;
 
-const propertyValue = (record: OrgizeViewIndexRecordDto, key: string): string | null =>
+const propertyValue = (record: DatedArticle, key: string): string | null =>
   record.properties.find((property) => property.key.toUpperCase() === key)?.value ?? null;

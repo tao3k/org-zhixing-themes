@@ -208,16 +208,18 @@ describe("Org source view projections", () => {
     expect(html).toContain("Agenda native row");
   });
 
-  it("renders the Blog reader as a compact editor frame with rail navigation", () => {
+  it("renders Blog as an index first and enters Zen only after article selection", () => {
     const document = createDocumentView(
       [
         record({
-          effectiveTags: ["blog"],
+          effectiveTags: ["blog", "agent", "design"],
+          properties: [{ key: "DATE", value: "<2026-05-17 Sun>" }],
           rangeStart: 30,
           title: "Elegant Org Frame",
         }),
         record({
-          effectiveTags: ["blog"],
+          effectiveTags: ["blog", "syntax"],
+          properties: [{ key: "DATE", value: "<2026-05-16 Sat>" }],
           rangeStart: 60,
           title: "Second Article",
         }),
@@ -246,19 +248,79 @@ describe("Org source view projections", () => {
       `,
     });
 
-    expect(html).toContain('class="blog-rail"');
-    expect(html).toContain('class="life-index"');
-    expect(html).toContain("Writing");
-    expect(html).toContain("Journeys");
-    expect(html).toContain('data-view="travel"');
-    expect(html.indexOf("article-switcher")).toBeLessThan(html.indexOf("blog-toc"));
+    expect(html).toContain('class="blog-index"');
+    expect(html).toContain("Blog Index");
+    expect(html).toContain("2 articles");
+    expect(html).toContain('class="blog-time-thresholds"');
+    expect(html).toContain('class="blog-tag-filter"');
+    expect(html).toContain('class="blog-reasoning-paths"');
+    expect(html).toContain('data-blog-tag="agent"');
+    expect(html).toContain('data-blog-time="2026-05-17"');
     expect(html).toContain('data-blog-article="30"');
     expect(html).toContain('data-blog-article="60"');
-    expect(html).toContain("Native rhythm");
-    expect(html).toContain('class="rendered-html blog-article"');
+    expect(html).not.toContain("Native rhythm");
+    expect(html).not.toContain('class="rendered-html blog-article"');
+
+    const zenHtml = renderView({
+      view: "blog",
+      document,
+      blogArticleRangeStart: 30,
+      blogZenMode: true,
+      articleHtml: `
+        <main>
+          <h1>Elegant Org Frame</h1>
+          <section>
+            <h2>Native rhythm</h2>
+            <p>Readable body.</p>
+          </section>
+        </main>
+      `,
+    });
+
+    expect(zenHtml).toContain('class="blog-reader is-zen"');
+    expect(zenHtml).toContain("Native rhythm");
+    expect(zenHtml).toContain('class="rendered-html blog-article"');
+    expect(zenHtml).not.toContain("zen-toolbar");
+    expect(zenHtml).not.toContain("data-blog-zen");
+    expect(zenHtml).not.toContain('class="blog-rail"');
   });
 
-  it("keeps large Blog article sets summarized inside the rail", () => {
+  it("filters Blog indexes by clickable topic and time thresholds", () => {
+    const document = createDocumentView([
+      record({
+        effectiveTags: ["blog", "code"],
+        properties: [{ key: "DATE", value: "<2026-05-17 Sun>" }],
+        rangeStart: 10,
+        title: "Code article",
+      }),
+      record({
+        effectiveTags: ["blog", "reading"],
+        properties: [{ key: "DATE", value: "<2026-05-17 Sun>" }],
+        rangeStart: 20,
+        title: "Reading article",
+      }),
+      record({
+        effectiveTags: ["blog", "code"],
+        properties: [{ key: "DATE", value: "<2026-05-15 Fri>" }],
+        rangeStart: 30,
+        title: "Older code article",
+      }),
+    ]);
+
+    const tagHtml = renderView({ view: "blog", document, blogTagFilter: "code" });
+    expect(tagHtml).toContain("Code article");
+    expect(tagHtml).toContain("Older code article");
+    expect(tagHtml).not.toContain("Reading article");
+    expect(tagHtml).toMatch(/data-blog-tag="code"[\s\S]*?data-active="true"/);
+
+    const timeHtml = renderView({ view: "blog", document, blogTimeFilter: "2026-05-15" });
+    expect(timeHtml).toContain("Older code article");
+    expect(timeHtml).not.toContain("Code article");
+    expect(timeHtml).toContain('data-blog-time="2026-05-15"');
+    expect(timeHtml).toContain('data-active="true"');
+  });
+
+  it("keeps large Blog article sets as a dated index without a rail", () => {
     const records = Array.from({ length: 20 }, (_, index) =>
       record({
         effectiveTags: ["blog"],
@@ -286,20 +348,14 @@ describe("Org source view projections", () => {
       `,
     });
 
-    expect(html).toContain("article-switcher-summary");
+    expect(html).toContain('class="blog-index"');
     expect(html).toContain(">20<");
-    expect(html.match(/data-blog-article=/g) ?? []).toHaveLength(7);
-    expect(html).toContain("13 more articles");
+    expect(html.match(/class="blog-index-article"/g) ?? []).toHaveLength(20);
+    expect((html.match(/class="blog-time-threshold"/g) ?? []).length).toBeLessThanOrEqual(13);
+    expect(html).not.toContain("article-switcher-summary");
+    expect(html).not.toContain("blog-time-point");
     expect(html).toContain('data-blog-article="12"');
-    expect([...html.matchAll(/data-blog-article="(\d+)"/g)].map((match) => match[1])).toEqual([
-      "14",
-      "13",
-      "12",
-      "11",
-      "10",
-      "9",
-      "8",
-    ]);
+    expect(html.indexOf("Article 20")).toBeLessThan(html.indexOf("Article 1"));
   });
 
   it("derives a source-local range for a second WASM Agenda query", () => {
@@ -383,6 +439,8 @@ describe("Org source view projections", () => {
     const html = renderView({
       view: "blog",
       document,
+      blogArticleRangeStart: 10,
+      blogZenMode: true,
       articleHtml: `
         <main>
           <h1>Native Org surface</h1>

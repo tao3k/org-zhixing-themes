@@ -1,4 +1,12 @@
-import { blogArticleFromEvent, blogZenModeFromEvent } from "./blogState";
+import {
+  blogArticleFromEvent,
+  blogKeyboardActionFromEvent,
+  blogTagFilterFromEvent,
+  blogTimeFilterFromEvent,
+  blogZenModeFromEvent,
+  type BlogArticleSelection,
+  type BlogKeyboardAction,
+} from "./blogState";
 import type { AgendaPanelKey } from "./agendaTypes";
 import { isAgendaMode, isAgendaPanel } from "./agendaState";
 import type { AppDomNodes } from "./appDom";
@@ -11,7 +19,10 @@ export type AppEventHandlers = {
   onAgendaMode: (mode: AgendaModeKey) => void;
   onAgendaPanel: (panel: AgendaPanelKey) => void;
   onAgendaRule: (ruleId: string) => void;
-  onBlogArticle: (rangeStart: number) => void;
+  onBlogArticle: (selection: BlogArticleSelection) => void;
+  onBlogKeyboard: (action: BlogKeyboardAction) => boolean;
+  onBlogTagFilter: (tag: string | null) => void;
+  onBlogTimeFilter: (time: string | null) => void;
   onBlogZenMode: (zenMode: boolean) => void;
   onDispose: () => void;
   onSourceFeed: (sourceId: string) => void;
@@ -70,10 +81,18 @@ export const bindAppEvents = (
     (event) => handleBlogArticle(event, handlers),
     listenerOptions,
   );
+  dom.view.addEventListener("click", (event) => handleBlogTag(event, handlers), listenerOptions);
+  dom.view.addEventListener("click", (event) => handleBlogTime(event, handlers), listenerOptions);
   dom.view.addEventListener("click", (event) => handleBlogZen(event, handlers), listenerOptions);
+  window.addEventListener(
+    "keydown",
+    (event) => handleBlogKeyboard(event, handlers),
+    listenerOptions,
+  );
   bindLazyAttachmentGalleryViewer(dom, signal);
   bindTravelGlance(dom, signal);
   bindLazyTravelVirtualList(dom, signal);
+  bindLazyBlogVirtualList(dom, signal);
   window.addEventListener("beforeunload", () => handlers.onDispose(), listenerOptions);
 };
 
@@ -119,6 +138,26 @@ const bindLazyTravelVirtualList = (dom: AppDomNodes, signal: AbortSignal): void 
   maybeBind();
 };
 
+const bindLazyBlogVirtualList = (dom: AppDomNodes, signal: AbortSignal): void => {
+  let loading = false;
+  const maybeBind = (): void => {
+    if (loading || signal.aborted || !dom.view.querySelector("[data-blog-virtual-list]")) {
+      return;
+    }
+    loading = true;
+    void import("./blogVirtualList").then(({ bindBlogVirtualList }) => {
+      if (!signal.aborted) {
+        bindBlogVirtualList(dom, signal);
+      }
+      observer.disconnect();
+    });
+  };
+  const observer = new MutationObserver(maybeBind);
+  observer.observe(dom.view, { childList: true });
+  signal.addEventListener("abort", () => observer.disconnect(), { once: true });
+  maybeBind();
+};
+
 const handleAgendaMode = (event: Event, handlers: AppEventHandlers): void => {
   const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
     "button[data-agenda-mode]",
@@ -148,8 +187,22 @@ const handleAgendaRule = (event: Event, handlers: AppEventHandlers): void => {
 
 const handleBlogArticle = (event: Event, handlers: AppEventHandlers): void => {
   const rangeStart = blogArticleFromEvent(event);
-  if (rangeStart !== null) {
+  if (rangeStart) {
     handlers.onBlogArticle(rangeStart);
+  }
+};
+
+const handleBlogTag = (event: Event, handlers: AppEventHandlers): void => {
+  const tag = blogTagFilterFromEvent(event);
+  if (tag !== undefined) {
+    handlers.onBlogTagFilter(tag);
+  }
+};
+
+const handleBlogTime = (event: Event, handlers: AppEventHandlers): void => {
+  const time = blogTimeFilterFromEvent(event);
+  if (time !== undefined) {
+    handlers.onBlogTimeFilter(time);
   }
 };
 
@@ -157,5 +210,12 @@ const handleBlogZen = (event: Event, handlers: AppEventHandlers): void => {
   const zenMode = blogZenModeFromEvent(event);
   if (zenMode !== null) {
     handlers.onBlogZenMode(zenMode);
+  }
+};
+
+const handleBlogKeyboard = (event: KeyboardEvent, handlers: AppEventHandlers): void => {
+  const action = blogKeyboardActionFromEvent(event);
+  if (action && handlers.onBlogKeyboard(action)) {
+    event.preventDefault();
   }
 };

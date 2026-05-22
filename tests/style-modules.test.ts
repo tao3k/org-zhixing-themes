@@ -100,11 +100,16 @@ describe("style module boundaries", () => {
     expect(styles).toContain("padding: 14px var(--frame-inset);");
     expect(styles).toContain("gap: var(--reader-gutter);");
     expect(styles).toContain("border-left: var(--divider-width) solid var(--hairline);");
-    expect(styles).toContain(".blog-rail");
-    expect(styles).toContain(
-      "grid-template-columns: minmax(214px, 260px) minmax(0, var(--reader-width));",
-    );
-    expect(styles).toContain("border-right: var(--divider-width) solid var(--hairline);");
+    expect(styles).toContain(".blog-index");
+    expect(styles).toContain(".blog-time-thresholds");
+    expect(styles).toContain(".blog-tag-filter");
+    expect(styles).toContain(".blog-reasoning-paths");
+    expect(styles).toContain(".blog-index-article");
+    expect(styles).toContain('#app[data-reader-mode="zen"] .site-header');
+    expect(styles).not.toContain(".blog-time-point");
+    expect(styles).not.toContain(".zen-toolbar");
+    expect(styles).not.toContain(".blog-rail");
+    expect(styles).not.toContain("article-switcher");
     expect(styles).toContain(".source-select");
     expect(styles).toContain(".source-select-root");
     expect(styles).toContain('.source-select-item[data-selected="true"]');
@@ -115,8 +120,6 @@ describe("style module boundaries", () => {
     );
     expect(styles).toContain(".source-feed {\n  display: none;");
     expect(styles).toContain(".source-block--summary");
-    expect(styles).toContain(".life-index");
-    expect(styles).toContain(".life-index-item");
     expect(styles).toContain(".org-record-workbench .card-grid");
     expect(styles).toContain("grid-template-columns: minmax(0, var(--reader-wide-width));");
     expect(travel).toContain("color: var(--face-strong);");

@@ -176,7 +176,7 @@ export const cacheKeyFor = (
     agendaMode: "classic",
     agendaPanel: "trace",
     agendaRuleId: null,
-    blog: { articleRangeStart: null, zenMode: false },
+    blog: { articleRangeStart: null, tagFilter: null, timeFilter: null, zenMode: false },
     document,
     renderedHtml,
     sourceItem: {

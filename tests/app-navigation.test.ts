@@ -3,7 +3,7 @@ import { mountOrgZhixingApp } from "../src/app";
 import { attachmentGalleryFromSources } from "../src/attachmentGalleryModel";
 import { sourcePickerChangeEvent } from "../src/sourcePicker";
 import type { StaticSiteData, StaticSourceProjection } from "../src/staticSiteData";
-import { sectionRecord, sourceRange } from "./modelFixtures";
+import { record, sectionRecord, sourceRange } from "./modelFixtures";
 import { staticProjection } from "./staticProjection.fixture";
 
 vi.mock("photoswipe/lightbox", () => ({
@@ -198,6 +198,28 @@ describe("Org Zhixing navigator", () => {
     expect(url.hash).toBe("");
   });
 
+  it("keeps Zen reading chrome-free and supports keyboard exit and article switching", async () => {
+    mountStaticApp("/?view=blog", fetchBlogStaticFixture());
+
+    await waitForText("First Article");
+    document.querySelector<HTMLButtonElement>('button[data-blog-article="101"]')?.click();
+
+    await waitForText("First body");
+    expect(readerMode()).toBe("zen");
+    expect(document.querySelector(".zen-toolbar")).toBeNull();
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    await waitForText("Second body");
+    expect(new URL(window.location.href).searchParams.get("article")).toBe("202");
+    expect(readerMode()).toBe("zen");
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await vi.waitFor(() => expect(readerMode()).toBe("library"));
+    expect(new URL(window.location.href).searchParams.get("zen")).toBeNull();
+    expect(document.querySelector(".blog-index")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("Second body");
+  });
+
   it("loads source shards on demand while keeping site-wide Gallery and Records stable", async () => {
     const fetch = vi.fn(fetchShardedStaticFixture());
     mountStaticApp("/", fetch);
@@ -267,12 +289,35 @@ const fetchShardedStaticFixture = () => {
   };
 };
 
+const fetchBlogStaticFixture = () => {
+  const sources = [blogProjection()];
+  const staticSite = {
+    ...staticSiteBase(),
+    blog: blogIndexFixture(sources),
+    sources,
+  };
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const url = input instanceof URL ? input : new URL(String(input), window.location.href);
+    if (url.pathname.endsWith("/org-zhixing.toml")) {
+      return textResponse(configText);
+    }
+    if (url.pathname.endsWith("/org-zhixing.static.json")) {
+      return jsonResponse(staticSite);
+    }
+    return new Response("not found", { status: 404 });
+  });
+};
+
 const staticSiteFixture = (): StaticSiteData => ({
+  ...staticSiteBase(),
+  sources: [staticProjection(), demoProjection(), travelProjection()],
+});
+
+const staticSiteBase = (): Omit<StaticSiteData, "sources"> => ({
   schemaVersion: 1,
   generatedAt: "2026-05-20T00:00:00.000Z",
   configPath: "org-zhixing.toml",
   orgize: { buildTime: "test", gitHash: "test" },
-  sources: [staticProjection(), demoProjection(), travelProjection()],
 });
 
 const shardedStaticSiteFixture = (sources: StaticSourceProjection[]): StaticSiteData => ({
@@ -373,6 +418,81 @@ const demoProjection = (): StaticSourceProjection => {
   return projection;
 };
 
+const blogProjection = (): StaticSourceProjection => {
+  const projection = structuredClone(staticProjection());
+  projection.id = "blog-demo";
+  projection.name = "Blog Demo";
+  projection.file = "blog-demo.org";
+  projection.sourceFile = "blog/blog-demo.org";
+  projection.sourceBytes = 512;
+  projection.html = `
+    <main>
+      <h1>First Article</h1>
+      <p>First body</p>
+      <h1>Second Article</h1>
+      <p>Second body</p>
+    </main>
+  `;
+  projection.viewIndex.records = [
+    record({
+      effectiveTags: ["blog", "writing"],
+      properties: [{ key: "DATE", value: "<2026-05-17 Sun>" }],
+      rangeStart: 101,
+      title: "First Article",
+    }),
+    record({
+      effectiveTags: ["blog", "writing"],
+      properties: [{ key: "DATE", value: "<2026-05-16 Sat>" }],
+      rangeStart: 202,
+      title: "Second Article",
+    }),
+  ];
+  projection.sectionIndex.records = [
+    sectionRecord({
+      effectiveTags: ["blog", "writing"],
+      level: 1,
+      outlinePathText: ["First Article"],
+      rangeStart: 101,
+      title: "First Article",
+    }),
+    sectionRecord({
+      effectiveTags: ["blog", "writing"],
+      level: 1,
+      outlinePathText: ["Second Article"],
+      rangeStart: 202,
+      title: "Second Article",
+    }),
+  ];
+  projection.attachmentInventory.entries = [];
+  projection.attachmentInventory.display = [];
+  projection.agendaView.cards = [];
+  projection.agendaView.totalCandidates = 0;
+  projection.memory.stats.totalRecords = 0;
+  projection.memory.stats.currentRecords = 0;
+  projection.memory.records = [];
+  return projection;
+};
+
+const blogIndexFixture = (sources: StaticSourceProjection[]): StaticSiteData["blog"] => {
+  const articles = sources.flatMap((source) =>
+    source.viewIndex.records.map((article) => ({
+      ...article,
+      file: source.file,
+      sourceFile: source.sourceFile,
+      sourceId: source.id,
+      sourceName: source.name,
+    })),
+  );
+  return {
+    articleCount: articles.length,
+    articles,
+    dateRange: { start: "<2026-05-16 Sat>", end: "<2026-05-17 Sun>" },
+    siteWide: true,
+    sourceCount: sources.length,
+    tagFacets: [{ tag: "writing", count: articles.length }],
+  };
+};
+
 class FakeWorker extends EventTarget {
   postMessage(): void {}
   terminate(): void {}
@@ -397,6 +517,9 @@ const selectSource = (sourceFile: string): void => {
 };
 
 const view = (): string | null => document.querySelector("#app")?.getAttribute("data-view") ?? null;
+
+const readerMode = (): string | null =>
+  document.querySelector("#app")?.getAttribute("data-reader-mode") ?? null;
 
 const statusText = (): string => document.querySelector("#status")?.textContent ?? "";
 

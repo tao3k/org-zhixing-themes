@@ -51,6 +51,7 @@ const main = async () => {
       gitHash: Org.gitHash,
     },
     attachmentGallery: projectAttachmentGalleryView(sources),
+    blog: projectBlogIndex(sources),
     travel: projectTravelView(sources),
     sources: sources.map(sourceSummary),
   };
@@ -149,6 +150,109 @@ const requestAgendaView = (org, range) =>
       }),
     ),
   );
+
+const projectBlogIndex = (sources) => {
+  const articles = sources.flatMap((source) =>
+    articleRoots(
+      source.viewIndex.records.filter((record) =>
+        record.effectiveTags.some((tag) => tag.toLowerCase() === "blog"),
+      ),
+    ).map((record) => ({
+      bodyPreview: record.bodyPreview,
+      effectiveTags: record.effectiveTags,
+      file: source.file,
+      level: record.level,
+      outline: record.outline,
+      planning: record.planning,
+      properties: record.properties,
+      rangeStart: record.rangeStart,
+      sourceFile: source.sourceFile,
+      sourceId: source.id,
+      sourceName: source.name,
+      title: record.title,
+      todo: record.todo,
+      todoState: record.todoState,
+    })),
+  );
+  const sortedArticles = articles.sort(compareArticleRecency);
+  return {
+    articleCount: sortedArticles.length,
+    articles: sortedArticles,
+    dateRange: blogDateRange(sortedArticles),
+    siteWide: true,
+    sourceCount: new Set(sortedArticles.map((article) => article.sourceFile)).size,
+    tagFacets: blogTagFacets(sortedArticles),
+  };
+};
+
+const articleRoots = (records) => {
+  const roots = [];
+  let currentRoot = null;
+  for (const record of records) {
+    if (currentRoot && record.level > currentRoot.level) {
+      continue;
+    }
+    roots.push(record);
+    currentRoot = record;
+  }
+  return roots;
+};
+
+const blogTagFacets = (articles) => {
+  const counts = new Map();
+  for (const article of articles) {
+    for (const tag of article.effectiveTags) {
+      if (tag.toLowerCase() === "blog") {
+        continue;
+      }
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ count, tag }))
+    .sort((left, right) => right.count - left.count || left.tag.localeCompare(right.tag))
+    .slice(0, 16);
+};
+
+const blogDateRange = (articles) => {
+  const labels = articles.map(articleDateText).filter(Boolean);
+  if (labels.length === 0) {
+    return null;
+  }
+  return { end: labels[0], start: labels.at(-1) };
+};
+
+const compareArticleRecency = (left, right) => {
+  const leftRank = articleDateRank(left);
+  const rightRank = articleDateRank(right);
+  if (leftRank !== null && rightRank !== null && leftRank !== rightRank) {
+    return rightRank - leftRank;
+  }
+  if (leftRank !== null) return -1;
+  if (rightRank !== null) return 1;
+  return left.sourceFile.localeCompare(right.sourceFile) || left.rangeStart - right.rangeStart;
+};
+
+const articleDateRank = (article) => {
+  const text = articleDateText(article);
+  if (!text) {
+    return null;
+  }
+  const match = text.match(/(\d{4}-\d{2}-\d{2})(?:\s+\w+)?(?:\s+(\d{1,2}:\d{2}))?/);
+  if (!match) {
+    return null;
+  }
+  const timestamp = Date.parse(`${match[1]}T${match[2] ?? "00:00"}:00Z`);
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const articleDateText = (article) =>
+  propertyValue(article, "CLOSED") ??
+  propertyValue(article, "DATE") ??
+  propertyValue(article, "SCHEDULED") ??
+  article.planning.closed ??
+  article.planning.scheduled ??
+  null;
 
 const projectAttachmentInventory = async (org, config, source) => {
   const inventory = parseJson(org.attachmentInventoryJson(JSON.stringify(config.attachments)));
