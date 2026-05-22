@@ -7,6 +7,7 @@
   "budgets": {
     "staticManifestBytes": 500000,
     "sourceShardBytes": 2000000,
+    "memoryShardBytes": 1000000,
     "largestSourceShardBytes": 800000,
     "initialScriptBytes": 1500000,
     "initialScriptCount": 4,
@@ -28,16 +29,16 @@
     "idleInteractionChunkPrefetch": true
   },
   "metrics": {
-    "staticManifestBytes": 64445,
-    "sourceShardBytes": 1290224,
+    "staticManifestBytes": 64924,
+    "sourceShardBytes": 773652,
     "sourceShardCount": 8,
-    "largestSourceShardBytes": 407361,
+    "memoryShardBytes": 517761,
+    "memoryShardCount": 8,
+    "largestMemoryShardBytes": 155469,
+    "largestMemoryShard": "org-zhixing.memory/wallpaper-gallery.json",
+    "largestSourceShardBytes": 252047,
     "largestSourceShard": "org-zhixing.sources/wallpaper-gallery.json",
     "largestSourceShardFields": [
-      {
-        "field": "memory",
-        "bytes": 155366
-      },
       {
         "field": "sectionIndex",
         "bytes": 133539
@@ -63,6 +64,10 @@
         "bytes": 152
       },
       {
+        "field": "memoryShardPath",
+        "bytes": 43
+      },
+      {
         "field": "lint",
         "bytes": 33
       },
@@ -76,7 +81,6 @@
       }
     ],
     "sourceShardFieldBytes": {
-      "memory": 516971,
       "sectionIndex": 458044,
       "attachmentInventory": 172647,
       "agendaView": 77030,
@@ -84,16 +88,23 @@
       "viewIndex": 29398,
       "agendaRange": 1216,
       "lint": 812,
+      "memoryShardPath": 327,
       "sourceFile": 207,
       "file": 136,
       "orgTitle": 34
     },
-    "initialScriptBytes": 940290,
+    "memoryShardFieldBytes": {
+      "memory": 516971,
+      "sourceFile": 207,
+      "sourceId": 135,
+      "schemaVersion": 8
+    },
+    "initialScriptBytes": 947399,
     "initialScriptCount": 3,
     "initialScripts": [
       "assets/runtime.545635b2.js",
       "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.cfad6edd.js"
+      "assets/app.32797c0f.js"
     ],
     "parserWorkerScriptBytes": 119867,
     "wasmAssetBytes": 2158753,
@@ -159,10 +170,10 @@
     "idleInteractionChunkPrefetch": true,
     "staticManifestParse": {
       "name": "staticManifestParse",
-      "minMs": 0.13,
+      "minMs": 0.12,
       "p50Ms": 0.13,
-      "p95Ms": 0.18,
-      "maxMs": 0.34,
+      "p95Ms": 0.17,
+      "maxMs": 0.44,
       "avgMs": 0.14
     },
     "travelProjectionRead": {
@@ -176,22 +187,27 @@
   },
   "budgetResults": {
     "staticManifestBytes": {
-      "actual": 64445,
+      "actual": 64924,
       "budget": 500000,
       "pass": true
     },
     "sourceShardBytes": {
-      "actual": 1290224,
+      "actual": 773652,
       "budget": 2000000,
       "pass": true
     },
+    "memoryShardBytes": {
+      "actual": 517761,
+      "budget": 1000000,
+      "pass": true
+    },
     "largestSourceShardBytes": {
-      "actual": 407361,
+      "actual": 252047,
       "budget": 800000,
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 940290,
+      "actual": 947399,
       "budget": 1500000,
       "pass": true
     },
@@ -206,7 +222,7 @@
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.18,
+      "actual": 0.17,
       "budget": 80,
       "pass": true
     },
@@ -284,13 +300,18 @@
   "recommendations": [
     {
       "area": "static-manifest-shards",
-      "signal": "entry manifest is 63 KiB; 8 source shards are 1.2 MiB",
+      "signal": "entry manifest is 63 KiB; 8 source shards are 756 KiB",
       "action": "Keep site-wide Gallery and Travel on compact projections; load full source shards only for source-scoped or Records views."
     },
     {
-      "area": "source-shard-projection-split",
-      "signal": "memory+sectionIndex account for 952 KiB of 1.2 MiB source shards",
-      "action": "Split memory and semantic section payloads into on-demand shards before scaling the corpus beyond the current demo set."
+      "area": "static-memory-shards",
+      "signal": "8 memory shards are 506 KiB and source shards contain no memory field",
+      "action": "Keep Memory view on the dedicated shard path; do not merge memory back into source shards for Blog, Gallery, Records, or Travel."
+    },
+    {
+      "area": "section-index-shard-split",
+      "signal": "sectionIndex accounts for 447 KiB of 756 KiB source shards",
+      "action": "Split sectionIndex next if Records and article rendering need independent load paths at a larger corpus scale."
     },
     {
       "area": "parser-worker-startup",

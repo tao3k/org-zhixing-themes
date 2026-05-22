@@ -243,6 +243,12 @@ describe("Org Zhixing navigator", () => {
         "/org-zhixing.sources/travel.json",
       ]),
     );
+    expect(fetchedPaths(fetch)).not.toContain("/org-zhixing.memory/wallpaper-gallery.json");
+
+    clickNav("memory");
+    await waitForView("memory");
+    await vi.waitFor(() => expect(document.querySelectorAll(".memory-record")).toHaveLength(1));
+    expect(fetchedPaths(fetch)).toContain("/org-zhixing.memory/wallpaper-gallery.json");
     expect(createWorker).not.toHaveBeenCalled();
   });
 });
@@ -278,7 +284,18 @@ const fetchShardedStaticFixture = () => {
   const sources = [staticProjection(), demoProjection(), travelProjection()];
   const staticSite = shardedStaticSiteFixture(sources);
   const shards = new Map(
-    sources.map((source) => [`/org-zhixing.sources/${source.id}.json`, source]),
+    sources.map((source) => [`/org-zhixing.sources/${source.id}.json`, sourceShardFixture(source)]),
+  );
+  const memoryShards = new Map(
+    sources.map((source) => [
+      `/org-zhixing.memory/${source.id}.json`,
+      {
+        schemaVersion: 1,
+        sourceId: source.id,
+        sourceFile: source.sourceFile,
+        memory: source.memory,
+      },
+    ]),
   );
   return async (input: RequestInfo | URL) => {
     const url = input instanceof URL ? input : new URL(String(input), window.location.href);
@@ -291,6 +308,10 @@ const fetchShardedStaticFixture = () => {
     const shard = shards.get(url.pathname);
     if (shard) {
       return jsonResponse(shard);
+    }
+    const memoryShard = memoryShards.get(url.pathname);
+    if (memoryShard) {
+      return jsonResponse(memoryShard);
     }
     return new Response("not found", { status: 404 });
   };
@@ -349,8 +370,16 @@ const shardedStaticSiteFixture = (sources: StaticSourceProjection[]): StaticSite
     sourceFile: source.sourceFile,
     sourceBytes: source.sourceBytes,
     shardPath: `org-zhixing.sources/${source.id}.json`,
+    memoryShardPath: `org-zhixing.memory/${source.id}.json`,
   })),
 });
+
+const sourceShardFixture = (source: StaticSourceProjection): StaticSourceProjection => {
+  const projection = structuredClone(source);
+  delete projection.memory;
+  projection.memoryShardPath = `org-zhixing.memory/${source.id}.json`;
+  return projection;
+};
 
 const travelProjection = (): StaticSourceProjection => {
   const projection = structuredClone(staticProjection());
@@ -386,9 +415,9 @@ const travelProjection = (): StaticSourceProjection => {
   projection.attachmentInventory.display = [];
   projection.agendaView.cards = [];
   projection.agendaView.totalCandidates = 0;
-  projection.memory.stats.totalRecords = 0;
-  projection.memory.stats.currentRecords = 0;
-  projection.memory.records = [];
+  projection.memory!.stats.totalRecords = 0;
+  projection.memory!.stats.currentRecords = 0;
+  projection.memory!.records = [];
   return projection;
 };
 
@@ -421,7 +450,7 @@ const demoProjection = (): StaticSourceProjection => {
     absolutePath: "/tmp/demo.pdf",
     mediaKind: "pdf",
   });
-  projection.memory.records[0].title = "Demo Source";
+  projection.memory!.records[0].title = "Demo Source";
   return projection;
 };
 
@@ -474,9 +503,9 @@ const blogProjection = (): StaticSourceProjection => {
   projection.attachmentInventory.display = [];
   projection.agendaView.cards = [];
   projection.agendaView.totalCandidates = 0;
-  projection.memory.stats.totalRecords = 0;
-  projection.memory.stats.currentRecords = 0;
-  projection.memory.records = [];
+  projection.memory!.stats.totalRecords = 0;
+  projection.memory!.stats.currentRecords = 0;
+  projection.memory!.records = [];
   return projection;
 };
 

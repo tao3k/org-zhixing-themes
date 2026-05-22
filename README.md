@@ -143,14 +143,16 @@ checkout when the Rust WASM package needs rebuilding.
 
 `npm run build` runs `npm run generate:static` before Rspack. That generator
 uses the Rust/WASM package to precompute `viewIndex`, `sectionIndex`, rendered
-HTML, attachment inventory, memory, agenda, and lint for every configured Org
+HTML, attachment inventory, memory, agenda, and lint for every discovered Org
 source.  The build ships a compact `org-zhixing.static.json` entry manifest plus
-per-source JSON shards under `org-zhixing.sources/`.
+per-source JSON shards under `org-zhixing.sources/` and lazy Agent memory shards
+under `org-zhixing.memory/`.
 
 At runtime the app first looks for that static manifest. GitHub Pages therefore
 hydrates source navigation, site-wide Gallery, and Travel from immutable compact
-static data. Source-scoped views and the site-wide Notes view load the full
-source shards on demand instead of parsing one large manifest up front. If the
+static data. Source-scoped views and the site-wide Notes view load source
+shards on demand instead of parsing one large manifest up front, while Memory
+loads its dedicated memory shard only when the Memory view needs it. If the
 manifest is absent, such as in local watch mode, the app falls back to the
 worker path.
 The status line reports `static` timing for precomputed data and

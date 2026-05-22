@@ -44,6 +44,7 @@ import { renderStats, renderView } from "./render";
 import {
   documentViewFromStaticSource,
   loadAllStaticSources,
+  loadStaticMemoryForSource,
   loadStaticSourceFor,
   type StaticSiteData,
   type StaticSourceProjection,
@@ -398,12 +399,33 @@ class OrgZhixingApp implements OrgZhixingAppHandle {
   }
 
   async #refreshMemoryIfNeeded(): Promise<void> {
-    if (this.#documentView?.agentMemory) {
+    if (!this.#documentView || this.#documentView.agentMemory) {
       return;
     }
     const version = this.#documentVersion;
     this.#pendingMessage = "Projecting Agent memory...";
     this.#render();
+    if (this.#staticSite && this.#sourceItem) {
+      const startedAt = performance.now();
+      const staticMemory = await loadStaticMemoryForSource(this.#staticSite, this.#sourceItem);
+      if (version !== this.#documentVersion) {
+        return;
+      }
+      if (staticMemory) {
+        this.#timings = { ...this.#timings, memoryMs: performance.now() - startedAt };
+        this.#documentView = withAgentMemory(
+          this.#documentView,
+          createAgentMemoryView(staticMemory),
+        );
+        this.#viewCache.delete("memory");
+        this.#pendingMessage = "";
+        return;
+      }
+      if (!this.#sourceOrg) {
+        this.#pendingMessage = "";
+        return;
+      }
+    }
     const memory = await this.#session.memory();
     if (version !== this.#documentVersion) {
       return;

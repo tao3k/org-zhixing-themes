@@ -90,6 +90,26 @@ describe("Org Zhixing performance regression gates", () => {
     expect(perfScript).toContain("idleInteractionChunkPrefetch: true");
   });
 
+  it("keeps static Agent memory behind dedicated lazy shards", () => {
+    const app = readFileSync("src/app.ts", "utf8");
+    const generator = readFileSync("scripts/generate-static-site.mjs", "utf8");
+    const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
+    const rspackConfig = readFileSync("rspack.config.mjs", "utf8");
+    const staticSiteData = readFileSync("src/staticSiteData.ts", "utf8");
+
+    expect(generator).toContain('const sourceMemoryShardPublicDir = "org-zhixing.memory";');
+    expect(generator).toContain("sourceProjectionShard(source)");
+    expect(generator).toContain("const { memory, ...projection } = source;");
+    expect(generator).toContain("memoryShardPath: sourceMemoryShardPublicPath(source)");
+    expect(staticSiteData).toContain("loadStaticMemoryForSource");
+    expect(staticSiteData).toContain("fetchStaticMemoryShard");
+    expect(app).toContain("loadStaticMemoryForSource(this.#staticSite, this.#sourceItem)");
+    expect(rspackConfig).toContain("staticMemoryShardRoot");
+    expect(rspackConfig).toContain("org-zhixing.memory/[name][ext]");
+    expect(perfScript).toContain("memoryShardBytes");
+    expect(perfScript).toContain("static-memory-shards");
+  });
+
   it("keeps static Blog generation on one article per discovered Org file", () => {
     const generator = readFileSync("scripts/generate-static-site.mjs", "utf8");
 

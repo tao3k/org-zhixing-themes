@@ -1122,17 +1122,25 @@ describe("Org source view projections", () => {
 
     expect(matched).toBe(staticSource);
 
-    const document = documentViewFromStaticSource(staticSource, {
+    const agenda = {
       start: { year: 2026, month: 5, day: 15 },
       days: 7,
       end: { year: 2026, month: 5, day: 21 },
       label: "2026-05-15 to 2026-05-21",
       limit: 32,
       mode: "classic",
-    });
+    } as const;
+    const leanStaticSource = structuredClone(staticSource);
+    delete leanStaticSource.memory;
+
+    const leanDocument = documentViewFromStaticSource(leanStaticSource, agenda);
+    expect(leanDocument.agentMemory).toBeNull();
+
+    const document = documentViewFromStaticSource(leanStaticSource, agenda, staticSource.memory);
 
     expect(document.counts.attachments).toBe(1);
     expect(document.counts.memory).toBe(1);
+    expect(document.agentMemory?.response.stats.totalRecords).toBe(1);
     expect(document.lint).toEqual([]);
     expect(renderView({ view: "gallery", document })).toContain("1 image items");
     expect(

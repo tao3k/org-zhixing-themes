@@ -44,9 +44,12 @@ The static generator owns:
 - legacy explicit-source override when present;
 - writing =org-zhixing.static.json= as the compact entry manifest with
   =sourceFile= values such as =blog/travel.org=;
-- writing full per-source projections under =org-zhixing.sources/*.json= so
-  large HTML, section, memory, agenda, lint, and attachment DTOs can be loaded
-  only when a view needs them.
+- writing per-source projections under =org-zhixing.sources/*.json= so large
+  HTML, section, agenda, lint, and attachment DTOs can be loaded only when a
+  view needs them;
+- writing Agent memory projections under =org-zhixing.memory/*.json= so Memory
+  can load historical decision context without forcing Blog, Gallery, Notes,
+  or Travel to pay that JSON cost.
 
 The browser runtime owns:
 

@@ -22,6 +22,7 @@ const warmups = numberArg("warmups", 5);
 const budgets = {
   staticManifestBytes: 500_000,
   sourceShardBytes: 2_000_000,
+  memoryShardBytes: 1_000_000,
   largestSourceShardBytes: 800_000,
   initialScriptBytes: 1_500_000,
   initialScriptCount: 4,
@@ -48,8 +49,11 @@ const staticManifestText = await readFile(resolve(distRoot, "org-zhixing.static.
 const staticManifest = JSON.parse(staticManifestText);
 const assets = await assetInventory();
 const sourceShards = await sourceShardInventory();
+const memoryShards = await memoryShardInventory();
 const sourceShardBreakdown = await sourceShardProjectionBreakdown(sourceShards);
+const memoryShardBreakdown = await sourceShardProjectionBreakdown(memoryShards);
 const sourceShardFieldBytes = aggregateShardFieldBytes(sourceShardBreakdown);
+const memoryShardFieldBytes = aggregateShardFieldBytes(memoryShardBreakdown);
 const initialScripts = scriptSrcs(indexHtml);
 const initialScriptTexts = await Promise.all(
   initialScripts.map((script) => readFile(resolve(distRoot, script), "utf8")),
@@ -69,10 +73,15 @@ const metrics = {
   staticManifestBytes: Buffer.byteLength(staticManifestText),
   sourceShardBytes: sourceShards.reduce((sum, shard) => sum + shard.bytes, 0),
   sourceShardCount: sourceShards.length,
+  memoryShardBytes: memoryShards.reduce((sum, shard) => sum + shard.bytes, 0),
+  memoryShardCount: memoryShards.length,
+  largestMemoryShardBytes: memoryShards[0]?.bytes ?? 0,
+  largestMemoryShard: memoryShards[0]?.path ?? null,
   largestSourceShardBytes: sourceShards[0]?.bytes ?? 0,
   largestSourceShard: sourceShards[0]?.path ?? null,
   largestSourceShardFields: sourceShardBreakdown[0]?.fields ?? [],
   sourceShardFieldBytes,
+  memoryShardFieldBytes,
   initialScriptBytes,
   initialScriptCount: initialScripts.length,
   initialScripts,
@@ -137,6 +146,9 @@ console.log(
   `source shards ${metrics.sourceShardCount} files ${formatBytes(metrics.sourceShardBytes)}`,
 );
 console.log(
+  `memory shards ${metrics.memoryShardCount} files ${formatBytes(metrics.memoryShardBytes)}`,
+);
+console.log(
   `initial scripts ${metrics.initialScriptCount} files ${formatBytes(metrics.initialScriptBytes)}`,
 );
 console.log(`blog ${metrics.blogArticles} Org files from ${metrics.blogSourceCount} Org files`);
@@ -183,6 +195,24 @@ async function sourceShardInventory() {
       const item = await stat(path);
       if (item.isFile()) {
         sizes.push({ path: `org-zhixing.sources/${entry}`, bytes: item.size });
+      }
+    }
+    return sizes.sort((left, right) => right.bytes - left.bytes);
+  } catch {
+    return [];
+  }
+}
+
+async function memoryShardInventory() {
+  const shardRoot = resolve(distRoot, "org-zhixing.memory");
+  try {
+    const entries = await readdir(shardRoot);
+    const sizes = [];
+    for (const entry of entries) {
+      const path = resolve(shardRoot, entry);
+      const item = await stat(path);
+      if (item.isFile()) {
+        sizes.push({ path: `org-zhixing.memory/${entry}`, bytes: item.size });
       }
     }
     return sizes.sort((left, right) => right.bytes - left.bytes);
@@ -276,6 +306,7 @@ function evaluateBudgets(metrics, budgetConfig) {
   return {
     staticManifestBytes: passMetric(metrics.staticManifestBytes, budgetConfig.staticManifestBytes),
     sourceShardBytes: passMetric(metrics.sourceShardBytes, budgetConfig.sourceShardBytes),
+    memoryShardBytes: passMetric(metrics.memoryShardBytes, budgetConfig.memoryShardBytes),
     largestSourceShardBytes: passMetric(
       metrics.largestSourceShardBytes,
       budgetConfig.largestSourceShardBytes,
@@ -384,14 +415,30 @@ function recommendationsFor(metrics) {
         "Keep site-wide Gallery and Travel on compact projections; load full source shards only for source-scoped or Records views.",
     });
   }
-  const semanticShardBytes =
-    (metrics.sourceShardFieldBytes.memory ?? 0) + (metrics.sourceShardFieldBytes.sectionIndex ?? 0);
-  if (semanticShardBytes > metrics.sourceShardBytes * 0.5) {
+  const sourceMemoryBytes = metrics.sourceShardFieldBytes.memory ?? 0;
+  if (sourceMemoryBytes > 0) {
     recommendations.push({
-      area: "source-shard-projection-split",
-      signal: `memory+sectionIndex account for ${formatBytes(semanticShardBytes)} of ${formatBytes(metrics.sourceShardBytes)} source shards`,
+      area: "static-memory-shard-split",
+      signal: `memory still accounts for ${formatBytes(sourceMemoryBytes)} inside source shards`,
       action:
-        "Split memory and semantic section payloads into on-demand shards before scaling the corpus beyond the current demo set.",
+        "Keep memory as an on-demand shard so normal source projections do not load the agent-memory payload.",
+    });
+  }
+  if (metrics.memoryShardCount > 0 && sourceMemoryBytes === 0) {
+    recommendations.push({
+      area: "static-memory-shards",
+      signal: `${metrics.memoryShardCount} memory shards are ${formatBytes(metrics.memoryShardBytes)} and source shards contain no memory field`,
+      action:
+        "Keep Memory view on the dedicated shard path; do not merge memory back into source shards for Blog, Gallery, Records, or Travel.",
+    });
+  }
+  const sectionIndexBytes = metrics.sourceShardFieldBytes.sectionIndex ?? 0;
+  if (sectionIndexBytes > metrics.sourceShardBytes * 0.5) {
+    recommendations.push({
+      area: "section-index-shard-split",
+      signal: `sectionIndex accounts for ${formatBytes(sectionIndexBytes)} of ${formatBytes(metrics.sourceShardBytes)} source shards`,
+      action:
+        "Split sectionIndex next if Records and article rendering need independent load paths at a larger corpus scale.",
     });
   }
   if (metrics.sourceShardCount > 0 && metrics.blogSourceCount < metrics.sourceShardCount) {

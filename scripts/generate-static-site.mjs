@@ -14,6 +14,8 @@ const outputRoot = resolve(projectRoot, ".cache/org-zhixing");
 const outputPath = resolve(outputRoot, "static-site.json");
 const sourceShardPublicDir = "org-zhixing.sources";
 const sourceShardRoot = resolve(outputRoot, sourceShardPublicDir);
+const sourceMemoryShardPublicDir = "org-zhixing.memory";
+const sourceMemoryShardRoot = resolve(outputRoot, sourceMemoryShardPublicDir);
 const configPath = "org-zhixing.toml";
 const htmlWindow = new Window({
   settings: {
@@ -89,11 +91,22 @@ const projectSource = async (source, config) => {
 
 const writeSourceShards = async (sources) => {
   await rm(sourceShardRoot, { recursive: true, force: true });
+  await rm(sourceMemoryShardRoot, { recursive: true, force: true });
   await mkdir(sourceShardRoot, { recursive: true });
+  await mkdir(sourceMemoryShardRoot, { recursive: true });
   await Promise.all(
-    sources.map((source) =>
-      writeFile(sourceShardPath(source), `${JSON.stringify(source)}\n`, "utf8"),
-    ),
+    sources.flatMap((source) => [
+      writeFile(
+        sourceShardPath(source),
+        `${JSON.stringify(sourceProjectionShard(source))}\n`,
+        "utf8",
+      ),
+      writeFile(
+        sourceMemoryShardPath(source),
+        `${JSON.stringify(sourceMemoryShard(source))}\n`,
+        "utf8",
+      ),
+    ]),
   );
 };
 
@@ -105,9 +118,30 @@ const sourceSummary = (source) => ({
   sourceFile: source.sourceFile,
   sourceBytes: source.sourceBytes,
   shardPath: joinPath(sourceShardPublicDir, `${safeShardId(source.id)}.json`),
+  memoryShardPath: sourceMemoryShardPublicPath(source),
 });
 
 const sourceShardPath = (source) => resolve(sourceShardRoot, `${safeShardId(source.id)}.json`);
+const sourceMemoryShardPath = (source) =>
+  resolve(sourceMemoryShardRoot, `${safeShardId(source.id)}.json`);
+
+const sourceMemoryShardPublicPath = (source) =>
+  joinPath(sourceMemoryShardPublicDir, `${safeShardId(source.id)}.json`);
+
+const sourceProjectionShard = (source) => {
+  const { memory, ...projection } = source;
+  return {
+    ...projection,
+    memoryShardPath: sourceMemoryShardPublicPath(source),
+  };
+};
+
+const sourceMemoryShard = (source) => ({
+  schemaVersion: 1,
+  sourceId: source.id,
+  sourceFile: source.sourceFile,
+  memory: source.memory,
+});
 
 const safeShardId = (value) =>
   String(value)

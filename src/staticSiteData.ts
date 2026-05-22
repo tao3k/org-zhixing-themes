@@ -28,6 +28,7 @@ export type StaticSourceSummary = {
   sourceFile: string;
   sourceBytes: number;
   shardPath?: string;
+  memoryShardPath?: string;
 };
 
 export type StaticSourceProjection = {
@@ -42,9 +43,17 @@ export type StaticSourceProjection = {
   sectionIndex: OrgizeSectionIndexResponseDto;
   html: string;
   attachmentInventory: OrgizeAttachmentInventoryResponseDto;
-  memory: OrgizeMemoryResponseDto;
+  memory?: OrgizeMemoryResponseDto;
+  memoryShardPath?: string;
   agendaView: OrgizeAgendaViewResponseDto;
   lint: OrgizeLintResponseDto;
+};
+
+export type StaticMemoryShard = {
+  schemaVersion: 1;
+  sourceId: string;
+  sourceFile: string;
+  memory: OrgizeMemoryResponseDto;
 };
 
 export type StaticBlogArticle = BlogArticleRecord & {
@@ -83,6 +92,10 @@ const sourceCache = new WeakMap<
   StaticSiteData,
   Map<string, Promise<StaticSourceProjection | null>>
 >();
+const memoryCache = new WeakMap<
+  StaticSiteData,
+  Map<string, Promise<OrgizeMemoryResponseDto | null>>
+>();
 
 export const loadStaticSiteData = async (): Promise<StaticSiteData | null> => {
   try {
@@ -107,12 +120,38 @@ export const loadStaticSourceFor = async (
   if (!staticSite) {
     return null;
   }
-  const matched =
-    staticSite.sources.find(
-      (item) =>
-        item.sourceFile === source.sourceFile || item.file === source.file || item.id === source.id,
-    ) ?? null;
+  const matched = findStaticSource(staticSite, source) ?? null;
   return matched ? loadStaticSource(staticSite, matched) : null;
+};
+
+export const loadStaticMemoryForSource = async (
+  staticSite: StaticSiteData | null,
+  source: SourceItem | StaticSource,
+): Promise<OrgizeMemoryResponseDto | null> => {
+  if (!staticSite) {
+    return null;
+  }
+  if (isStaticSourceProjection(source) && source.memory) {
+    return source.memory;
+  }
+  const matched = findStaticSource(staticSite, source);
+  if (matched && isStaticSourceProjection(matched) && matched.memory) {
+    return matched.memory;
+  }
+  const shardPath =
+    matched?.memoryShardPath ?? ("memoryShardPath" in source ? source.memoryShardPath : undefined);
+  if (!shardPath) {
+    return null;
+  }
+  const cache = memoryCacheFor(staticSite);
+  const key = matched?.sourceFile ?? source.sourceFile;
+  const cached = cache.get(key);
+  if (cached) {
+    return cached;
+  }
+  const loaded = fetchStaticMemoryShard(shardPath);
+  cache.set(key, loaded);
+  return loaded;
 };
 
 export const loadAllStaticSources = async (
@@ -127,11 +166,7 @@ export const loadAllStaticSources = async (
 export const staticSourceFor = (
   staticSite: StaticSiteData | null,
   source: SourceItem,
-): StaticSource | null =>
-  staticSite?.sources.find(
-    (item) =>
-      item.sourceFile === source.sourceFile || item.file === source.file || item.id === source.id,
-  ) ?? null;
+): StaticSource | null => (staticSite ? findStaticSource(staticSite, source) : null);
 
 export const sourceItemsFromStaticSite = (staticSite: StaticSiteData | null): SourceItem[] =>
   staticSite?.sources.map((source) => ({
@@ -149,12 +184,14 @@ export const withStaticSiteSources = (
   return sources.length > 0 ? { ...config, sources } : config;
 };
 
-export const isStaticSourceProjection = (source: StaticSource): source is StaticSourceProjection =>
-  "viewIndex" in source;
+export const isStaticSourceProjection = (
+  source: SourceItem | StaticSource,
+): source is StaticSourceProjection => "viewIndex" in source;
 
 export const documentViewFromStaticSource = (
   source: StaticSourceProjection,
   agenda: AgendaSettings,
+  memory: OrgizeMemoryResponseDto | null = source.memory ?? null,
 ): OrgizeDocumentView => {
   let document = createDocumentView(
     source.viewIndex.records,
@@ -162,9 +199,20 @@ export const documentViewFromStaticSource = (
     source.sectionIndex.records,
   );
   document = withAttachmentInventory(document, source.attachmentInventory);
-  document = withAgentMemory(document, createAgentMemoryView(source.memory));
+  if (memory) {
+    document = withAgentMemory(document, createAgentMemoryView(memory));
+  }
   return withAgendaView(document, source.agendaView, source.agendaRange ?? agenda);
 };
+
+const findStaticSource = (
+  staticSite: StaticSiteData,
+  source: SourceItem | StaticSource,
+): StaticSource | null =>
+  staticSite.sources.find(
+    (item) =>
+      item.sourceFile === source.sourceFile || item.file === source.file || item.id === source.id,
+  ) ?? null;
 
 const loadStaticSource = async (
   staticSite: StaticSiteData,
@@ -199,6 +247,18 @@ const sourceCacheFor = (
   return next;
 };
 
+const memoryCacheFor = (
+  staticSite: StaticSiteData,
+): Map<string, Promise<OrgizeMemoryResponseDto | null>> => {
+  const cached = memoryCache.get(staticSite);
+  if (cached) {
+    return cached;
+  }
+  const next = new Map<string, Promise<OrgizeMemoryResponseDto | null>>();
+  memoryCache.set(staticSite, next);
+  return next;
+};
+
 const fetchStaticSourceShard = async (
   shardPath: string,
 ): Promise<StaticSourceProjection | null> => {
@@ -211,6 +271,21 @@ const fetchStaticSourceShard = async (
     return value.viewIndex && value.sectionIndex && value.html !== undefined
       ? (value as StaticSourceProjection)
       : null;
+  } catch {
+    return null;
+  }
+};
+
+const fetchStaticMemoryShard = async (
+  shardPath: string,
+): Promise<OrgizeMemoryResponseDto | null> => {
+  try {
+    const response = await fetch(publicAssetUrl(shardPath));
+    if (!response.ok) {
+      return null;
+    }
+    const value = (await response.json()) as Partial<StaticMemoryShard>;
+    return value.schemaVersion === 1 && value.memory ? value.memory : null;
   } catch {
     return null;
   }

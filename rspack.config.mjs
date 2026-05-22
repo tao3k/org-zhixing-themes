@@ -8,6 +8,7 @@ const orgizePackageRoot = resolve(projectRoot, "node_modules/orgize");
 const publicRoot = resolve(projectRoot, "public");
 const staticManifestPath = resolve(projectRoot, ".cache/org-zhixing/static-site.json");
 const staticSourceShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.sources");
+const staticMemoryShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.memory");
 const orgizePackageWatchFiles = existsSync(orgizePackageRoot)
   ? [
       resolve(orgizePackageRoot, "worker.js"),
@@ -82,6 +83,14 @@ export default (_env, argv) => {
                 {
                   from: resolve(staticSourceShardRoot, "*.json"),
                   to: "org-zhixing.sources/[name][ext]",
+                },
+              ]
+            : []),
+          ...(existsSync(staticMemoryShardRoot)
+            ? [
+                {
+                  from: resolve(staticMemoryShardRoot, "*.json"),
+                  to: "org-zhixing.memory/[name][ext]",
                 },
               ]
             : []),
