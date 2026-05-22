@@ -66,6 +66,26 @@ wrong.
 - Zen Glance is a windowed reading surface.  The floating-panel state machine
   owns its size and position; CSS only paints the shell and content.
 
+** Org Native Alignment
+
+The frontend should make Org syntax beautiful by consuming parser/exporter
+facts, not by reparsing Org text in TypeScript.
+
+| Org-modern area | TypeScript implementation |
+|-----------------+---------------------------|
+| Headline stars | CSS structural markers on rendered headings |
+| TODO and DONE states | =sectionIndex= TODO fields become heading markers with semantic tones |
+| Priority cookies | parser priority DTO becomes compact =[#A]/[#B]/[#C]= heading markers |
+| Planning timestamps | =OrgizeTimestampDto= becomes =time.org-timestamp= with active/inactive/range state |
+| Tags | effective parser tags become compact Org meta labels |
+| Property drawers | parser property DTOs become structural =dl= rows, not body text |
+| Tables | exported tables are wrapped in =.org-table-frame= and header cells are promoted to semantic =th= |
+| Example/source blocks | exported =pre/code= blocks are framed with Org-style block names |
+| Checkboxes | only attribute/DTO-backed checkbox state is rendered; if export drops state, the parser must expose it before TS paints it |
+
+This is the boundary: TypeScript can beautify semantic facts, but it must not
+invent a second Org parser with regular expressions.
+
 ** Tests
 
 The style tests protect the contract:
@@ -78,10 +98,14 @@ The style tests protect the contract:
 - rendered Org remains semantic: headings, TODO/DONE, tags, property rows,
   source blocks, tables, and meta chips are styled by Org meaning, not by page
   cards.
+- model render tests verify that TODO, priority, planning timestamps, tables,
+  and source/example blocks produce explicit Org-native HTML affordances.
 
 ** Current Slice
 
-This slice introduces the generated token contract and migrates the foundation,
+This slice introduces the generated token contract, migrates the foundation,
 blog reader, Travel, attachment gallery, rendered Org, and memory records onto
-the face economy.  Later slices can move agenda modules through the same gate
-once their product layout is revisited.
+the face economy, and adds explicit Org-native render affordances for headings,
+planning timestamps, tables, and blocks in the TypeScript renderer.  Checkboxes
+stay behind a parser-owned DTO boundary.  Later slices can move agenda modules
+through the same gate once their product layout is revisited.

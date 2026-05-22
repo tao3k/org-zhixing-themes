@@ -1,5 +1,10 @@
-import type { OrgizePropertyDto, OrgizeSectionIndexRecordDto } from "orgize/dto";
+import type {
+  OrgizePropertyDto,
+  OrgizeSectionIndexRecordDto,
+  OrgizeTimestampDto,
+} from "orgize/dto";
 import type { OrgizeDocumentView } from "./model";
+import { renderTimestamp } from "./orgTimestampRender";
 
 export type SectionRecord = OrgizeSectionIndexRecordDto & {
   outlinePathText?: string[];
@@ -8,6 +13,7 @@ export type SectionRecord = OrgizeSectionIndexRecordDto & {
 
 type PlanningEntry = {
   label: "SCHEDULED" | "DEADLINE" | "CLOSED";
+  timestamp: OrgizeTimestampDto | null;
   value: string;
 };
 
@@ -70,10 +76,12 @@ const renderPlanning = (record: SectionRecord): HTMLElement => {
   row.className = "org-meta-row org-meta-row--planning";
   for (const entry of planningEntries(record)) {
     const item = document.createElement("span");
-    item.className = `org-meta-chip org-meta-chip--${entry.label.toLowerCase()}`;
+    const kind = entry.label.toLowerCase();
+    item.className = `org-meta-chip org-planning-chip org-planning-chip--${kind} org-meta-chip--${kind}`;
     const label = document.createElement("b");
+    label.className = "org-planning-label";
     label.textContent = entry.label;
-    item.append(label, document.createTextNode(` ${entry.value}`));
+    item.append(label, renderTimestamp(document, entry.timestamp, entry.value));
     row.append(item);
   }
   return row;
@@ -125,7 +133,16 @@ const planningEntry = (label: PlanningEntry["label"], value: unknown): PlanningE
       : value && typeof value === "object" && "raw" in value && typeof value.raw === "string"
         ? value.raw
         : "";
-  return raw ? { label, value: raw } : null;
+  return raw
+    ? {
+        label,
+        timestamp:
+          value && typeof value === "object" && "kind" in value
+            ? (value as OrgizeTimestampDto)
+            : null,
+        value: raw,
+      }
+    : null;
 };
 
 const visibleProperties = (record: SectionRecord): OrgizePropertyDto[] =>

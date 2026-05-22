@@ -14,6 +14,7 @@ export type AppUrlState = {
 
 export const writeAppUrlState = (state: AppUrlState): void => {
   const url = new URL(window.location.href);
+  url.hash = "";
   if (state.source === null) {
     url.searchParams.delete("source");
   } else if (state.source) {

@@ -181,6 +181,22 @@ describe("Org Zhixing navigator", () => {
     expect(document.body.textContent).toContain("Travel Demo");
   });
 
+  it("clears stale in-view hashes when app navigation rewrites the route", async () => {
+    mountStaticApp("/?view=blog#stale-blog-anchor");
+
+    await waitForView("blog");
+    await vi.waitFor(() => expect(new URL(window.location.href).hash).toBe(""));
+
+    window.history.replaceState(null, "", "/?view=blog#syntax-heading");
+    clickNav("travel");
+    await waitForView("travel");
+
+    const url = new URL(window.location.href);
+    expect(url.searchParams.get("view")).toBe("travel");
+    expect(url.searchParams.get("source")).toBeNull();
+    expect(url.hash).toBe("");
+  });
+
   it("loads source shards on demand while keeping site-wide Gallery and Records stable", async () => {
     const fetch = vi.fn(fetchShardedStaticFixture());
     mountStaticApp("/", fetch);

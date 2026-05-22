@@ -122,6 +122,11 @@ describe("style module boundaries", () => {
     const renderedOrg = readFileSync("src/styles/rendered-org.css", "utf8");
 
     expect(renderedOrg).toContain(".rendered-html h2::before");
+    expect(renderedOrg).toContain(".org-heading-todo--focus");
+    expect(renderedOrg).toContain(".org-priority--a");
+    expect(renderedOrg).toContain(".org-timestamp--active");
+    expect(renderedOrg).toContain(".org-table-frame");
+    expect(renderedOrg).toContain(".org-block-name");
     expect(renderedOrg).toContain(".org-meta-chip--deadline");
     expect(renderedOrg).toContain(".org-meta-row--properties div");
     expect(renderedOrg).toContain(".rendered-html pre");

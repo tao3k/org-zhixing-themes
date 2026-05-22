@@ -76,6 +76,79 @@ code {
   content: "***";
 }
 
+.org-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 9px;
+  align-items: baseline;
+}
+
+.org-heading-markers {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-leading);
+}
+
+.org-heading-title {
+  min-width: 0;
+}
+
+.org-heading-todo,
+.org-heading-priority {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-label);
+  padding: 2px 6px;
+  font-weight: var(--weight-medium);
+}
+
+.org-heading-todo--todo {
+  border-color: var(--amber-6);
+  color: var(--face-popout);
+  background: var(--surface-popout);
+}
+
+.org-heading-todo--focus {
+  border-color: var(--blue-6);
+  color: var(--face-salient);
+  background: var(--surface-salient);
+}
+
+.org-heading-todo--waiting {
+  border-color: var(--violet-6);
+  color: var(--face-structural);
+  background: var(--surface-structural);
+}
+
+.org-heading-todo--done {
+  border-color: var(--green-6);
+  color: var(--face-success);
+  background: var(--surface-success);
+}
+
+.org-priority--a {
+  border-color: var(--red-6);
+  color: var(--face-critical);
+  background: var(--surface-critical);
+}
+
+.org-priority--b {
+  border-color: var(--amber-6);
+  color: var(--face-popout);
+  background: var(--surface-popout);
+}
+
+.org-priority--c {
+  border-color: var(--hairline-soft);
+  color: var(--face-faded);
+  background: var(--surface-subtle);
+}
+
 .rendered-html p,
 .rendered-html li {
   color: var(--face-normal);
@@ -169,7 +242,28 @@ code {
 .org-meta-chip b {
   margin-right: 5px;
   color: var(--face-strong);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
+}
+
+.org-planning-chip {
+  gap: 6px;
+}
+
+.org-planning-label {
+  text-transform: uppercase;
+}
+
+.org-timestamp {
+  color: inherit;
+  white-space: nowrap;
+}
+
+.org-timestamp--active {
+  color: var(--face-salient);
+}
+
+.org-timestamp--inactive {
+  color: var(--face-faded);
 }
 
 .org-meta-chip--scheduled {
@@ -193,7 +287,7 @@ code {
   border-color: var(--blue-6);
   color: var(--face-salient);
   background: var(--surface-salient);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .org-meta-row--properties div {
@@ -205,7 +299,7 @@ code {
 
 .org-meta-row--properties dt {
   color: var(--face-faded);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   text-transform: uppercase;
 }
 
@@ -219,9 +313,28 @@ code {
   font-family: var(--font-mono);
 }
 
-.rendered-html pre {
-  overflow: auto;
+.org-block-frame {
   margin: 20px 0;
+}
+
+.org-block-name {
+  width: fit-content;
+  margin: 0 0 6px;
+  border-radius: var(--radius-label);
+  padding: 2px 6px;
+  color: var(--face-faded);
+  background: var(--surface-subtle);
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+  font-weight: var(--weight-medium);
+  line-height: var(--type-label-leading);
+  text-transform: uppercase;
+}
+
+.rendered-html pre,
+.org-native-block {
+  overflow: auto;
+  margin: 0;
   padding: 16px 18px;
   border: 1px solid var(--hairline-soft);
   border-left: 3px solid var(--face-salient);
@@ -244,10 +357,18 @@ code {
   color: var(--face-faded);
 }
 
-.rendered-html table {
+.org-table-frame {
+  overflow: auto;
+  margin: 22px 0;
+  border-top: 1px solid var(--hairline-soft);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.rendered-html table,
+.org-native-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 22px 0;
+  margin: 0;
   font-size: 0.94rem;
 }
 
@@ -264,6 +385,14 @@ code {
   font-weight: var(--weight-strong);
 }
 
+.org-native-table tbody tr:nth-child(even) {
+  background: var(--surface-subtle);
+}
+
+.org-native-table code {
+  white-space: nowrap;
+}
+
 .rendered-html .todo,
 .rendered-html .done,
 .rendered-html .tag {
@@ -273,7 +402,7 @@ code {
   padding: 2px 8px;
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .rendered-html .todo {

@@ -133,6 +133,80 @@ describe("Org source view projections", () => {
     });
   });
 
+  it("projects native Org syntax into explicit reading aesthetics", () => {
+    const document = createDocumentView(
+      [
+        record({
+          effectiveTags: ["blog"],
+          rangeStart: 10,
+          title: "Native Org surface",
+        }),
+      ],
+      null,
+      [
+        sectionRecord({
+          effectiveTags: ["blog", "agenda"],
+          level: 1,
+          planning: {
+            scheduled: {
+              kind: "active",
+              raw: "<2026-05-16 Sat 11:00>",
+              isRange: false,
+              start: { year: 2026, month: 5, day: 16, dayName: "Sat", hour: 11, minute: 0 },
+            },
+            deadline: {
+              kind: "active",
+              raw: "<2026-05-18 Mon>",
+              isRange: false,
+              start: { year: 2026, month: 5, day: 18, dayName: "Mon" },
+            },
+          },
+          priority: {
+            raw: "[#A]",
+            effective: "A",
+            isDefault: false,
+            rangeStatus: "inRange",
+            profile: { highest: "A", lowest: "C", default: "B" },
+          },
+          properties: [{ key: "AREA", value: "reader", source: sourceRange(11) }],
+          rangeStart: 10,
+          title: "Native Org surface",
+          todo: "NEXT",
+          todoState: "todo",
+        }),
+      ],
+    );
+
+    const html = renderView({
+      view: "blog",
+      document,
+      articleHtml: `
+        <main>
+          <h1>Native Org surface</h1>
+          <section>
+            <table><thead><tr><td>Syntax family</td><td>Risk</td></tr></thead><tbody><tr><td>Planning</td><td>flat text</td></tr></tbody></table>
+            <pre class="example">example block</pre>
+            <pre><code class="language-typescript">type Native = true;</code></pre>
+          </section>
+        </main>
+      `,
+      sourceFile: "blog/native.org",
+    });
+
+    expect(html).toContain("org-heading-todo org-heading-todo--focus");
+    expect(html).toContain(">NEXT<");
+    expect(html).toContain("org-heading-priority org-priority--a");
+    expect(html).toContain("[#A]");
+    expect(html).toContain("org-planning-chip org-planning-chip--scheduled");
+    expect(html).toContain('datetime="2026-05-16T11:00"');
+    expect(html).toContain("org-planning-chip org-planning-chip--deadline");
+    expect(html).toContain("org-table-frame");
+    expect(html).toContain('<th scope="col">Syntax family</th>');
+    expect(html).toContain("org-block-frame");
+    expect(html).toContain("SRC · typescript");
+    expect(html).toContain("EXAMPLE");
+  });
+
   it("projects real travel Org cues into Google Maps links and enrich fields", () => {
     const coordinateSource = sourceRange(41);
     const document = createDocumentView([], null, [
@@ -363,7 +437,8 @@ describe("Org source view projections", () => {
     expect(html).toContain("1 explicit :record: heading from Org source");
     expect(html).toContain("Environments / Wallpaper");
     expect(html).toContain("Rendered paragraph");
-    expect(html).toContain("<pre>");
+    expect(html).toContain("org-block-frame");
+    expect(html).toContain("org-native-block");
     expect(html).not.toContain("[[https://example.com/wallpaper");
     expect(html).not.toContain("Plain preview should not be primary");
   });

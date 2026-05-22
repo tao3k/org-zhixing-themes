@@ -23,6 +23,7 @@ import {
   sectionTitle,
   type SectionRecord,
 } from "./orgHtmlMetadata";
+import { enhanceOrgNativeAesthetics } from "./orgNativeAesthetics";
 import type { SiteNoteSource } from "./siteNotes";
 
 type TimingStats = {
@@ -336,6 +337,7 @@ const prepareArticleHtml = (
   rewriteAttachmentLinks(body, document, sourceFile);
   applyHtmlEmbedPolicy(body);
   augmentOrgHtmlMetadata(body, document);
+  enhanceOrgNativeAesthetics(body, document);
   return { html: body.innerHTML, toc };
 };
 

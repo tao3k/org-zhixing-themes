@@ -9,6 +9,7 @@ import {
   sectionTitle,
   type SectionRecord,
 } from "./orgHtmlMetadata";
+import { enhanceOrgNativeAesthetics } from "./orgNativeAesthetics";
 
 export type RenderedOrgSection = {
   bodyHtml: string;
@@ -52,6 +53,7 @@ export const renderedOrgSections = (
     rewriteAttachmentLinks(section, context.document, context.sourceFile);
     applyHtmlEmbedPolicy(section);
     augmentOrgHtmlMetadata(section, context.document);
+    enhanceOrgNativeAesthetics(section, context.document);
     section.querySelector("h1,h2,h3,h4,h5,h6")?.remove();
     rendered.set(record.source.rangeStart, {
       bodyHtml: section.innerHTML.trim(),
