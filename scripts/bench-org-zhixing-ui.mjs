@@ -67,6 +67,12 @@ const metrics = {
   initialScriptBytes,
   initialScriptCount: initialScripts.length,
   initialScripts,
+  blogArticles: staticManifest.blog?.articleCount ?? 0,
+  blogSourceCount: staticManifest.blog?.sourceCount ?? 0,
+  blogTagFacetCount: staticManifest.blog?.tagFacets?.length ?? 0,
+  blogTravelArticles:
+    staticManifest.blog?.articles?.filter((article) => article.sourceFile === "blog/travel.org")
+      .length ?? 0,
   travelPlaces: staticManifest.travel?.places?.length ?? 0,
   travelSourceCount: staticManifest.travel?.sourceCount ?? 0,
   travelScannedSourceCount: staticManifest.travel?.scannedSourceCount ?? 0,
@@ -117,6 +123,7 @@ console.log(
 console.log(
   `initial scripts ${metrics.initialScriptCount} files ${formatBytes(metrics.initialScriptBytes)}`,
 );
+console.log(`blog ${metrics.blogArticles} Org files from ${metrics.blogSourceCount} Org files`);
 console.log(
   `static manifest parse p50 ${formatMs(staticManifestParse.p50Ms)} p95 ${formatMs(
     staticManifestParse.p95Ms,
@@ -283,6 +290,14 @@ function recommendationsFor(metrics) {
       signal: `entry manifest is ${formatBytes(metrics.staticManifestBytes)}; ${metrics.sourceShardCount} source shards are ${formatBytes(metrics.sourceShardBytes)}`,
       action:
         "Keep site-wide Gallery and Travel on compact projections; load full source shards only for source-scoped or Records views.",
+    });
+  }
+  if (metrics.sourceShardCount > 0 && metrics.blogSourceCount < metrics.sourceShardCount) {
+    recommendations.push({
+      area: "blog-source-coverage",
+      signal: `Blog covers ${metrics.blogSourceCount} of ${metrics.sourceShardCount} discovered Org sources`,
+      action:
+        "Keep Blog admission on discovered Org files so configured files do not disappear behind tag filters.",
     });
   }
   if (metrics.largestSourceShardBytes > 500_000) {

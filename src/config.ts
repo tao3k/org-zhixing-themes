@@ -235,7 +235,7 @@ const publicRootUrl = (): URL => {
 const stripLeadingSlash = (path: string): string => path.replace(/^\/+/, "");
 
 const defaultMenu = (): MenuItem[] => [
-  { name: "Blog", view: "blog", weight: 10 },
+  { name: "Blogs", view: "blog", weight: 10 },
   { name: "Gallery", view: "gallery", weight: 18 },
   { name: "Notes", view: "records", weight: 20 },
   { name: "Travel", view: "travel", weight: 22 },

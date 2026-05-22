@@ -28,7 +28,7 @@ show_timings = true
 
 [[ui.views]]
 id = "blog"
-label = "Blog"
+label = "Blogs"
 weight = 10
 
 [[ui.views]]

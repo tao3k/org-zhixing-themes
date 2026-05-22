@@ -14,6 +14,7 @@ import {
   withAgendaView,
   withAgentMemory,
   withAttachmentInventory,
+  type BlogArticleRecord,
   type OrgizeDocumentView,
 } from "./model";
 import type { AttachmentGalleryView } from "./attachmentGalleryModel";
@@ -44,19 +45,7 @@ export type StaticSourceProjection = {
   lint: OrgizeLintResponseDto;
 };
 
-export type StaticBlogArticle = Pick<
-  OrgizeViewIndexResponseDto["records"][number],
-  | "bodyPreview"
-  | "effectiveTags"
-  | "level"
-  | "outline"
-  | "planning"
-  | "properties"
-  | "rangeStart"
-  | "title"
-  | "todo"
-  | "todoState"
-> & {
+export type StaticBlogArticle = BlogArticleRecord & {
   file: string;
   sourceFile: string;
   sourceId: string;

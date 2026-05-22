@@ -54,6 +54,23 @@ export type AgendaItem = {
   rangeStart: number;
 };
 
+export type BlogArticleRecord = Pick<
+  OrgizeViewIndexRecordDto,
+  | "bodyPreview"
+  | "effectiveTags"
+  | "level"
+  | "outline"
+  | "planning"
+  | "properties"
+  | "rangeStart"
+  | "title"
+  | "todo"
+  | "todoState"
+> & {
+  sourceFile?: string;
+  sourceName?: string;
+};
+
 export const createDocumentView = (
   sectionIndex: OrgizeViewIndexRecordDto[],
   lint: OrgizeLintFindingDto[] | null = null,
@@ -77,7 +94,7 @@ export const createDocumentView = (
     captureRequest: null,
     captureApplyPreview: null,
     counts: {
-      blog: recordsByTag.get("blog")?.length ?? 0,
+      blog: blogArticlesFromDocument(sectionIndex, semanticSections).length,
       attachments: recordsByTag.get("attach")?.length ?? 0,
       records: notes.length,
       memory: recordsByTag.get("memory")?.length ?? 0,
@@ -154,8 +171,8 @@ export const taggedRecords = (
 export const noteRecords = (document: OrgizeDocumentView | null): OrgizeViewIndexRecordDto[] =>
   document ? noteRecordsByPolicy(document.sectionIndex, document.attachmentInventory) : [];
 
-export const blogArticles = (document: OrgizeDocumentView | null): OrgizeViewIndexRecordDto[] =>
-  articleRoots(taggedRecords(document, "blog"));
+export const blogArticles = (document: OrgizeDocumentView | null): BlogArticleRecord[] =>
+  document ? blogArticlesFromDocument(document.sectionIndex, document.semanticSections) : [];
 
 export const attachmentDisplayRecords = (
   document: OrgizeDocumentView | null,
@@ -164,17 +181,58 @@ export const attachmentDisplayRecords = (
 export const agendaItems = (document: OrgizeDocumentView | null): AgendaItem[] =>
   document?.agenda ?? [];
 
-const articleRoots = (records: OrgizeViewIndexRecordDto[]): OrgizeViewIndexRecordDto[] => {
-  const roots: OrgizeViewIndexRecordDto[] = [];
-  let currentRoot: OrgizeViewIndexRecordDto | null = null;
-  for (const record of records) {
-    if (currentRoot && record.level > currentRoot.level) {
-      continue;
-    }
-    roots.push(record);
-    currentRoot = record;
+const blogArticlesFromDocument = (
+  sectionIndex: OrgizeViewIndexRecordDto[],
+  semanticSections: OrgizeSectionIndexRecordDto[],
+): BlogArticleRecord[] => {
+  const firstSection = semanticSections[0];
+  if (firstSection) {
+    return [blogArticleFromSectionRecord(firstSection)];
   }
-  return roots;
+  const firstRecord = sectionIndex[0];
+  return firstRecord ? [firstRecord] : [];
+};
+
+const blogArticleFromSectionRecord = (record: OrgizeSectionIndexRecordDto): BlogArticleRecord => ({
+  bodyPreview: sectionBodyPreview(record),
+  effectiveTags: record.effectiveTags,
+  level: record.level,
+  outline: (record.outlinePathText ?? record.outlinePath).join(" / "),
+  planning: {
+    closed: planningText(record.planning.closed),
+    deadline: planningText(record.planning.deadline),
+    scheduled: planningText(record.planning.scheduled),
+  },
+  properties: record.properties,
+  rangeStart: record.source.rangeStart,
+  title: sectionTitleText(record),
+  todo: record.todo,
+  todoState: record.todoState,
+});
+
+const sectionBodyPreview = (record: OrgizeSectionIndexRecordDto): string =>
+  record.body
+    .map((slice) => slice.text.trim())
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 260);
+
+const sectionTitleText = (record: OrgizeSectionIndexRecordDto): string =>
+  record.titleText || orgTitleText(record.title);
+
+const orgTitleText = (value: string): string =>
+  value.replace(/\[\[([^\]]+)\]\[([^\]]+)\]\]/g, "$2").replace(/\[\[([^\]]+)\]\]/g, "$1");
+
+const planningText = (value: unknown): string | null => {
+  if (!value) {
+    return null;
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return typeof value === "object" && "raw" in value && typeof value.raw === "string"
+    ? value.raw
+    : null;
 };
 
 const indexRecordsByTag = (

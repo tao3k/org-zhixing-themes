@@ -1,4 +1,3 @@
-import type { OrgizeViewIndexRecordDto } from "orgize/dto";
 import {
   articleDateIsoForIndex,
   articleDateLabel,
@@ -8,7 +7,7 @@ import {
 } from "./blogArticleTimeline";
 import { rewriteAttachmentLinks } from "./attachmentHtmlRewrite";
 import { applyHtmlEmbedPolicy } from "./htmlEmbedPolicy";
-import type { OrgizeDocumentView } from "./model";
+import type { BlogArticleRecord, OrgizeDocumentView } from "./model";
 import {
   augmentOrgHtmlMetadata,
   matchHeadingRecord,
@@ -25,7 +24,7 @@ type PreparedArticle = {
 };
 
 type BlogIndexArticle = Pick<
-  OrgizeViewIndexRecordDto,
+  BlogArticleRecord,
   "bodyPreview" | "effectiveTags" | "planning" | "properties" | "rangeStart" | "title"
 > &
   Partial<Pick<StaticBlogArticle, "sourceFile" | "sourceName">>;
@@ -74,7 +73,6 @@ export const renderBlogReader = ({
   articleMessage,
   blogIndex,
   document,
-  selectedRangeStart,
   sourceFile,
   tagFilter,
   timeFilter,
@@ -84,24 +82,22 @@ export const renderBlogReader = ({
   if (!zenMode) {
     return renderBlogIndex(blogIndex ?? blogIndexFromDocument(articles), tagFilter, timeFilter);
   }
-  const selected =
-    articles.find((article) => article.rangeStart === selectedRangeStart) ?? articles[0];
-  const selectedArticle = selected
-    ? prepareRenderedArticle(articleHtml, selected, document, sourceFile)
-    : prepareArticleHtml(articleHtml, document, sourceFile);
+  const selectedArticle = prepareRenderedArticle(articleHtml, document, sourceFile);
   const emptyMessage =
     articleMessage ||
-    (articles.length === 0
-      ? "No :blog: articles found in this Org source."
-      : "Rendering article...");
+    (articles.length === 0 ? "No Org file article found in this source." : "Rendering article...");
 
   return `
     <section class="blog-reader is-zen" aria-label="Blog reader">
+      <div class="blog-zen-progress" data-blog-zen-progress aria-hidden="true">
+        <span></span>
+      </div>
       ${
         selectedArticle.html
           ? `<article class="rendered-html blog-article">${selectedArticle.html}</article>`
           : `<div class="empty blog-article-empty">${escapeHtml(emptyMessage)}</div>`
       }
+      ${selectedArticle.html ? `<footer class="blog-zen-end" aria-hidden="true"><span></span><b>End</b><span></span></footer>` : ""}
     </section>
   `;
 };
@@ -140,7 +136,7 @@ const renderBlogIndex = (
 const renderBlogArticleList = (articles: BlogIndexArticle[]): string =>
   articles.length > 0
     ? `<div class="blog-index-list" role="list"${articles.length >= blogVirtualListThreshold ? " data-blog-virtual-list" : ""}>${articles.map(renderBlogIndexArticle).join("")}</div>`
-    : `<div class="empty">No :blog: articles match this index.</div>`;
+    : `<div class="empty">No Org articles match this index.</div>`;
 
 const renderBlogIndexArticle = (article: BlogIndexArticle): string => `
   <article role="listitem">
@@ -197,9 +193,9 @@ const renderBlogFacetStrip = (
 ): string =>
   facets.length > 0
     ? `
-      <section class="blog-tag-facets" aria-label="Blog topics">
+      <section class="blog-tag-facets" aria-label="Blog tags">
         <button type="button" class="blog-tag-filter" data-blog-tag="" data-active="${activeTag === null}">
-          <b>All topics</b><small>${articleCount}</small>
+          <b>All tags</b><small>${articleCount}</small>
         </button>
         ${facets.map((facet) => renderBlogFacet(facet, activeTag)).join("")}
       </section>
@@ -249,7 +245,7 @@ const renderIndexTags = (tags: string[]): string => {
     : "";
 };
 
-const blogIndexFromDocument = (articles: OrgizeViewIndexRecordDto[]): BlogIndexView => ({
+const blogIndexFromDocument = (articles: BlogArticleRecord[]): BlogIndexView => ({
   articleCount: articles.length,
   articles,
   dateRange: dateRangeForArticles(articles),
@@ -260,7 +256,7 @@ const blogIndexFromDocument = (articles: OrgizeViewIndexRecordDto[]): BlogIndexV
 const blogIndexSummary = (index: BlogIndexView, visibleCount: number): string => {
   const dateText = index.dateRange ? ` · ${index.dateRange.start} -> ${index.dateRange.end}` : "";
   const visibleText = visibleCount === index.articleCount ? "" : ` · ${visibleCount} visible`;
-  return `${index.articleCount} articles · ${index.sourceCount} sources · ${index.tagFacets.length} topics${dateText}${visibleText}`;
+  return `${index.articleCount} Org files · ${index.tagFacets.length} tag facets${dateText}${visibleText}`;
 };
 
 const dateRangeForArticles = (articles: BlogIndexArticle[]): BlogIndexView["dateRange"] => {
@@ -384,31 +380,10 @@ const relatedTagsFor = (articles: BlogIndexArticle[], rootTag: string): string[]
 
 const prepareRenderedArticle = (
   articleHtml: string,
-  article: OrgizeViewIndexRecordDto,
   document: OrgizeDocumentView,
   sourceFile: string | undefined,
 ): PreparedArticle => {
-  if (!articleHtml) {
-    return { html: "" };
-  }
-  const parser = new DOMParser();
-  const parsed = parser.parseFromString(articleHtml, "text/html");
-  const root = parsed.querySelector("main") ?? parsed.body;
-  const heading = [...root.querySelectorAll<HTMLHeadingElement>("h1,h2,h3,h4,h5,h6")].find(
-    (candidate) => normalizeHeading(candidate.textContent) === normalizeHeading(article.title),
-  );
-  if (!heading) {
-    return prepareArticleHtml(articleHtml, document, sourceFile);
-  }
-  const level = headingLevel(heading);
-  const container = parsed.createElement("div");
-  container.append(heading.cloneNode(true));
-  let next = heading.nextElementSibling;
-  while (next && !(isHeading(next) && headingLevel(next) <= level)) {
-    container.append(next.cloneNode(true));
-    next = next.nextElementSibling;
-  }
-  return prepareArticleHtml(container.innerHTML, document, sourceFile);
+  return prepareArticleHtml(articleHtml, document, sourceFile);
 };
 
 const prepareArticleHtml = (
@@ -451,13 +426,6 @@ const tocHeadingTitle = (heading: HTMLHeadingElement, record: SectionRecord | nu
 
 const stripOrgHeadingTags = (value: string): string =>
   value.replace(/\s+(:[A-Za-z0-9_@#%]+)+:\s*$/, "");
-
-const isHeading = (element: Element): boolean => /^H[1-6]$/.test(element.tagName);
-
-const headingLevel = (element: Element): number => Number(element.tagName.replace("H", "")) || 1;
-
-const normalizeHeading = (value: string | null): string =>
-  (value ?? "").replace(/\s+/g, " ").trim();
 
 const uniqueHeadingId = (title: string, usedIds: Set<string>): string => {
   const base = slugify(title) || "section";

@@ -152,50 +152,99 @@ const requestAgendaView = (org, range) =>
   );
 
 const projectBlogIndex = (sources) => {
-  const articles = sources.flatMap((source) =>
-    articleRoots(
-      source.viewIndex.records.filter((record) =>
-        record.effectiveTags.some((tag) => tag.toLowerCase() === "blog"),
-      ),
-    ).map((record) => ({
-      bodyPreview: record.bodyPreview,
-      effectiveTags: record.effectiveTags,
-      file: source.file,
-      level: record.level,
-      outline: record.outline,
-      planning: record.planning,
-      properties: record.properties,
-      rangeStart: record.rangeStart,
-      sourceFile: source.sourceFile,
-      sourceId: source.id,
-      sourceName: source.name,
-      title: record.title,
-      todo: record.todo,
-      todoState: record.todoState,
-    })),
-  );
+  const articles = sources.map(blogArticleFromSource).filter(Boolean);
   const sortedArticles = articles.sort(compareArticleRecency);
   return {
     articleCount: sortedArticles.length,
     articles: sortedArticles,
     dateRange: blogDateRange(sortedArticles),
     siteWide: true,
-    sourceCount: new Set(sortedArticles.map((article) => article.sourceFile)).size,
+    sourceCount: sources.length,
     tagFacets: blogTagFacets(sortedArticles),
   };
 };
 
-const articleRoots = (records) => {
-  const roots = [];
-  let currentRoot = null;
-  for (const record of records) {
-    if (currentRoot && record.level > currentRoot.level) {
-      continue;
-    }
-    roots.push(record);
-    currentRoot = record;
+const blogArticleFromSource = (source) => {
+  const firstSection = source.sectionIndex.records[0];
+  const firstViewRecord = firstSection
+    ? source.viewIndex.records.find(
+        (record) => record.rangeStart === firstSection.source.rangeStart,
+      )
+    : source.viewIndex.records[0];
+  const sourceArticle = firstSection
+    ? blogArticleFromSectionRecord(firstSection, firstViewRecord)
+    : firstViewRecord;
+  if (!sourceArticle) {
+    return {
+      bodyPreview: "",
+      effectiveTags: [],
+      file: source.file,
+      level: 1,
+      outline: source.name,
+      planning: {},
+      properties: [],
+      rangeStart: 0,
+      sourceFile: source.sourceFile,
+      sourceId: source.id,
+      sourceName: source.name,
+      title: source.name,
+      todo: null,
+      todoState: null,
+    };
   }
-  return roots;
+  return {
+    bodyPreview: sourceArticle.bodyPreview,
+    effectiveTags: sourceArticle.effectiveTags,
+    file: source.file,
+    level: sourceArticle.level,
+    outline: source.name,
+    planning: sourceArticle.planning,
+    properties: sourceArticle.properties,
+    rangeStart: sourceArticle.rangeStart,
+    sourceFile: source.sourceFile,
+    sourceId: source.id,
+    sourceName: source.name,
+    title: source.name,
+    todo: sourceArticle.todo,
+    todoState: sourceArticle.todoState,
+  };
+};
+
+const blogArticleFromSectionRecord = (record, viewRecord) => ({
+  bodyPreview: viewRecord?.bodyPreview ?? sectionBodyPreview(record),
+  effectiveTags: record.effectiveTags,
+  level: record.level,
+  outline: (record.outlinePathText ?? record.outlinePath).join(" / "),
+  planning: {
+    closed: planningText(record.planning.closed),
+    deadline: planningText(record.planning.deadline),
+    scheduled: planningText(record.planning.scheduled),
+  },
+  properties: record.properties,
+  rangeStart: record.source.rangeStart,
+  title: record.titleText || orgTitleText(record.title),
+  todo: record.todo,
+  todoState: record.todoState,
+});
+
+const sectionBodyPreview = (record) =>
+  record.body
+    .map((slice) => slice.text.trim())
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, 260);
+
+const orgTitleText = (value) =>
+  value.replace(/\[\[([^\]]+)\]\[([^\]]+)\]\]/g, "$2").replace(/\[\[([^\]]+)\]\]/g, "$1");
+
+const planningText = (value) => {
+  if (!value) {
+    return null;
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return typeof value === "object" && typeof value.raw === "string" ? value.raw : null;
 };
 
 const blogTagFacets = (articles) => {

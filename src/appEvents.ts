@@ -93,6 +93,7 @@ export const bindAppEvents = (
   bindTravelGlance(dom, signal);
   bindLazyTravelVirtualList(dom, signal);
   bindLazyBlogVirtualList(dom, signal);
+  bindLazyBlogZenProgress(dom, signal);
   window.addEventListener("beforeunload", () => handlers.onDispose(), listenerOptions);
 };
 
@@ -148,6 +149,26 @@ const bindLazyBlogVirtualList = (dom: AppDomNodes, signal: AbortSignal): void =>
     void import("./blogVirtualList").then(({ bindBlogVirtualList }) => {
       if (!signal.aborted) {
         bindBlogVirtualList(dom, signal);
+      }
+      observer.disconnect();
+    });
+  };
+  const observer = new MutationObserver(maybeBind);
+  observer.observe(dom.view, { childList: true });
+  signal.addEventListener("abort", () => observer.disconnect(), { once: true });
+  maybeBind();
+};
+
+const bindLazyBlogZenProgress = (dom: AppDomNodes, signal: AbortSignal): void => {
+  let loading = false;
+  const maybeBind = (): void => {
+    if (loading || signal.aborted || !dom.view.querySelector("[data-blog-zen-progress]")) {
+      return;
+    }
+    loading = true;
+    void import("./blogZenProgress").then(({ bindBlogZenProgress }) => {
+      if (!signal.aborted) {
+        bindBlogZenProgress(dom, signal);
       }
       observer.disconnect();
     });

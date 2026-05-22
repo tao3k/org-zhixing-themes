@@ -1,16 +1,15 @@
-import type { OrgizeViewIndexRecordDto } from "orgize/dto";
-import { blogArticles, type OrgizeDocumentView } from "./model";
+import { blogArticles, type BlogArticleRecord, type OrgizeDocumentView } from "./model";
 
 const articleRailLimit = 7;
-type DatedArticle = Pick<OrgizeViewIndexRecordDto, "planning" | "properties" | "rangeStart">;
+type DatedArticle = Pick<BlogArticleRecord, "planning" | "properties" | "rangeStart">;
 
-export const blogTimelineArticles = (document: OrgizeDocumentView): OrgizeViewIndexRecordDto[] =>
+export const blogTimelineArticles = (document: OrgizeDocumentView): BlogArticleRecord[] =>
   [...blogArticles(document)].sort(compareArticleRecency);
 
 export const blogRailItems = (
-  articles: OrgizeViewIndexRecordDto[],
+  articles: BlogArticleRecord[],
   selectedRangeStart: number | null,
-): OrgizeViewIndexRecordDto[] => {
+): BlogArticleRecord[] => {
   if (articles.length <= articleRailLimit) {
     return articles;
   }
@@ -30,7 +29,7 @@ export type BlogTagFacet = {
   tag: string;
 };
 
-export const blogTagFacets = (articles: OrgizeViewIndexRecordDto[]): BlogTagFacet[] => {
+export const blogTagFacets = (articles: BlogArticleRecord[]): BlogTagFacet[] => {
   const counts = new Map<string, number>();
   for (const article of articles) {
     for (const tag of article.effectiveTags) {
@@ -55,10 +54,7 @@ export const articleDateIsoForIndex = (article: DatedArticle): string | null => 
   return rank === null ? null : new Date(rank).toISOString().slice(0, 10);
 };
 
-const compareArticleRecency = (
-  left: OrgizeViewIndexRecordDto,
-  right: OrgizeViewIndexRecordDto,
-): number => {
+const compareArticleRecency = (left: BlogArticleRecord, right: BlogArticleRecord): number => {
   const leftRank = articleDateRank(left);
   const rightRank = articleDateRank(right);
   if (leftRank !== null && rightRank !== null && leftRank !== rightRank) {

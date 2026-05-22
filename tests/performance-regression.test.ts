@@ -65,6 +65,28 @@ describe("Org Zhixing performance regression gates", () => {
     expect(perfScript).toContain("dynamicBlogVirtualListChunk");
   });
 
+  it("keeps static Blog generation on one article per discovered Org file", () => {
+    const generator = readFileSync("scripts/generate-static-site.mjs", "utf8");
+
+    expect(generator).toContain("sources.map(blogArticleFromSource)");
+    expect(generator).toContain("title: source.name");
+    expect(generator).not.toContain("source.sectionIndex.records.map");
+    expect(generator).not.toContain(
+      'record.effectiveTags.some((tag) => tag.toLowerCase() === "blog")',
+    );
+  });
+
+  it("keeps Zen reader progress as a lazy reading affordance", () => {
+    const appEvents = readFileSync("src/appEvents.ts", "utf8");
+    const blogZenProgress = readFileSync("src/blogZenProgress.ts", "utf8");
+
+    expect(appEvents).not.toMatch(/import\s+\{?\s*bindBlogZenProgress/);
+    expect(appEvents).toContain('import("./blogZenProgress")');
+    expect(appEvents).toContain('querySelector("[data-blog-zen-progress]")');
+    expect(blogZenProgress).toContain("readingProgressPercent");
+    expect(blogZenProgress).not.toContain("@mozilla/readability");
+  });
+
   it("keeps Travel Zen Glance window and masonry runtimes behind lazy boundaries", () => {
     const appEvents = readFileSync("src/appEvents.ts", "utf8");
     const travelGlance = readFileSync("src/travelGlance.ts", "utf8");

@@ -227,9 +227,16 @@ describe("Org source view projections", () => {
       null,
       [
         sectionRecord({
-          effectiveTags: ["blog"],
+          effectiveTags: ["blog", "agent", "design"],
+          properties: [{ key: "DATE", source: sourceRange(30), value: "<2026-05-17 Sun>" }],
           rangeStart: 30,
           title: "Elegant Org Frame",
+        }),
+        sectionRecord({
+          effectiveTags: ["blog", "syntax"],
+          properties: [{ key: "DATE", source: sourceRange(60), value: "<2026-05-16 Sat>" }],
+          rangeStart: 60,
+          title: "Second Article",
         }),
       ],
     );
@@ -250,14 +257,15 @@ describe("Org source view projections", () => {
 
     expect(html).toContain('class="blog-index"');
     expect(html).toContain("Blog Index");
-    expect(html).toContain("2 articles");
+    expect(html).toContain("1 Org files");
+    expect(html).toContain("2 tag facets");
     expect(html).toContain('class="blog-time-thresholds"');
     expect(html).toContain('class="blog-tag-filter"');
     expect(html).toContain('class="blog-reasoning-paths"');
     expect(html).toContain('data-blog-tag="agent"');
     expect(html).toContain('data-blog-time="2026-05-17"');
     expect(html).toContain('data-blog-article="30"');
-    expect(html).toContain('data-blog-article="60"');
+    expect(html).not.toContain('data-blog-article="60"');
     expect(html).not.toContain("Native rhythm");
     expect(html).not.toContain('class="rendered-html blog-article"');
 
@@ -280,13 +288,67 @@ describe("Org source view projections", () => {
     expect(zenHtml).toContain('class="blog-reader is-zen"');
     expect(zenHtml).toContain("Native rhythm");
     expect(zenHtml).toContain('class="rendered-html blog-article"');
+    expect(zenHtml).toContain("data-blog-zen-progress");
+    expect(zenHtml).toContain('class="blog-zen-end"');
     expect(zenHtml).not.toContain("zen-toolbar");
-    expect(zenHtml).not.toContain("data-blog-zen");
+    expect(zenHtml).not.toContain('data-blog-zen="');
     expect(zenHtml).not.toContain('class="blog-rail"');
   });
 
+  it("projects one Blog article per Org file without requiring :blog: tags", () => {
+    const document = createDocumentView([], null, [
+      sectionRecord({
+        body: [{ source: sourceRange(101), text: "浙江旅行正文。" }],
+        effectiveTags: ["travel", "民宿"],
+        level: 1,
+        rangeStart: 100,
+        title: "游山玩水->浙江",
+      }),
+      sectionRecord({
+        effectiveTags: ["travel", "民宿"],
+        level: 2,
+        outlinePathText: ["游山玩水->浙江", "丽水站"],
+        rangeStart: 120,
+        title: "丽水站",
+      }),
+      sectionRecord({
+        effectiveTags: ["gallery"],
+        level: 1,
+        rangeStart: 200,
+        title: "Wallpaper Gallery",
+      }),
+    ]);
+
+    const html = renderView({ view: "blog", document });
+
+    expect(html).toContain("1 Org files");
+    expect(html).toContain("游山玩水-&gt;浙江");
+    expect(html).toContain('data-blog-article="100"');
+    expect(html).toContain('data-blog-tag="travel"');
+    expect(html).not.toContain('data-blog-article="120"');
+    expect(html).not.toContain("Wallpaper Gallery");
+
+    const zenHtml = renderView({
+      view: "blog",
+      document,
+      blogArticleRangeStart: 100,
+      blogZenMode: true,
+      articleHtml: `
+        <main>
+          <h1>游山玩水-&gt;浙江</h1>
+          <h2>丽水站</h2>
+          <p>浙江旅行正文。</p>
+          <h1>Wallpaper Gallery</h1>
+        </main>
+      `,
+    });
+
+    expect(zenHtml).toContain("丽水站");
+    expect(zenHtml).toContain("Wallpaper Gallery");
+  });
+
   it("filters Blog indexes by clickable topic and time thresholds", () => {
-    const document = createDocumentView([
+    const articles = [
       record({
         effectiveTags: ["blog", "code"],
         properties: [{ key: "DATE", value: "<2026-05-17 Sun>" }],
@@ -305,15 +367,22 @@ describe("Org source view projections", () => {
         rangeStart: 30,
         title: "Older code article",
       }),
-    ]);
+    ];
+    const document = createDocumentView([]);
+    const blogIndex = blogIndexFixtureFromRecords(articles);
 
-    const tagHtml = renderView({ view: "blog", document, blogTagFilter: "code" });
+    const tagHtml = renderView({ view: "blog", document, blogIndex, blogTagFilter: "code" });
     expect(tagHtml).toContain("Code article");
     expect(tagHtml).toContain("Older code article");
     expect(tagHtml).not.toContain("Reading article");
     expect(tagHtml).toMatch(/data-blog-tag="code"[\s\S]*?data-active="true"/);
 
-    const timeHtml = renderView({ view: "blog", document, blogTimeFilter: "2026-05-15" });
+    const timeHtml = renderView({
+      view: "blog",
+      document,
+      blogIndex,
+      blogTimeFilter: "2026-05-15",
+    });
     expect(timeHtml).toContain("Older code article");
     expect(timeHtml).not.toContain("Code article");
     expect(timeHtml).toContain('data-blog-time="2026-05-15"');
@@ -334,11 +403,13 @@ describe("Org source view projections", () => {
         title: `Article ${index + 1}`,
       }),
     );
-    const document = createDocumentView(records);
+    const document = createDocumentView([]);
+    const blogIndex = blogIndexFixtureFromRecords(records);
 
     const html = renderView({
       view: "blog",
       document,
+      blogIndex,
       blogArticleRangeStart: 12,
       articleHtml: `
         <main>
@@ -1091,3 +1162,41 @@ describe("Org source view projections", () => {
     expect(gallery.records[0]?.sourceName).toBe("Wallpaper Attachment Gallery");
   });
 });
+
+const blogIndexFixtureFromRecords = (records: ReturnType<typeof record>[]) => {
+  const articles = records
+    .map((article, index) => ({
+      ...article,
+      file: `article-${index + 1}.org`,
+      sourceFile: `blog/article-${index + 1}.org`,
+      sourceId: `article-${index + 1}`,
+      sourceName: `Article ${index + 1}`,
+    }))
+    .sort((left, right) => blogFixtureDateRank(right) - blogFixtureDateRank(left));
+  return {
+    articleCount: articles.length,
+    articles,
+    dateRange: null,
+    siteWide: true as const,
+    sourceCount: articles.length,
+    tagFacets: tagFacetsFor(articles),
+  };
+};
+
+const tagFacetsFor = (articles: Array<{ effectiveTags: string[] }>) =>
+  [
+    ...articles.reduce((counts, article) => {
+      for (const tag of article.effectiveTags) {
+        if (tag.toLowerCase() !== "blog") {
+          counts.set(tag, (counts.get(tag) ?? 0) + 1);
+        }
+      }
+      return counts;
+    }, new Map<string, number>()),
+  ].map(([tag, count]) => ({ count, tag }));
+
+const blogFixtureDateRank = (article: { properties: Array<{ key: string; value: string }> }) => {
+  const value = article.properties.find((property) => property.key === "DATE")?.value ?? "";
+  const match = /(\d{4}-\d{2}-\d{2})/.exec(value);
+  return match ? Date.parse(`${match[1]}T00:00:00Z`) : 0;
+};

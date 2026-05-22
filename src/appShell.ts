@@ -20,7 +20,7 @@ export const renderAppShell = (): string => `
         <span class="map-line map-line--three"></span>
         <b class="map-node map-node--core">知</b>
         <b class="map-node map-node--agenda">Agenda</b>
-        <b class="map-node map-node--blog">Blog</b>
+        <b class="map-node map-node--blog">Blogs</b>
         <b class="map-node map-node--event">Events</b>
         <b class="map-node map-node--note">ZK</b>
       </div>

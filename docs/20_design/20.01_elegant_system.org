@@ -106,6 +106,27 @@ If a future capture flow imports arbitrary web pages, =@mozilla/readability=
 belongs at that external-ingest boundary together with sanitizer policy, not in
 the hot Zen render path.
 
+The SimpRead study is local-source based, not search-summary based.  The useful
+files are =src/read/read.jsx=, =src/read/progressbar.jsx=,
+=src/read/toc.jsx=, =src/focus/focus.js=, and
+=src/assets/css/theme_common.css=.  They show a strong reader product, but most
+of the model assumes extracted HTML or Markdown-like article bodies.  Org is
+denser: TODO state, priority, scheduled/deadline timestamps, property drawers,
+tables, source/example blocks, links, embeds, tags, and outline depth are all
+native reading semantics.  The aesthetic direction is therefore not "make Org
+look like a simple article"; it is "make each Org semantic unit become a quiet
+reading unit".
+
+| SimpRead idea | Org Zhixing translation |
+|---------------+-------------------------|
+| Reader progress bar | passive Zen progress line; it is reading state, not navigation |
+| Footer completion mark | quiet Zen end marker, not a toolbar |
+| TOC overlay | future hidden outline or command surface; no visible Zen navigator by default |
+| Focus mode | future Org block/section spotlight over parser-owned ranges |
+| Annotation bar | future Org-native anchors/capture records, not browser-local marks |
+| Read-later queue | future memory/capture projection over Org files |
+| Readability fallback | only for external web-page ingest, never for current Org rendering |
+
 Large collections must not become large visual grids.  A workspace with 1000 or
 2000 Org files still gets a compact source picker, but source files are quiet
 substrate rather than the main visual object.  This follows the static-site
@@ -121,6 +142,16 @@ thresholds, while the article list uses the TanStack virtual-core boundary when
 the result set is large.  Bulk discovery belongs to search/command surfaces and
 virtualized lists, not to the reading frame.
 
+Blog has no =:blog:= admission filter.  The configured content directory is the
+admission boundary: every discovered Org file is exactly one Blog article.  The
+=:blog:= tag is still useful as a tag facet or authoring signal, but it cannot
+decide whether =travel.org=, gallery notes, or other life records exist as
+readable pages.  This keeps Blog aligned with a Hugo-like regular-page
+collection while preserving Org's richer section semantics inside the Zen
+reader.  Summary labels must name their unit: =Org files= are discovered source
+files, and =tag facets= are the visible tag filters, not a separate taxonomy
+invented by the frontend.
+
 The first viewport should say "life archive" by structure, not by translating
 English labels to Chinese.  Navigation labels remain recognizable product
 surfaces, while Blog treats source files as quiet substrate.  The visible Blog
@@ -130,11 +161,11 @@ Zen reading.
 Agent-facing reading is not only a traditional blog index.  Human memory moves
 as an association network, while LLM reasoning often proceeds as a branching
 tree.  Blog therefore exposes an association lens derived from parser-owned Org
-tags and article roots: topic filters model the network entry points, and the
-association strip shows compact branches from a root topic to related topics.
-It must not repeat article titles or compete with the article index.  This
-remains a projection over Org facts; the frontend must not invent another parser
-or store agent-written categories as source truth.
+tags on file-level articles: tag filters model the network entry points, and the
+association strip shows compact branches from a root tag to related tags.  It
+must not repeat article titles or compete with the article index.  This remains
+a projection over Org facts; the frontend must not invent another parser or
+store agent-written categories as source truth.
 
 The practical test is simple: if a surface needs more elegance, first ask which
 Org semantic unit is missing or which frame rhythm is unstable.  Add a card,
@@ -180,11 +211,16 @@ The style tests protect the contract:
   constrained by =--reader-width= and no top navigation is visible;
 - Zen keyboard controls must stay available: =Esc= exits to the index, and
   arrow keys move through adjacent articles without showing reader chrome;
+- Zen progress is a lazy, passive reader affordance.  It appears only in Zen,
+  updates from document scroll state, and must not introduce a toolbar or
+  visible navigator;
 - source navigation and Blog article indexes must stay bounded for large
   workspaces; tests cover 1000 source files and 20 article headings so the UI
   cannot regress into an unbounded source/file card wall;
 - Blog article indexes are ordered as a dated article collection, not by source
   file order or source picker state;
+- Blog admission must be one article per configured Org file, not section-root
+  splitting and not a =:blog:= tag filter;
 - Blog keeps large article indexes behind a lazy TanStack virtual-core boundary;
 - package-backed color and font imports must stay present;
 - core reader surfaces must not reintroduce hard-coded hex colors, very heavy

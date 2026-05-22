@@ -24,18 +24,22 @@
     "eagerZagSelect": false
   },
   "metrics": {
-    "staticManifestBytes": 64881,
+    "staticManifestBytes": 64297,
     "sourceShardBytes": 1289988,
     "sourceShardCount": 8,
     "largestSourceShardBytes": 407338,
     "largestSourceShard": "org-zhixing.sources/wallpaper-gallery.json",
-    "initialScriptBytes": 920269,
+    "initialScriptBytes": 922948,
     "initialScriptCount": 3,
     "initialScripts": [
-      "assets/runtime.8e28beef.js",
+      "assets/runtime.545635b2.js",
       "assets/vendors-node_modules_fontsource-variable_inter_files_inter-latin-wght-normal_woff2-node_modul-38c2c2.984ee745.js",
-      "assets/app.55103bb8.js"
+      "assets/app.d568b5ee.js"
     ],
+    "blogArticles": 8,
+    "blogSourceCount": 8,
+    "blogTagFacetCount": 16,
+    "blogTravelArticles": 1,
     "travelPlaces": 22,
     "travelSourceCount": 1,
     "travelScannedSourceCount": 8,
@@ -57,23 +61,23 @@
     "staticManifestParse": {
       "name": "staticManifestParse",
       "minMs": 0.12,
-      "p50Ms": 0.12,
-      "p95Ms": 0.15,
-      "maxMs": 0.22,
-      "avgMs": 0.13
+      "p50Ms": 0.13,
+      "p95Ms": 0.21,
+      "maxMs": 0.75,
+      "avgMs": 0.15
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
       "minMs": 0,
       "p50Ms": 0,
       "p95Ms": 0,
-      "maxMs": 0,
+      "maxMs": 0.01,
       "avgMs": 0
     }
   },
   "budgetResults": {
     "staticManifestBytes": {
-      "actual": 64881,
+      "actual": 64297,
       "budget": 500000,
       "pass": true
     },
@@ -88,7 +92,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 920269,
+      "actual": 922948,
       "budget": 1500000,
       "pass": true
     },
@@ -98,12 +102,12 @@
       "pass": true
     },
     "staticManifestParseP50Ms": {
-      "actual": 0.12,
+      "actual": 0.13,
       "budget": 15,
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.15,
+      "actual": 0.21,
       "budget": 80,
       "pass": true
     },
