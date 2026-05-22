@@ -63,7 +63,7 @@
 
   .travel-glance-flow[data-layout="ready"] .travel-glance-sizer,
   .travel-glance-flow[data-layout="ready"] .travel-glance-flow-item,
-  .travel-glance-flow[data-layout="ready"] .travel-glance-flow-item--wide {
+  .travel-glance-flow[data-layout="ready"] .travel-glance-flow-item--full {
     width: 100%;
   }
 

@@ -522,8 +522,8 @@
   width: calc(33.333% - 10px);
 }
 
-.travel-glance-flow[data-layout="ready"] .travel-glance-flow-item--wide {
-  width: calc(66.666% - 5px);
+.travel-glance-flow[data-layout="ready"] .travel-glance-flow-item--full {
+  width: 100%;
 }
 
 .travel-glance-flow[data-layout="ready"] .travel-glance-flow-item {
@@ -607,7 +607,7 @@
     width: calc(50% - 7px);
   }
 
-  .travel-glance-flow[data-layout="ready"] .travel-glance-flow-item--wide {
+  .travel-glance-flow[data-layout="ready"] .travel-glance-flow-item--full {
     width: 100%;
   }
 }

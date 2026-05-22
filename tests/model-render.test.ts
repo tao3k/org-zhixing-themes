@@ -231,6 +231,10 @@ describe("Org source view projections", () => {
     expect(html).toContain("travel-glance-flow");
     expect(html).toContain("travel-media-flow");
     expect(html).toContain("travel-glance-flow-item");
+    expect(html).toContain("travel-glance-flow-item--full");
+    const mediaIndex = html.indexOf("travel-media-flow");
+    expect(html.indexOf("travel-glance-facts")).toBeLessThan(mediaIndex);
+    expect(mediaIndex).toBeLessThan(html.indexOf("travel-inline-map--glance", mediaIndex));
     expect(html).toContain('src="https://www.youtube.com/embed/CIZZiV7knVM"');
     expect(html).toContain('sandbox="allow-scripts allow-same-origin allow-presentation"');
     expect((html.match(/youtube\.com\/embed\/CIZZiV7knVM/g) ?? []).length).toBe(1);

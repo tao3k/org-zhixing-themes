@@ -115,7 +115,7 @@ const renderTravelGlanceTemplate = (place: TravelPlace): string => `
         <span class="travel-glance-sizer" aria-hidden="true"></span>
         ${renderGlanceFacts(place)}
         ${renderTravelEmbeds(place)}
-        ${renderEmbeddedMap(place, `travel-glance-map-${place.id}`, "travel-inline-map--glance travel-glance-flow-item travel-glance-flow-item--wide travel-glance-flow-item--map", false)}
+        ${renderEmbeddedMap(place, `travel-glance-map-${place.id}`, "travel-inline-map--glance travel-glance-flow-item travel-glance-flow-item--full travel-glance-flow-item--map", false)}
         ${renderEvidence(place.evidence)}
         ${renderSourceLinks(place)}
         ${renderEnrichFields(place)}
@@ -158,7 +158,7 @@ const renderSourceLinks = (place: TravelPlace): string =>
     : "";
 
 const renderGlanceFacts = (place: TravelPlace): string => `
-  <dl class="travel-glance-facts travel-glance-flow-item">
+  <dl class="travel-glance-facts travel-glance-flow-item travel-glance-flow-item--full">
     <div><dt>Map query</dt><dd>${escapeHtml(place.query)}</dd></div>
     ${place.sourceName || place.sourceFile ? `<div><dt>Source</dt><dd>${escapeHtml(place.sourceName ?? place.sourceFile ?? "")}</dd></div>` : ""}
     ${place.region ? `<div><dt>Region</dt><dd>${escapeHtml(place.region)}</dd></div>` : ""}
@@ -172,7 +172,7 @@ const renderGlanceFacts = (place: TravelPlace): string => `
 
 const renderTravelEmbeds = (place: TravelPlace): string =>
   place.embedHtml
-    ? `<section class="travel-media-flow travel-glance-flow-item travel-glance-flow-item--wide rendered-html" aria-label="Embedded travel media">${place.embedHtml}</section>`
+    ? `<section class="travel-media-flow travel-glance-flow-item travel-glance-flow-item--full rendered-html" aria-label="Embedded travel media">${place.embedHtml}</section>`
     : "";
 
 const renderEnrichFields = (place: TravelPlace): string =>

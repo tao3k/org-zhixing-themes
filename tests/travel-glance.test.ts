@@ -75,7 +75,10 @@ describe("Travel Zen Glance interactions", () => {
     expect(styles).toContain("opacity: 0;");
     expect(styles).toContain('.travel-glance-flow[data-layout="ready"] .travel-glance-flow-item');
     expect(styles).toContain("width: calc(33.333% - 10px);");
-    expect(styles).toContain("width: calc(66.666% - 5px);");
+    expect(styles).toContain(
+      '.travel-glance-flow[data-layout="ready"] .travel-glance-flow-item--full',
+    );
+    expect(styles).toContain("width: 100%;");
     expect(flowItem).toContain("break-inside: avoid;");
     expect(flowItem).toContain("overflow: hidden;");
     expect(flowItem).not.toContain("box-shadow:");
@@ -117,12 +120,13 @@ const mountTravelDom = (): AppDomNodes => {
             <h3>丽水站</h3>
             <div class="travel-glance-flow" data-travel-glance-flow data-layout="pending" aria-busy="true">
               <span class="travel-glance-sizer" aria-hidden="true"></span>
-              <section class="travel-media-flow travel-glance-flow-item travel-glance-flow-item--wide rendered-html">
+              <dl class="travel-glance-facts travel-glance-flow-item travel-glance-flow-item--full"></dl>
+              <section class="travel-media-flow travel-glance-flow-item travel-glance-flow-item--full rendered-html">
                 <div class="videoWrapper mb-4">
                   <iframe title="YouTube video" src="https://www.youtube.com/embed/vb1-lHR7kRM"></iframe>
                 </div>
               </section>
-              <div class="travel-glance-flow-item" data-travel-map>
+              <div class="travel-glance-flow-item travel-glance-flow-item--full" data-travel-map>
                 <iframe title="Google Maps preview for 丽水站" data-map-src="about:blank#maps.google.com/maps"></iframe>
               </div>
             </div>
