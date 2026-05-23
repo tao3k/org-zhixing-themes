@@ -1,0 +1,56 @@
+[site]
+title = "知行合一"
+locale = "zh-CN"
+base_url = "https://tao3k.github.io/org-zhixing-ts/"
+
+[content]
+content_dir = "blog"
+
+[ui]
+default_view = "gallery"
+show_timings = true
+
+[[ui.views]]
+id = "blog"
+label = "Blogs"
+weight = 10
+
+[[ui.views]]
+id = "gallery"
+label = "Gallery"
+weight = 18
+
+[[ui.views]]
+id = "records"
+label = "Notes"
+weight = 20
+
+[[ui.views]]
+id = "memory"
+label = "Memory"
+weight = 25
+
+[[ui.views]]
+id = "travel"
+label = "Travel"
+weight = 28
+
+[[ui.views]]
+id = "agenda"
+label = "Agenda"
+weight = 30
+
+[behavior]
+lazy_lint = true
+
+[attachments]
+attach_id_dir = ".attach"
+check_vcs = false
+check_annex = false
+scan_orphans = false
+
+[agenda]
+start = "2026-05-15"
+days = 7
+limit = 32
+mode = "classic"

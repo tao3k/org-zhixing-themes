@@ -1,0 +1,100 @@
+#+TITLE: Org Zhixing Demo
+#+AUTHOR: Tao 3000
+#+CATEGORY: zhixing
+#+FILETAGS: :zhixing:user:
+#+TODO: NEXT(n) WAIT(w@/!) TODO(t) | DONE(d) CANCELED(c)
+
+* NEXT [#A] Build the visible Org life surface :agenda:record:focus:
+SCHEDULED: <2026-05-15 Fri 09:30> DEADLINE: <2026-05-18 Mon -1d>
+:PROPERTIES:
+:ID: task-org-zhixing-demo
+:AREA: product
+:EFFORT: 2h
+:END:
+The first milestone is a browser surface that can display blog notes, records,
+agenda-like planning data, links, properties, and attachment evidence from the
+same Org source.
+
+* Blog
+** DONE Why Org belongs in the browser :blog:
+CLOSED: [2026-05-13 Wed 21:10]
+:PROPERTIES:
+:SLUG: org-in-browser
+:END:
+Rust owns the parser. TypeScript owns interaction, layout, caching, and display.
+The boundary is a compact WASM DTO instead of a reimplemented parser.
+
+** TODO [#B] A small public changelog :blog:record:
+SCHEDULED: <2026-05-16 Sat>
+:PROPERTIES:
+:SLUG: changelog-week-20
+:END:
+This post can be rendered as a blog card and also indexed as an ordinary user
+record.
+
+* Records
+** NEXT [#B] Capture parser decisions :record:memory:
+SCHEDULED: <2026-05-15 Fri 16:00-16:30>
+:PROPERTIES:
+:ID: record-parser-decisions
+:KIND: decision
+:EFFORT: 30m
+:END:
+Keep the source in Org. Let the frontend ask for outline, section index, lint,
+attachments, and rendered HTML projections.
+
+** WAIT [#C] Sketch attachment use cases :record:ATTACH:
+SCHEDULED: <2026-05-16 Sat>
+:PROPERTIES:
+:DIR: assets
+:AREA: research
+:EFFORT: 45m
+:END:
+Attachment metadata should be visible without filesystem access. Example:
+[[attachment:architecture.png::255][architecture sketch]].
+
+* Agenda
+** NEXT [#A] Parser-owned agenda workspace :agenda:focus:
+:PROPERTIES:
+:ORDERED: t
+:AREA: frontend
+:END:
+*** NEXT [#A] Wire the agendaView worker projection :agenda:focus:
+SCHEDULED: <2026-05-15 Fri 11:00-12:00>
+:PROPERTIES:
+:ID: agenda-worker-projection
+:EFFORT: 1h
+:END:
+Use the Rust agenda view as the source of truth for sort receipts, blocker
+evidence, and visible candidate rows.
+
+*** TODO [#B] Render grouped agenda cards :agenda:ui:
+SCHEDULED: <2026-05-15 Fri 13:00>
+:PROPERTIES:
+:ID: agenda-modern-groups
+:EFFORT: 2h
+:END:
+This row is intentionally under an ORDERED parent so the frontend can show a
+parser-owned blocker edge without recomputing Org semantics in TypeScript.
+
+** TODO [#B] Publish the demo package :agenda:
+SCHEDULED: <2026-05-17 Sun 10:00> DEADLINE: <2026-05-20 Wed>
+:PROPERTIES:
+:ID: publish-demo
+:AREA: release
+:EFFORT: 4h
+:END:
+Ship enough surface for a personal blog, records, and planning dashboard.
+
+** TODO [#A] Review deadline posture :agenda:ops:
+DEADLINE: <2026-05-16 Sat>
+:PROPERTIES:
+:AREA: operations
+:EFFORT: 30m
+:END:
+Deadline rows should become their own pressure surface instead of disappearing
+inside a flat chronological list.
+
+** DONE [#C] Validate the local worker protocol :agenda:
+CLOSED: [2026-05-14 Thu]
+The worker session can update the source and return snapshot projections.

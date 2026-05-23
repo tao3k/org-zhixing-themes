@@ -1,0 +1,1 @@
+"use strict";(self.rspackChunkorg_zhixing=self.rspackChunkorg_zhixing||[]).push([[404],{2655(r,e,i){i.d(e,{QueryClient:()=>s.QueryClient});var s=i(7945)}}]);

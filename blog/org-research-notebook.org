@@ -1,0 +1,94 @@
+#+TITLE: Research Notebook
+#+AUTHOR: Tao 3000
+#+DATE: <2026-05-13 Wed>
+#+CATEGORY: research
+#+FILETAGS: :zhixing:research:zk:
+#+TODO: IDEA(i) NEXT(n) WAIT(w) REVIEW(r) | DONE(d) ARCHIVED(a)
+#+OPTIONS: toc:2 num:nil
+
+* REVIEW Research notes need evidence and memory :blog:research:
+SCHEDULED: <2026-05-16 Sat> DEADLINE: <2026-05-22 Fri>
+:PROPERTIES:
+:ID: research-evidence-memory
+:SLUG: research-evidence-memory
+:AREA: research
+:KIND: synthesis
+:EFFORT: 2h
+:END:
+Research writing is a different stress test from agenda writing.  It uses links,
+citations-like references, quoted excerpts, tables, and memory records.
+
+#+BEGIN_QUOTE
+The frontend should help a reader move from source evidence to a next action
+without pretending the evidence is just another task card.
+#+END_QUOTE
+
+** Evidence matrix
+
+| Signal          | Org expression                         | UI expectation              |
+|-----------------+----------------------------------------+-----------------------------|
+| External source | [[https://orgmode.org/manual/][Org manual]] | labeled outbound link       |
+| Internal link   | [[id:research-reading-queue][reading queue]] | stable cross-record target  |
+| Attachment      | [[attachment:paper-notes.pdf][paper notes]] | evidence, not broken text   |
+| Date            | [2026-05-13 Wed]                       | readable historical marker  |
+
+** Notes
+
+- ZK style content is not only backlink graphs.
+- A research article may contain unfinished tasks, but it should still read as
+  an article first.
+- Memory-worthy snippets should become records with stable IDs.
+
+* IDEA AI-assisted agenda handoff :blog:agent:
+:PROPERTIES:
+:ID: ai-assisted-agenda-handoff
+:SLUG: ai-assisted-agenda-handoff
+:AREA: agent
+:END:
+An AI agenda workflow needs explainable context:
+
+1. What source created this card?
+2. Which parser facts were used?
+3. Which human decision remains?
+
+#+BEGIN_EXPORT html
+<aside class="org-callout">Export blocks should not break the article surface.</aside>
+#+END_EXPORT
+
+* Records
+** NEXT Research reading queue :record:memory:
+SCHEDULED: <2026-05-17 Sun 20:00>
+:PROPERTIES:
+:ID: research-reading-queue
+:AREA: reading
+:KIND: queue
+:EFFORT: 45m
+:END:
+Track sources that need review before they become public notes.
+
+** WAIT Archive raw highlights :record:
+SCHEDULED: <2026-05-19 Tue>
+:PROPERTIES:
+:ID: archive-raw-highlights
+:AREA: research
+:EFFORT: 1h
+:END:
+Raw highlights belong in source material, while synthesis belongs in the Blog
+article.
+
+* Agenda
+** NEXT [#A] Render research evidence links :agenda:research:
+SCHEDULED: <2026-05-16 Sat 18:00-18:45>
+:PROPERTIES:
+:AREA: links
+:EFFORT: 45m
+:END:
+The notes view should show links and properties clearly enough for follow-up.
+
+** TODO [#B] Promote stable IDs into source cards :agenda:ui:
+SCHEDULED: <2026-05-22 Fri>
+:PROPERTIES:
+:AREA: source-nav
+:EFFORT: 2h
+:END:
+Eventually source blocks can display parsed title, tags, and record counts.

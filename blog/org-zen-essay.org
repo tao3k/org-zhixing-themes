@@ -1,0 +1,99 @@
+#+TITLE: Zen Essay Notebook
+#+AUTHOR: Tao 3000
+#+DATE: <2026-05-15 Fri>
+#+CATEGORY: zen-essay
+#+FILETAGS: :zhixing:writing:zen:
+#+TODO: DRAFT(d) NEXT(n) WAIT(w) | PUBLISHED(p) DONE(x)
+#+OPTIONS: toc:nil num:nil
+
+* PUBLISHED Long-form reading should feel quiet :blog:essay:
+CLOSED: [2026-05-15 Fri 22:40]
+:PROPERTIES:
+:ID: zen-long-form-reading
+:SLUG: long-form-reading-quiet
+:AREA: writing
+:KIND: essay
+:END:
+Zen mode is not the Blog section itself.  Blog is the library; Zen mode is the
+reading posture for one selected article.
+
+The article surface therefore needs enough typography to carry real writing:
+paragraph rhythm, headings, footnotes, quotes, lists, and occasional technical
+blocks.  The page should not feel like a settings dashboard pretending to be an
+essay.
+
+** A calmer outline
+
+Org documents often mix private structure and public prose.  A personal site
+should preserve that structure without exposing every internal switch as a UI
+gadget.
+
+#+BEGIN_VERSE
+Read one note.
+Find one next action.
+Leave the rest quiet.
+#+END_VERSE
+
+** Side notes
+
+The phrase /知行合一/ is a product constraint here: knowledge and action must be
+visible in the same source, but not with equal visual volume.  Agenda signals can
+exist below an essay without making the essay feel noisy.
+
+* DRAFT Designing a personal knowledge homepage :blog:design:
+SCHEDULED: <2026-05-17 Sun>
+:PROPERTIES:
+:ID: personal-knowledge-homepage
+:SLUG: personal-knowledge-homepage
+:AREA: design
+:EFFORT: 2h
+:END:
+The homepage needs a clear navigation model:
+
+1. Blog as published or publishable articles.
+2. Notes as records, decisions, references, and memory fragments.
+3. Agenda as the living execution surface.
+
+#+BEGIN_QUOTE
+The navigation should describe the reader's intent, not the implementation
+category of the parser.
+#+END_QUOTE
+
+* Records
+** NEXT Reading mode typography pass :record:ui:
+SCHEDULED: <2026-05-16 Sat 15:00>
+:PROPERTIES:
+:ID: reading-mode-typography-pass
+:AREA: typography
+:EFFORT: 1h
+:END:
+Check paragraph measure, list spacing, quote treatment, and table overflow.
+
+** WAIT Collect references for digital garden IA :record:research:
+SCHEDULED: <2026-05-18 Mon>
+:PROPERTIES:
+:ID: digital-garden-reference-ia
+:AREA: research
+:EFFORT: 45m
+:END:
+Reference links:
+[[https://maggieappleton.com/garden-history][garden history]],
+[[https://zettelkasten.de/][Zettelkasten]], and [[id:personal-knowledge-homepage][homepage draft]].
+
+* Agenda
+** NEXT [#A] Test Zen mode with a long article :agenda:focus:
+SCHEDULED: <2026-05-16 Sat 19:00-19:30>
+:PROPERTIES:
+:AREA: reading
+:EFFORT: 30m
+:END:
+The article should be readable without the source library crowding the line
+length.
+
+** TODO [#B] Compare mobile source cards :agenda:ui:
+SCHEDULED: <2026-05-19 Tue>
+:PROPERTIES:
+:AREA: mobile
+:EFFORT: 1h
+:END:
+On narrow screens the source blocks should remain scannable.
