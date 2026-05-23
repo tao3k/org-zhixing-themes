@@ -30,10 +30,8 @@
     "eagerTravelVirtualList": false,
     "eagerMasonryLayout": false,
     "eagerFloatingPanel": false,
-    "eagerZagSelect": false,
     "lazyParserWorker": true,
     "staticSiteWideSourceDeferral": true,
-    "deferredSourcePickerRuntime": true,
     "idleInteractionChunkPrefetch": true
   },
   "metrics": {
@@ -138,12 +136,12 @@
       "sourceId": 135,
       "schemaVersion": 8
     },
-    "initialScriptBytes": 394527,
+    "initialScriptBytes": 395288,
     "initialScriptCount": 3,
     "initialScripts": [
       "assets/lib-react.4fa030ab.js",
       "assets/836.e1b72ad0.js",
-      "assets/app.2edb692d.js"
+      "assets/app.cfcacd40.js"
     ],
     "generatedTailwindCssBytes": 774,
     "tailwindContentUtilityLeak": false,
@@ -153,6 +151,10 @@
       {
         "path": "assets/634.437f5d75.js",
         "bytes": 143521
+      },
+      {
+        "path": "assets/581.fd02cb84.js",
+        "bytes": 59104
       },
       {
         "path": "assets/10.b3e89ac7.js",
@@ -171,16 +173,12 @@
         "bytes": 19109
       },
       {
+        "path": "assets/883.083266ee.js",
+        "bytes": 14442
+      },
+      {
         "path": "assets/43.dbf8c8f5.js",
         "bytes": 10018
-      },
-      {
-        "path": "assets/767.4fb4ee82.js",
-        "bytes": 7961
-      },
-      {
-        "path": "assets/550.184c2fb4.js",
-        "bytes": 6912
       }
     ],
     "blogArticles": 8,
@@ -201,7 +199,6 @@
     "eagerTravelVirtualList": false,
     "eagerMasonryLayout": false,
     "eagerFloatingPanel": false,
-    "eagerZagSelect": false,
     "dynamicTanStackChunk": true,
     "dynamicEffectRuntimeChunk": true,
     "dynamicTanStackQueryChunk": true,
@@ -210,25 +207,23 @@
     "dynamicTravelVirtualListChunk": true,
     "dynamicMasonryChunk": true,
     "dynamicFloatingPanelChunk": true,
-    "dynamicZagSelectChunk": true,
     "lazyParserWorker": true,
     "staticSiteWideSourceDeferral": true,
-    "deferredSourcePickerRuntime": true,
     "idleInteractionChunkPrefetch": true,
     "staticManifestParse": {
       "name": "staticManifestParse",
       "minMs": 0.12,
-      "p50Ms": 0.13,
-      "p95Ms": 0.13,
-      "maxMs": 0.14,
-      "avgMs": 0.13
+      "p50Ms": 0.14,
+      "p95Ms": 0.15,
+      "maxMs": 0.16,
+      "avgMs": 0.14
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
       "minMs": 0,
       "p50Ms": 0,
       "p95Ms": 0,
-      "maxMs": 0,
+      "maxMs": 0.01,
       "avgMs": 0
     }
   },
@@ -269,7 +264,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 394527,
+      "actual": 395288,
       "budget": 1500000,
       "pass": true
     },
@@ -289,12 +284,12 @@
       "pass": true
     },
     "staticManifestParseP50Ms": {
-      "actual": 0.13,
+      "actual": 0.14,
       "budget": 15,
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.13,
+      "actual": 0.15,
       "budget": 80,
       "pass": true
     },
@@ -358,22 +353,12 @@
       "budget": false,
       "pass": true
     },
-    "eagerZagSelect": {
-      "actual": false,
-      "budget": false,
-      "pass": true
-    },
     "lazyParserWorker": {
       "actual": true,
       "budget": true,
       "pass": true
     },
     "staticSiteWideSourceDeferral": {
-      "actual": true,
-      "budget": true,
-      "pass": true
-    },
-    "deferredSourcePickerRuntime": {
       "actual": true,
       "budget": true,
       "pass": true
@@ -436,11 +421,6 @@
       "action": "Keep Blog index, Gallery, and Travel from loading the active source shard during boot; source shards should start at Zen/article or source-scoped views."
     },
     {
-      "area": "source-picker-first-interaction",
-      "signal": "Zag Select is warmed on intent/idle instead of imported during source picker construction",
-      "action": "Keep the styled source picker runtime off the boot path while prefetching it before the first deliberate picker open."
-    },
-    {
       "area": "interaction-prefetch",
       "signal": "Gallery lightbox and Travel Glance chunks are prefetched after the relevant DOM appears",
       "action": "Continue moving heavy first-interaction chunks to intent/idle prefetch boundaries instead of eager imports."
@@ -459,11 +439,6 @@
       "area": "zen-glance-window-runtime",
       "signal": "Zag Floating Panel exists only as an on-demand chunk",
       "action": "Keep Zen Glance window control behind the card-open boundary instead of adding it to initial navigation."
-    },
-    {
-      "area": "source-picker-runtime",
-      "signal": "Zag Select exists only as an on-demand chunk",
-      "action": "Keep the styled source picker out of initial scripts while preserving the non-native select surface."
     }
   ]
 }

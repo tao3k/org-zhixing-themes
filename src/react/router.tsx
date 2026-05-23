@@ -1,5 +1,4 @@
 import {
-  Link,
   Navigate,
   Outlet,
   createRootRouteWithContext,
@@ -18,14 +17,9 @@ import { renderView } from "../render";
 import { travelViewFromStaticSite } from "../travelSiteProjection";
 import type { ContentShellData } from "../services/contentServices";
 import type { ViewKey } from "../model";
-import {
-  isEditableTarget,
-  lifeFacetFor,
-  routePathForView,
-  viewDomNodes,
-  viewForPath,
-} from "./routeViewHelpers";
+import { isEditableTarget, viewDomNodes, viewForPath } from "./routeViewHelpers";
 import { getReactQueryClient } from "./queryClient";
+import { ShellChrome } from "./ShellChrome";
 
 export type OrgZhixingRouterContext = {
   getQueryClient: () => Promise<QueryClient>;
@@ -117,13 +111,18 @@ const routeTree = rootRoute.addChildren([
   diagnosticsRoute,
 ]);
 
-export const router = createRouter({
-  context: {
+export const createOrgZhixingRouter = (
+  context: OrgZhixingRouterContext = {
     getQueryClient: getReactQueryClient,
   },
-  defaultPreload: "intent",
-  routeTree,
-});
+): ReturnType<typeof createRouter> =>
+  createRouter({
+    context,
+    defaultPreload: "intent",
+    routeTree,
+  });
+
+export const router = createOrgZhixingRouter();
 
 async function loadContentShellQuery(context: OrgZhixingRouterContext): Promise<ContentShellData> {
   const queryClient = await context.getQueryClient();
@@ -206,46 +205,9 @@ function RootLayout(): ReactNode {
   }, [readerMode, shell.siteConfig.locale, shell.siteConfig.title, view]);
 
   return (
-    <main className="shell">
-      <header className="site-header">
-        <Link className="site-brand" to="/blogs" aria-label="Zhixing home">
-          <span>知行合一</span>
-          <small>Zhixing</small>
-        </Link>
-        <nav id="tabs" className="site-nav" aria-label="Life archive navigation">
-          {shell.siteConfig.menu.map((item) => (
-            <Link
-              key={item.view}
-              to={routePathForView(item.view)}
-              className="site-nav-item"
-              activeProps={{ className: "site-nav-item active" }}
-            >
-              <span>{item.name}</span>
-              <small>{lifeFacetFor(item.view)}</small>
-            </Link>
-          ))}
-        </nav>
-        <output id="status" className="site-status">
-          {shell.staticSite ? "static site-wide" : "live source"}
-        </output>
-      </header>
-      {readerMode === "library" ? (
-        <section className="site-hero">
-          <div className="hero-copy">
-            <p className="eyebrow">Personal digital garden</p>
-            <h1 id="site-title">{shell.siteConfig.title}</h1>
-            <p>把写作、札记、事件与行动议程放回同一个 Org 源头，让知识进入每天的实践。</p>
-          </div>
-        </section>
-      ) : null}
-      <section className="viewer-pane">
-        <Outlet />
-      </section>
-      <div className="runtime-state" aria-hidden="true">
-        <strong id="active-source-title">{shell.initialSource.name}</strong>
-        <small id="active-source-path">{shell.initialSource.file} / blog source</small>
-      </div>
-    </main>
+    <ShellChrome readerMode={readerMode} shell={shell}>
+      <Outlet />
+    </ShellChrome>
   );
 }
 
@@ -385,15 +347,24 @@ function BlogArticlePage(): ReactNode {
 
 function GalleryPage(): ReactNode {
   const shell = rootRoute.useLoaderData();
-  return (
-    <HtmlSurface
-      html={renderView({
-        view: "gallery",
-        document: null,
-        attachmentGallery: shell.staticSite?.attachmentGallery ?? null,
-      })}
-    />
-  );
+  const html = renderView({
+    view: "gallery",
+    document: null,
+    attachmentGallery: shell.staticSite?.attachmentGallery ?? null,
+  });
+  useEffect(() => {
+    if (!html.includes("data-attachment-open")) {
+      return;
+    }
+    const controller = new AbortController();
+    void import("../attachmentGalleryViewer").then(({ bindAttachmentGalleryViewer }) => {
+      if (!controller.signal.aborted) {
+        bindAttachmentGalleryViewer(viewDomNodes(), controller.signal);
+      }
+    });
+    return () => controller.abort();
+  }, [html]);
+  return <HtmlSurface html={html} />;
 }
 
 function TravelPage(): ReactNode {

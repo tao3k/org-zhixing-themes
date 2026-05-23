@@ -18,7 +18,7 @@ import {
   createTravelView,
   createTravelViewFromSources,
 } from "../src/travelModel";
-import { cacheKeyFor, memoryResponse, record, sectionRecord, sourceRange } from "./modelFixtures";
+import { memoryResponse, record, sectionRecord, sourceRange } from "./modelFixtures";
 import { staticProjection } from "./staticProjection.fixture";
 
 describe("Org source view projections", () => {
@@ -1048,68 +1048,6 @@ describe("Org source view projections", () => {
     expect(html).not.toContain("[[https://example.com/raw");
     expect(html).not.toContain("[[attachment:raw.jpg]]");
     expect(html).not.toContain("Raw memory preview");
-  });
-
-  it("separates cache keys by source and late projection state", () => {
-    const baseDocument = createDocumentView([record({ rangeStart: 7, title: "Cached note" })]);
-    const attachmentDocument = withAttachmentInventory(baseDocument, {
-      schemaVersion: 1,
-      entries: [
-        {
-          source: sourceRange(7),
-          sectionTitle: "Cached note",
-          kind: { label: "link", link: { path: "image.jpg" } },
-          path: "image.jpg",
-          absolutePath: "/tmp/image.jpg",
-          exists: true,
-          vcs: {
-            status: "notChecked",
-            annex: { status: "notChecked" },
-          },
-        },
-      ],
-      display: [
-        {
-          source: sourceRange(7),
-          sectionTitle: "Cached note",
-          sectionTitleText: "Cached note",
-          outlinePath: ["Cached note"],
-          outlinePathText: ["Cached note"],
-          tags: [],
-          effectiveTags: [],
-          directoryPath: ".attach/id",
-          linkPath: "image.jpg",
-          absolutePath: "/tmp/image.jpg",
-          exists: true,
-          mediaKind: "image",
-        },
-      ],
-      syncPlan: { actions: [] },
-      archiveAdvice: [],
-      warnings: [],
-    });
-
-    const pendingKey = cacheKeyFor(baseDocument, "records", "org-zhixing-demo.org", "");
-    const renderedKey = cacheKeyFor(
-      baseDocument,
-      "records",
-      "org-zhixing-demo.org",
-      "<main></main>",
-    );
-    const attachmentKey = cacheKeyFor(
-      attachmentDocument,
-      "records",
-      "org-zhixing-demo.org",
-      "<main></main>",
-    );
-    const otherSourceKey = cacheKeyFor(
-      attachmentDocument,
-      "records",
-      "wallpaper-gallery.org",
-      "<main></main>",
-    );
-
-    expect(new Set([pendingKey, renderedKey, attachmentKey, otherSourceKey]).size).toBe(4);
   });
 
   it("hydrates a complete document view from the production static projection", () => {

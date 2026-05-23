@@ -7,8 +7,6 @@ import type {
   OrgizeTextSliceDto,
   OrgizeViewIndexRecordDto,
 } from "orgize/dto";
-import { createDocumentView } from "../src/model";
-import { viewCacheKey } from "../src/viewCache";
 
 export const record = ({
   bodyPreview = "",
@@ -165,25 +163,3 @@ export const sourceRange = (rangeStart: number): OrgizeSourceRangeDto => ({
   rangeStart,
   rangeEnd: rangeStart + 10,
 });
-
-export const cacheKeyFor = (
-  document: ReturnType<typeof createDocumentView>,
-  view: "records",
-  sourceFile: string,
-  renderedHtml: string,
-): string =>
-  viewCacheKey({
-    agendaMode: "classic",
-    agendaPanel: "trace",
-    agendaRuleId: null,
-    blog: { articleRangeStart: null, tagFilter: null, timeFilter: null, zenMode: false },
-    document,
-    renderedHtml,
-    sourceItem: {
-      id: sourceFile,
-      name: sourceFile,
-      file: sourceFile,
-      sourceFile: `blog/${sourceFile}`,
-    },
-    view,
-  });

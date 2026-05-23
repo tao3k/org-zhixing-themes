@@ -42,24 +42,24 @@ describe("Org Zhixing performance regression gates", () => {
   });
 
   it("keeps heavy Travel virtualization behind an explicit lazy boundary", () => {
-    const appEvents = readFileSync("src/appEvents.ts", "utf8");
+    const router = readFileSync("src/react/router.tsx", "utf8");
     const travelRender = readFileSync("src/travelRender.ts", "utf8");
 
-    expect(appEvents).not.toMatch(/import\s+\{?\s*bindTravelVirtualList/);
-    expect(appEvents).toContain('import("./travelVirtualList")');
-    expect(appEvents).toContain('querySelector("[data-travel-virtual-list]")');
+    expect(router).not.toMatch(/import\s+\{?\s*bindTravelVirtualList/);
+    expect(router).toContain('import("../travelVirtualList")');
+    expect(router).toContain('html.includes("data-travel-virtual-list")');
     expect(travelRender).toContain("const virtualListThreshold = 80;");
     expect(travelRender).toContain("travel.places.length >= virtualListThreshold");
   });
 
   it("keeps heavy Blog indexing behind an explicit lazy boundary", () => {
-    const appEvents = readFileSync("src/appEvents.ts", "utf8");
+    const router = readFileSync("src/react/router.tsx", "utf8");
     const blogRender = readFileSync("src/blogRender.ts", "utf8");
     const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
 
-    expect(appEvents).not.toMatch(/import\s+\{?\s*bindBlogVirtualList/);
-    expect(appEvents).toContain('import("./blogVirtualList")');
-    expect(appEvents).toContain('querySelector("[data-blog-virtual-list]")');
+    expect(router).not.toMatch(/import\s+\{?\s*bindBlogVirtualList/);
+    expect(router).toContain('import("../blogVirtualList")');
+    expect(router).toContain('html.includes("data-blog-virtual-list")');
     expect(blogRender).toContain("export const blogVirtualListThreshold = 120;");
     expect(blogRender).toContain("articles.length >= blogVirtualListThreshold");
     expect(perfScript).toContain("eagerBlogVirtualList: false");
@@ -67,36 +67,31 @@ describe("Org Zhixing performance regression gates", () => {
   });
 
   it("keeps parser runtime and source shards off static site-wide startup", () => {
-    const app = readFileSync("src/app.ts", "utf8");
-    const appEvents = readFileSync("src/appEvents.ts", "utf8");
+    const router = readFileSync("src/react/router.tsx", "utf8");
+    const contentServices = readFileSync("src/services/contentServices.ts", "utf8");
     const orgizeClient = readFileSync("src/orgizeClient.ts", "utf8");
     const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
-    const sourcePicker = readFileSync("src/sourcePicker.ts", "utf8");
 
     expect(orgizeClient).not.toContain("this.#worker = options.createWorker();");
     expect(orgizeClient).toContain("#workerForRequest()");
-    expect(app).toContain("#viewNeedsActiveSource()");
-    expect(app).toContain("#canRenderStaticSiteWideView()");
-    const sourcePickerConstructor = sourcePicker.match(
-      /constructor\(root: HTMLElement, sources: SourceItem\[\], selected: string\) \{([\s\S]*?)\n  \}/,
-    )?.[1];
-    expect(sourcePickerConstructor).not.toContain("#loadRuntime");
-    expect(sourcePicker).toContain("#scheduleIdleWarmup()");
-    expect(appEvents).toContain("scheduleIdleImport");
-    expect(appEvents).toContain("prefetchTravelGlanceRuntime");
+    expect(router).toContain("shell.staticSite?.blog");
+    expect(router).toContain("shell.staticSite?.attachmentGallery");
+    expect(router).toContain("travelViewFromStaticSite(shell.staticSite)");
+    expect(router).toContain("prefetchTravelGlanceRuntime");
+    expect(contentServices).toContain("loadStaticSourceFor(shell.staticSite, source)");
+    expect(contentServices).toContain("loadAllStaticSources(shell.staticSite");
     expect(perfScript).toContain("lazyParserWorker: true");
     expect(perfScript).toContain("staticSiteWideSourceDeferral: true");
-    expect(perfScript).toContain("deferredSourcePickerRuntime: true");
     expect(perfScript).toContain("idleInteractionChunkPrefetch: true");
   });
 
   it("keeps static agenda, attachments, Agent memory, and section indexes behind dedicated lazy shards", () => {
-    const app = readFileSync("src/app.ts", "utf8");
     const generator = readFileSync("scripts/generate-static-site.mjs", "utf8");
     const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
     const rsbuildConfig = readFileSync("rsbuild.config.ts", "utf8");
     const staticSiteData = readFileSync("src/staticSiteData.ts", "utf8");
     const staticSiteShards = readFileSync("src/staticSiteShards.ts", "utf8");
+    const contentServices = readFileSync("src/services/contentServices.ts", "utf8");
 
     expect(staticSiteShards).toContain('import("@tanstack/query-core")');
     expect(staticSiteShards).not.toContain('from "@tanstack/query-core"');
@@ -130,11 +125,10 @@ describe("Org Zhixing performance regression gates", () => {
     expect(staticSiteShards).toContain("fetchStaticMemoryShard");
     expect(staticSiteShards).toContain("fetchStaticSectionShard");
     expect(staticSiteData).toContain("Promise.all([");
-    expect(app).toContain("loadStaticAgendaForSource(this.#staticSite, this.#sourceItem)");
-    expect(app).toContain("const staticAgendaPromise =");
-    expect(app).toContain("loadStaticAttachmentInventoryForSource(");
-    expect(app).toContain("loadStaticMemoryForSource(this.#staticSite, this.#sourceItem)");
-    expect(app).toContain("loadStaticSectionIndexForSource(");
+    expect(contentServices).toContain("loadStaticAgendaForSource(shell.staticSite, staticSource)");
+    expect(contentServices).toContain("loadStaticAttachmentInventoryForSource(");
+    expect(contentServices).toContain("loadStaticMemoryForSource(shell.staticSite, staticSource)");
+    expect(contentServices).toContain("loadStaticSectionIndexForSource(");
     expect(rsbuildConfig).toContain("pluginReact()");
     expect(rsbuildConfig).toContain("staticAgendaShardRoot");
     expect(rsbuildConfig).toContain("staticAttachmentShardRoot");
@@ -203,14 +197,14 @@ describe("Org Zhixing performance regression gates", () => {
   });
 
   it("does not render parser/source loading text in the static app shell", () => {
-    const app = readFileSync("src/app.ts", "utf8");
-    const appShell = readFileSync("src/appShell.ts", "utf8");
+    const router = readFileSync("src/react/router.tsx", "utf8");
+    const contentServices = readFileSync("src/services/contentServices.ts", "utf8");
     const render = readFileSync("src/render.ts", "utf8");
 
-    expect(app).not.toContain("this.#render();\n    void this.#boot();");
-    expect(app).not.toContain("Loading Org parser");
-    expect(appShell).not.toContain("Loading Org parser");
-    expect(appShell).not.toContain("Loading source");
+    expect(router).not.toContain("Loading Org parser");
+    expect(router).not.toContain("Loading source");
+    expect(contentServices).not.toContain("Loading Org parser");
+    expect(contentServices).not.toContain("Loading source");
     expect(render).not.toContain("Loading Org parser");
   });
 
@@ -250,24 +244,24 @@ describe("Org Zhixing performance regression gates", () => {
   });
 
   it("keeps Zen reader progress as a lazy reading affordance", () => {
-    const appEvents = readFileSync("src/appEvents.ts", "utf8");
+    const router = readFileSync("src/react/router.tsx", "utf8");
     const blogZenProgress = readFileSync("src/blogZenProgress.ts", "utf8");
 
-    expect(appEvents).not.toMatch(/import\s+\{?\s*bindBlogZenProgress/);
-    expect(appEvents).toContain('import("./blogZenProgress")');
-    expect(appEvents).toContain('querySelector("[data-blog-zen-progress]")');
+    expect(router).not.toMatch(/import\s+\{?\s*bindBlogZenProgress/);
+    expect(router).toContain('import("../blogZenProgress")');
+    expect(blogZenProgress).toContain('const progressSelector = "[data-blog-zen-progress]"');
     expect(blogZenProgress).toContain("readingProgressPercent");
     expect(blogZenProgress).not.toContain("@mozilla/readability");
   });
 
   it("keeps Travel Zen Glance window and masonry runtimes behind lazy boundaries", () => {
-    const appEvents = readFileSync("src/appEvents.ts", "utf8");
+    const router = readFileSync("src/react/router.tsx", "utf8");
     const travelGlance = readFileSync("src/travelGlance.ts", "utf8");
     const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
 
-    expect(appEvents).toContain('import("./travelVirtualList")');
-    expect(appEvents).not.toContain("masonry-layout");
-    expect(appEvents).not.toContain("@zag-js/floating-panel");
+    expect(router).toContain('import("../travelVirtualList")');
+    expect(router).not.toContain("masonry-layout");
+    expect(router).not.toContain("@zag-js/floating-panel");
     expect(travelGlance).not.toMatch(/import\s+\{?\s*machine/);
     expect(travelGlance).not.toContain("@zag-js/dialog");
     expect(travelGlance).toContain('import("@zag-js/floating-panel")');
@@ -279,26 +273,12 @@ describe("Org Zhixing performance regression gates", () => {
     expect(perfScript).toContain("dynamicFloatingPanelChunk");
   });
 
-  it("keeps the styled source picker runtime behind a lazy boundary", () => {
-    const appUi = readFileSync("src/appUi.ts", "utf8");
-    const sourcePicker = readFileSync("src/sourcePicker.ts", "utf8");
-    const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
-
-    expect(appUi).not.toContain("@zag-js/select");
-    expect(sourcePicker).not.toMatch(/^import\s+\{[^}]*\}\s+from "@zag-js\/select"/m);
-    expect(sourcePicker).toContain('import("@zag-js/select")');
-    expect(sourcePicker).toContain("#bindWarmupIntent()");
-    expect(sourcePicker).toContain("#scheduleIdleWarmup()");
-    expect(perfScript).toContain("eagerZagSelect: false");
-    expect(perfScript).toContain("dynamicZagSelectChunk");
-  });
-
   it("keeps attachment lightbox code behind an image-opener lazy boundary", () => {
-    const appEvents = readFileSync("src/appEvents.ts", "utf8");
+    const router = readFileSync("src/react/router.tsx", "utf8");
 
-    expect(appEvents).not.toMatch(/import\s+\{?\s*bindAttachmentGalleryViewer/);
-    expect(appEvents).toContain('import("./attachmentGalleryViewer")');
-    expect(appEvents).toContain('a[data-attachment-open][data-attachment-kind="image"]');
+    expect(router).not.toMatch(/import\s+\{?\s*bindAttachmentGalleryViewer/);
+    expect(router).toContain('import("../attachmentGalleryViewer")');
+    expect(router).toContain('html.includes("data-attachment-open")');
   });
 
   it("keeps link soft wrapping free of the heavyweight CSS line-break runtime", () => {

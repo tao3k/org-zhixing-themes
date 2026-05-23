@@ -140,13 +140,6 @@ const mountTravelDom = (): AppDomNodes => {
     </div>
   `;
   return {
-    sourceFeed: document.createElement("div"),
-    sourcePicker: document.createElement("div"),
-    status: document.createElement("output"),
-    siteTitle: document.createElement("h1"),
-    activeSourceTitle: document.createElement("div"),
-    activeSourcePath: document.createElement("div"),
-    tabs: document.createElement("nav"),
     view: document.querySelector<HTMLDivElement>("#view") as HTMLDivElement,
   };
 };

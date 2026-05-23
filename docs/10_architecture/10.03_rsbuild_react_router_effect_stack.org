@@ -63,9 +63,9 @@ TanStack Router owns browser location.  New route paths should be path-first:
 | =/memory= | Agent memory projection. |
 | =/agenda= | Agenda projection. |
 
-Legacy =?view= URLs may continue to resolve during migration, but new code
-should not create them.  Article navigation should become explicit route state
-so a stale hash cannot survive a cross-view click.
+The product surface is path-first.  There is no compatibility route that
+translates =?view= into a page; stale query/hash state must disappear at the
+route boundary instead of being normalized by an old host app.
 
 ** Query Boundary
 

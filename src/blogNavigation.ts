@@ -1,7 +1,11 @@
 import { blogTimelineArticles } from "./blogArticleTimeline";
 import type { OrgizeDocumentView } from "./model";
-import type { BlogArticleSelection } from "./blogState";
 import type { StaticBlogIndex } from "./staticSiteData";
+
+export type BlogArticleSelection = {
+  rangeStart: number;
+  sourceFile: string | null;
+};
 
 export type BlogArticleNavigationInput = {
   currentRangeStart: number | null;

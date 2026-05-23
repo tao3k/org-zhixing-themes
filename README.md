@@ -102,14 +102,15 @@ limit = 32
 mode = "classic"
 ```
 
-The browser accepts `?config=other.toml`, `?source=note.org`,
-`?view=agenda`, `?view=capture`, `?agenda=strict`, `?agenda=auto`,
-`?agenda=agent`, and `?perf=0` overrides.
+The browser accepts path routes such as `/blogs`, `/gallery`, `/notes`,
+`/travel`, `/memory`, and `/agenda`. Query state is reserved for scoped route
+options such as `?config=other.toml`, `?source=note.org`, `?agenda=strict`,
+`?agenda=auto`, `?agenda=agent`, and `?perf=0`; navigation code must not emit
+old `?view=` URLs.
 Config files must be root-level public TOML files. The `[content] content_dir`
 is the entry directory, and the static generator discovers `*.org` files under
-that root in the same spirit as Hugo content traversal. Legacy
-`[[content.sources]]` tables are still parsed for older fixtures, but new
-configs should let Org files own titles, tags, and semantic metadata.
+that root in the same spirit as Hugo content traversal. New configs should let
+Org files own titles, tags, and semantic metadata.
 
 ## Capture Runtime Projection
 

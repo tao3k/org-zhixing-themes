@@ -128,8 +128,8 @@ reading unit".
 | Readability fallback | only for external web-page ingest, never for current Org rendering |
 
 Large collections must not become large visual grids.  A workspace with 1000 or
-2000 Org files still gets a compact source picker, but source files are quiet
-substrate rather than the main visual object.  This follows the static-site
+2000 Org files gets compact route-owned indexes, timelines, and facets; source
+files stay quiet substrate rather than the main visual object.  This follows the static-site
 mental model used by Hugo: content-backed
 [[https://gohugo.io/methods/site/regularpages/][regular pages]] form page
 collections, and
@@ -223,7 +223,7 @@ The style tests protect the contract:
   workspaces; tests cover 1000 source files and 20 article headings so the UI
   cannot regress into an unbounded source/file card wall;
 - Blog article indexes are ordered as a dated article collection, not by source
-  file order or source picker state;
+  file order or host-local picker state;
 - Blog admission must be one article per configured Org file, not section-root
   splitting and not a =:blog:= tag filter;
 - Blog keeps large article indexes behind a lazy TanStack virtual-core boundary;

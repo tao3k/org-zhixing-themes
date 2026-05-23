@@ -71,15 +71,12 @@ only for orchestration and rendering.
   utilities import, so exported/user HTML classes such as =mb-4= do not silently
   become design-system CSS.  The broader product layout CSS remains
   module-scoped until a migration removes real duplication.
-- The source picker uses a styled =@zag-js/select= surface instead of the native
-  browser select popup, but the Zag select runtime stays behind a dynamic chunk
-  so fixing native popup styling does not inflate initial scripts.
-- Vite now allows only the demo root and the parent =wasm= package, excludes the
-  symlinked =orgize= package from dependency pre-bundling, and uses an explicit
-  watch allowlist: =src/=, root entry files, root-level public TOML config,
-  =public/blog/*.org=, and the built =wasm/dist= artifact surface.  Generated
-  directories such as =.git=, =target=, =.devenv=, =dist=, and =node_modules= are
-  ignored.
+- Source selection is no longer a product host surface.  Large workspaces are
+  represented by route-owned article, note, travel, memory, and agenda
+  projections instead of a source picker runtime.
+- Rsbuild owns the dev server, static asset copy, HTML generation, and Rspack
+  optimization boundary.  Generated directories such as =.git=, =target=,
+  =.devenv=, =dist=, and =node_modules= stay outside watched content surfaces.
 
 ** Local Measurement
 
@@ -99,11 +96,10 @@ The benchmark reports are Git-tracked under
 - =org-zhixing-ui.json= reports entry manifest size, source-shard size, eager
   script size, static manifest JSON parse timing, Travel projection read
   timing, source-shard field-size breakdowns, largest async chunks, parser
-  worker/WASM asset size, static site-wide source deferral, and whether
-  source picker runtime loading is deferred, interaction chunks are idle
-  prefetched, and whether PhotoSwipe, =css-line-break=, TanStack Virtual, or the
-  Travel virtual-list chunk, Zag Floating Panel, or Zag Select leaked into
-  initial scripts.
+  worker/WASM asset size, static site-wide source deferral, whether interaction
+  chunks are idle/lazy prefetched, and whether PhotoSwipe, =css-line-break=,
+  TanStack Virtual, Travel virtual-list, masonry, or Zag Floating Panel leaked
+  into initial scripts.
 
 The unit suite also carries regression gates:
 
@@ -112,7 +108,6 @@ The unit suite also carries regression gates:
 - real-scale Travel virtual-list binding must not construct =ResizeObserver=;
 - source-derived static Travel projection fallback must be cached;
 - the Travel virtual-list dependency must stay behind a dynamic import.
-- the styled source picker must keep =@zag-js/select= behind a dynamic import.
 - the attachment lightbox dependency must stay behind an image-opener dynamic
   import;
 - link soft wrapping must not reintroduce the =css-line-break= runtime.
@@ -120,8 +115,8 @@ The unit suite also carries regression gates:
   manifest while Records loads source shards on demand;
 - parser worker creation and active source-shard loading must stay out of static
   Blog/Gallery/Travel startup.
-- source picker construction must not import Zag Select immediately; heavy
-  first-interaction chunks should be warmed on user intent or idle.
+- heavy first-interaction chunks should stay behind route/card/image-open
+  boundaries and be warmed on intent or idle when useful.
 
 On the local 100x demo fixture, parse p95 is still single-digit milliseconds;
 the visible first-call bottleneck is semantic conversion, not the rowan parser.

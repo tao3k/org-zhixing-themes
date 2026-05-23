@@ -45,10 +45,8 @@ const budgets = {
   eagerTravelVirtualList: false,
   eagerMasonryLayout: false,
   eagerFloatingPanel: false,
-  eagerZagSelect: false,
   lazyParserWorker: true,
   staticSiteWideSourceDeferral: true,
-  deferredSourcePickerRuntime: true,
   idleInteractionChunkPrefetch: true,
 };
 
@@ -147,7 +145,6 @@ const metrics = {
   eagerTravelVirtualList: initialScriptsContainModule(/travelVirtualized|travel-virtual-spacer/),
   eagerMasonryLayout: initialScriptsContainModule(/Masonry|masonry-layout/),
   eagerFloatingPanel: initialScriptsContainModule(/floating-panel|data-floating/),
-  eagerZagSelect: initialScriptsContainModule(/source-select|select\.machine|data-part/),
   dynamicTanStackChunk: asyncScriptsContainModule(/Virtualizer|observeElementRect/),
   dynamicEffectRuntimeChunk: asyncScriptsContainModule(/effect\/GlobalValue|effect\/Effect/),
   dynamicTanStackQueryChunk: asyncScriptsContainModule(/QueryCache|MutationCache|notifyManager/),
@@ -158,10 +155,8 @@ const metrics = {
   ),
   dynamicMasonryChunk: asyncScriptsContainModule(/Masonry|masonry-layout/),
   dynamicFloatingPanelChunk: asyncScriptsContainModule(/floating-panel|data-floating/),
-  dynamicZagSelectChunk: asyncScriptsContainModule(/source-select|select\.machine|data-part/),
   lazyParserWorker: runtimeBoundary.lazyParserWorker,
   staticSiteWideSourceDeferral: runtimeBoundary.staticSiteWideSourceDeferral,
-  deferredSourcePickerRuntime: runtimeBoundary.deferredSourcePickerRuntime,
   idleInteractionChunkPrefetch: runtimeBoundary.idleInteractionChunkPrefetch,
   staticManifestParse,
   travelProjectionRead,
@@ -368,29 +363,23 @@ function aggregateShardFieldBytes(shards) {
 }
 
 async function runtimeBoundarySignals() {
-  const [appSource, appEventsSource, clientSource, sourcePickerSource] = await Promise.all([
-    readFile(resolve(projectRoot, "src/app.ts"), "utf8"),
-    readFile(resolve(projectRoot, "src/appEvents.ts"), "utf8"),
+  const [routerSource, contentServicesSource, clientSource] = await Promise.all([
+    readFile(resolve(projectRoot, "src/react/router.tsx"), "utf8"),
+    readFile(resolve(projectRoot, "src/services/contentServices.ts"), "utf8"),
     readFile(resolve(projectRoot, "src/orgizeClient.ts"), "utf8"),
-    readFile(resolve(projectRoot, "src/sourcePicker.ts"), "utf8"),
   ]);
-  const sourcePickerConstructor =
-    sourcePickerSource.match(
-      /constructor\(root: HTMLElement, sources: SourceItem\[\], selected: string\) \{([\s\S]*?)\n  \}/,
-    )?.[1] ?? "";
   return {
     lazyParserWorker:
       clientSource.includes("#workerForRequest()") &&
       !clientSource.includes("this.#worker = options.createWorker();"),
     staticSiteWideSourceDeferral:
-      appSource.includes("#viewNeedsActiveSource()") &&
-      appSource.includes("#canRenderStaticSiteWideView()"),
-    deferredSourcePickerRuntime:
-      sourcePickerSource.includes("#scheduleIdleWarmup()") &&
-      !sourcePickerConstructor.includes("#loadRuntime"),
+      routerSource.includes("shell.staticSite?.blog") &&
+      routerSource.includes("shell.staticSite?.attachmentGallery") &&
+      routerSource.includes("travelViewFromStaticSite(shell.staticSite)") &&
+      contentServicesSource.includes("loadStaticSourceFor(shell.staticSite, source)"),
     idleInteractionChunkPrefetch:
-      appEventsSource.includes("scheduleIdleImport") &&
-      appEventsSource.includes("prefetchTravelGlanceRuntime"),
+      routerSource.includes('import("../attachmentGalleryViewer")') &&
+      routerSource.includes("prefetchTravelGlanceRuntime"),
   };
 }
 
@@ -517,11 +506,6 @@ function evaluateBudgets(metrics, budgetConfig) {
       budget: budgetConfig.eagerFloatingPanel,
       pass: metrics.eagerFloatingPanel === budgetConfig.eagerFloatingPanel,
     },
-    eagerZagSelect: {
-      actual: metrics.eagerZagSelect,
-      budget: budgetConfig.eagerZagSelect,
-      pass: metrics.eagerZagSelect === budgetConfig.eagerZagSelect,
-    },
     lazyParserWorker: {
       actual: metrics.lazyParserWorker,
       budget: budgetConfig.lazyParserWorker,
@@ -531,11 +515,6 @@ function evaluateBudgets(metrics, budgetConfig) {
       actual: metrics.staticSiteWideSourceDeferral,
       budget: budgetConfig.staticSiteWideSourceDeferral,
       pass: metrics.staticSiteWideSourceDeferral === budgetConfig.staticSiteWideSourceDeferral,
-    },
-    deferredSourcePickerRuntime: {
-      actual: metrics.deferredSourcePickerRuntime,
-      budget: budgetConfig.deferredSourcePickerRuntime,
-      pass: metrics.deferredSourcePickerRuntime === budgetConfig.deferredSourcePickerRuntime,
     },
     idleInteractionChunkPrefetch: {
       actual: metrics.idleInteractionChunkPrefetch,
@@ -731,15 +710,6 @@ function recommendationsFor(metrics) {
         "Keep Blog index, Gallery, and Travel from loading the active source shard during boot; source shards should start at Zen/article or source-scoped views.",
     });
   }
-  if (metrics.deferredSourcePickerRuntime) {
-    recommendations.push({
-      area: "source-picker-first-interaction",
-      signal:
-        "Zag Select is warmed on intent/idle instead of imported during source picker construction",
-      action:
-        "Keep the styled source picker runtime off the boot path while prefetching it before the first deliberate picker open.",
-    });
-  }
   if (metrics.idleInteractionChunkPrefetch) {
     recommendations.push({
       area: "interaction-prefetch",
@@ -787,14 +757,6 @@ function recommendationsFor(metrics) {
       signal: "Zag Floating Panel exists only as an on-demand chunk",
       action:
         "Keep Zen Glance window control behind the card-open boundary instead of adding it to initial navigation.",
-    });
-  }
-  if (metrics.dynamicZagSelectChunk && !metrics.eagerZagSelect) {
-    recommendations.push({
-      area: "source-picker-runtime",
-      signal: "Zag Select exists only as an on-demand chunk",
-      action:
-        "Keep the styled source picker out of initial scripts while preserving the non-native select surface.",
     });
   }
   return recommendations;

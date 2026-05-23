@@ -30,7 +30,6 @@
     "@tanstack/react-router": "^1.170.7",
     "@tanstack/virtual-core": "^3.15.0",
     "@zag-js/floating-panel": "^1.41.0",
-    "@zag-js/select": "^1.41.0",
     "@zag-js/vanilla": "^1.41.0",
     "masonry-layout": "^4.2.2",
     "orgize": "github:tao3k/orgize-wasm#2807b600c5e9908078443b4cb408c39cee9c06e6",
