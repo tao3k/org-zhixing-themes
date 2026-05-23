@@ -165,6 +165,8 @@ describe("Org Zhixing performance regression gates", () => {
     const contentServices = readFileSync("src/services/contentServices.ts", "utf8");
     const rsbuildConfig = readFileSync("rsbuild.config.ts", "utf8");
     const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
+    const pagesWorkflow = readFileSync(".github/workflows/github-page.yml", "utf8");
+    const publicConfig = readFileSync("public/org-zhixing.toml", "utf8");
 
     expect(packageJson.scripts.dev).toContain("rsbuild dev");
     expect(packageJson.scripts.build).toContain("rsbuild build");
@@ -175,10 +177,13 @@ describe("Org Zhixing performance regression gates", () => {
     expect(packageJson.dependencies["react-dom"]).toBeTruthy();
     expect(packageJson.dependencies["@tanstack/react-router"]).toBeTruthy();
     expect(packageJson.dependencies["@tanstack/react-query"]).toBeTruthy();
+    expect(packageJson.dependencies["@tanstack/router-plugin"]).toBeUndefined();
+    expect(packageJson.devDependencies["@tanstack/router-plugin"]).toBeUndefined();
     expect(packageJson.devDependencies["@rspack/core"]).toBeUndefined();
     expect(packageJson.devDependencies["@rspack/cli"]).toBeUndefined();
     expect(main).toContain("<RouterProvider router={router} />");
     expect(router).toContain("createRouter");
+    expect(router).toContain("basepath: orgZhixingBasePath()");
     expect(router).toContain('path: "/blogs"');
     expect(router).toContain('path: "/blogs/$articleId"');
     expect(router).toContain('defaultPreload: "intent"');
@@ -192,6 +197,13 @@ describe("Org Zhixing performance regression gates", () => {
     expect(contentServices).toContain("loadBlogArticleData");
     expect(rsbuildConfig).toContain("defineConfig");
     expect(rsbuildConfig).toContain("pluginReact()");
+    expect(rsbuildConfig).toContain("__ORG_ZHIXING_BASE_PATH__");
+    expect(rsbuildConfig).toContain("deploymentBasePathFromConfig(publicConfigPath)");
+    expect(rsbuildConfig).not.toContain("process.env.ORG_ZHIXING_BASE_PATH");
+    expect(rsbuildConfig).not.toContain("@tanstack/router-plugin");
+    expect(pagesWorkflow).not.toContain("ORG_ZHIXING_BASE_PATH");
+    expect(publicConfig).toContain('base_url = "https://tao3k.github.io/org-zhixing-ts/"');
+    expect(perfScript).toContain("distAssetPath");
     expect(perfScript).toContain("eagerReactQuery: false");
     expect(perfScript).toContain("dynamicReactQueryChunk");
   });

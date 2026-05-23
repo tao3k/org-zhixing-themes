@@ -1,6 +1,7 @@
 [site]
 title = "知行合一"
 locale = "zh-CN"
+base_url = "https://tao3k.github.io/org-zhixing-ts/"
 
 [content]
 content_dir = "blog"

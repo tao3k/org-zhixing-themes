@@ -8,7 +8,7 @@
     "dev": "npm run generate:theme && npm run generate:static && rsbuild dev",
     "generate:theme": "node scripts/build-elegant-theme.mjs",
     "generate:static": "node scripts/generate-static-site.mjs",
-    "build": "npm run generate:theme && npm run generate:static && tsc -b && rsbuild build",
+    "build": "npm run generate:theme && npm run generate:static && tsc -b && rsbuild build && node scripts/write-spa-fallback.mjs",
     "test": "vitest run",
     "ci": "npm run generate:theme && npm run typecheck && npm run harness && npm test && npm run build",
     "typecheck": "tsc -b --pretty false",

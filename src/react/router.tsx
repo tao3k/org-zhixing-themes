@@ -20,6 +20,7 @@ import type { ViewKey } from "../model";
 import { isEditableTarget, viewDomNodes, viewForPath } from "./routeViewHelpers";
 import { getReactQueryClient } from "./queryClient";
 import { ShellChrome } from "./ShellChrome";
+import { orgZhixingBasePath } from "./deploymentBasePath";
 
 export type OrgZhixingRouterContext = {
   getQueryClient: () => Promise<QueryClient>;
@@ -117,6 +118,7 @@ export const createOrgZhixingRouter = (
   },
 ): ReturnType<typeof createRouter> =>
   createRouter({
+    basepath: orgZhixingBasePath(),
     context,
     defaultPreload: "intent",
     routeTree,

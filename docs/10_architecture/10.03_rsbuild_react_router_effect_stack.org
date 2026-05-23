@@ -46,6 +46,8 @@ The build config owns:
 - =server.publicDir= for =public/= assets;
 - =output.copy= for generated =org-zhixing.static.json= and shard directories;
 - =output.distPath= so performance scripts can continue scanning =dist/assets=;
+- =public/org-zhixing.toml [site].base_url= as the Hugo-like deployment base
+  for Rsbuild asset URLs and the TanStack Router =basepath=;
 - =dev.watchFiles= for Org/TOML/WASM artifact feedback without watching the
   parent checkout or generated cache directories.
 
@@ -66,6 +68,11 @@ TanStack Router owns browser location.  New route paths should be path-first:
 The product surface is path-first.  There is no compatibility route that
 translates =?view= into a page; stale query/hash state must disappear at the
 route boundary instead of being normalized by an old host app.
+
+Project-site deployments such as
+=https://tao3k.github.io/org-zhixing-ts/= are configured in
+=org-zhixing.toml=, not in GitHub Actions.  The Pages job only publishes
+=dist/=; it does not own route semantics.
 
 ** Query Boundary
 

@@ -1,12 +1,14 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
+import { parse } from "smol-toml";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const orgizePackageRoot = resolve(projectRoot, "node_modules/orgize");
 const publicRoot = resolve(projectRoot, "public");
+const publicConfigPath = resolve(publicRoot, "org-zhixing.toml");
 const staticManifestPath = resolve(projectRoot, ".cache/org-zhixing/static-site.json");
 const staticSourceShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.sources");
 const staticMemoryShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.memory");
@@ -24,10 +26,15 @@ const orgizePackageWatchFiles = existsSync(orgizePackageRoot)
       resolve(orgizePackageRoot, "dist/**/*"),
     ]
   : [];
+const deploymentBasePath = deploymentBasePathFromConfig(publicConfigPath);
+const assetPrefix = deploymentBasePath === "/" ? "auto" : `${deploymentBasePath}/`;
 
 export default defineConfig({
   plugins: [pluginReact()],
   source: {
+    define: {
+      __ORG_ZHIXING_BASE_PATH__: JSON.stringify(deploymentBasePath),
+    },
     entry: {
       app: resolve(projectRoot, "src/main.tsx"),
     },
@@ -37,7 +44,7 @@ export default defineConfig({
     scriptLoading: "module",
   },
   output: {
-    assetPrefix: "auto",
+    assetPrefix,
     cleanDistPath: true,
     distPath: {
       root: "dist",
@@ -121,3 +128,38 @@ export default defineConfig({
     chunks: "all",
   },
 });
+
+function deploymentBasePathFromConfig(configPath: string): string {
+  if (!existsSync(configPath)) {
+    return "/";
+  }
+  const raw = parse(readFileSync(configPath, "utf8")) as Record<string, unknown>;
+  const site =
+    raw.site && typeof raw.site === "object" ? (raw.site as Record<string, unknown>) : {};
+  return normalizeBasePath(
+    stringValue(site.base_path) ?? basePathFromUrl(stringValue(site.base_url)) ?? "/",
+  );
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function basePathFromUrl(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+  try {
+    return new URL(value).pathname;
+  } catch {
+    return value;
+  }
+}
+
+function normalizeBasePath(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "/") {
+    return "/";
+  }
+  return `/${trimmed.replace(/^\/+|\/+$/g, "")}`;
+}

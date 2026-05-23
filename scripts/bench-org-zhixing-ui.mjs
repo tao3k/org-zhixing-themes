@@ -384,7 +384,13 @@ async function runtimeBoundarySignals() {
 }
 
 function scriptSrcs(html) {
-  return [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((match) => match[1]);
+  return [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((match) => distAssetPath(match[1]));
+}
+
+function distAssetPath(src) {
+  const pathname = new URL(src, "https://example.invalid/").pathname.replace(/^\/+/, "");
+  const assetIndex = pathname.lastIndexOf("assets/");
+  return assetIndex >= 0 ? pathname.slice(assetIndex) : pathname;
 }
 
 function sample(name, fn, options = {}) {

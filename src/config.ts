@@ -5,6 +5,7 @@ import type { ViewKey } from "./model";
 export type SiteConfig = {
   title: string;
   locale: string;
+  basePath: string;
   contentRoot: string;
   defaultSourceId: string | null;
   defaultView: ViewKey;
@@ -132,6 +133,7 @@ const parseSiteConfig = (source: string): SiteConfig => {
   return {
     title: readString(site, "title", "Org Zhixing"),
     locale: readString(site, "locale", "zh-CN"),
+    basePath: siteBasePath(site),
     contentRoot,
     defaultSourceId: defaultSource,
     defaultView: readView(ui?.default_view, "blog"),
@@ -144,6 +146,32 @@ const parseSiteConfig = (source: string): SiteConfig => {
         ? sources
         : [sourceFromPath(contentRoot, defaultSourceId, defaultSourcePath, "Org Zhixing Demo")],
   };
+};
+
+const siteBasePath = (site: TomlRecord | null): string =>
+  normalizeBasePath(
+    readOptionalString(site, "base_path") ??
+      basePathFromUrl(readOptionalString(site, "base_url")) ??
+      "/",
+  );
+
+const basePathFromUrl = (value: string | null): string | null => {
+  if (!value) {
+    return null;
+  }
+  try {
+    return new URL(value).pathname;
+  } catch {
+    return value;
+  }
+};
+
+const normalizeBasePath = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "/") {
+    return "/";
+  }
+  return `/${trimmed.replace(/^\/+|\/+$/g, "")}`;
 };
 
 const parseBehavior = (raw: TomlRecord | null, ui: TomlRecord | null): SiteBehavior => ({

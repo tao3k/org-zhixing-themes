@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { normalizeOrgZhixingBasePath } from "../src/react/deploymentBasePath";
 import { routePathForView } from "../src/react/routeViewHelpers";
 
 describe("React Router boundary", () => {
@@ -11,5 +12,12 @@ describe("React Router boundary", () => {
     expect(routePathForView("agenda")).toBe("/agenda");
     expect(routePathForView("capture")).toBe("/capture");
     expect(routePathForView("diagnostics")).toBe("/diagnostics");
+  });
+
+  it("normalizes the GitHub Pages project base path without a router plugin", () => {
+    expect(normalizeOrgZhixingBasePath("")).toBe("/");
+    expect(normalizeOrgZhixingBasePath("/")).toBe("/");
+    expect(normalizeOrgZhixingBasePath("org-zhixing-ts")).toBe("/org-zhixing-ts");
+    expect(normalizeOrgZhixingBasePath("/org-zhixing-ts/")).toBe("/org-zhixing-ts");
   });
 });

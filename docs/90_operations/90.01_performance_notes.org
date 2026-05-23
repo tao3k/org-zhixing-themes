@@ -77,6 +77,9 @@ only for orchestration and rendering.
 - Rsbuild owns the dev server, static asset copy, HTML generation, and Rspack
   optimization boundary.  Generated directories such as =.git=, =target=,
   =.devenv=, =dist=, and =node_modules= stay outside watched content surfaces.
+- =public/org-zhixing.toml [site].base_url= is the deployment-base SSOT.  The
+  Pages workflow does not set a parallel path variable; this keeps local and
+  GitHub Pages builds aligned with the content configuration.
 
 ** Local Measurement
 

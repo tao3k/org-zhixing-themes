@@ -74,6 +74,7 @@ than Hugo's full site configuration model:
 [site]
 title = "Org Zhixing"
 locale = "zh-CN"
+base_url = "https://tao3k.github.io/org-zhixing-ts/"
 
 [content]
 content_dir = "blog"
@@ -107,6 +108,10 @@ The browser accepts path routes such as `/blogs`, `/gallery`, `/notes`,
 options such as `?config=other.toml`, `?source=note.org`, `?agenda=strict`,
 `?agenda=auto`, `?agenda=agent`, and `?perf=0`; navigation code must not emit
 old `?view=` URLs.
+Like Hugo's `baseURL`, `[site] base_url` is the canonical deployment base. The
+Rsbuild/Rspack build reads it from `org-zhixing.toml` to set asset URLs and the
+code-based TanStack Router `basepath`; the GitHub Pages workflow must not carry
+a separate base-path environment override.
 Config files must be root-level public TOML files. The `[content] content_dir`
 is the entry directory, and the static generator discovers `*.org` files under
 that root in the same spirit as Hugo content traversal. New configs should let
