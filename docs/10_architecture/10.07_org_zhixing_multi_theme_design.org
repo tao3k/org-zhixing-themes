@@ -52,6 +52,7 @@ and version them.  There is no separate =org-zhixing-theme.toml= manifest.
   packages/
     core/package.json
     theme-runtime/package.json
+    theme-tooling/package.json
   themes/
     elegant-blog/package.json
     minimal-notes/package.json
@@ -88,7 +89,14 @@ linked locally or installed from npm.
     "defaultVariant": "light",
     "variants": ["light", "solarized-dark"],
     "capabilities": ["blog", "agenda", "search"],
-    "publicSlots": ["site-header", "article-footer", "sidebar"],
+    "publicSlots": [
+      {
+        "id": "site-header",
+        "strategies": ["wrap", "replace"],
+        "runtime": "universal",
+        "stability": "stable"
+      }
+    ],
     "renderers": {
       "react": {"export": "./react", "serverComponents": true}
     },
@@ -131,13 +139,18 @@ dependencies -> orgZhixing manifests -> validation -> generated registry
              -> org-zhixing.toml selection -> adapter build
 #+end_example
 
-The generated registry uses analyzable imports:
+The generated registry keeps a metadata-only catalog of every discovered theme,
+but emits a runtime import for only the theme selected by =org-zhixing.toml=:
 
 #+begin_src typescript
-export const themes = {
-  "elegant-blog": () => import("@org-zhixing/theme-elegant-blog/react"),
-  "minimal-notes": () => import("@org-zhixing/theme-minimal-notes/react"),
-} as const;
+import selectedTheme from "@org-zhixing/theme-elegant-blog";
+
+export const generatedThemeCatalog = [
+  { id: "elegant-blog", package: "@org-zhixing/theme-elegant-blog" },
+  { id: "minimal-notes", package: "@org-zhixing/theme-minimal-notes" },
+] as const;
+
+export const generatedThemes = [selectedTheme] as const;
 #+end_src
 
 Only the selected structural theme enters production output.  Duplicate IDs are
@@ -238,6 +251,7 @@ React universal, or tokens-only template and supported adapter fixtures.
 | THEME-E008 | server/client boundary violation          |
 | THEME-E009 | invalid manifest or out-of-root asset      |
 | THEME-E010 | performance budget exceeded               |
+| THEME-E011 | invalid or legacy site theme configuration |
 
 Successful builds emit a compact receipt containing theme package and version,
 variant, adapter, render mode, client JavaScript size, and route count.
@@ -302,3 +316,214 @@ and Server Components, and document the adapter protocol for future frameworks.
 5. SPA and Next.js fixtures consume the same portable content and theme identity.
 6. Production evidence excludes unselected themes and server-only client leaks.
 7. The legacy =[theme].name= route is removed after migration.
+
+** Scenario Benchmark RFC
+
+*** Runtime Decision
+
+Org Zhixing keeps =Rsbuild + React + TanStack Router + TanStack Query + Effect=
+as its primary application runtime.  This stack already owns typed routes,
+loaders, preload behavior, lazy chunks, static deployment, and the validated
+performance boundaries in this repository.
+
+For the primary React SPA adapter, a component declared =server= means it is pure
+and contains no browser-only API.  The SPA adapter renders it as a universal
+component during client startup.  A component declared =client= remains an
+explicit interactive leaf.  This preserves server-ready theme contracts without
+making Next.js or SSR the primary runtime.
+
+Next.js remains an optional theme adapter fixture.  A future server requirement
+may evaluate TanStack Start.  Neither is a prerequisite for Mobile support or
+Scenario Benchmark work.
+
+*** Benchmark Layers
+
+Scenario Benchmark uses three complementary layers:
+
+- Playwright owns browser scenarios, device emulation, touch, accessibility
+  assertions, traces, and visual baselines.
+- Lighthouse CI owns mobile browser audits, Web Vitals, resource summaries, DOM
+  size, and accessibility/performance assertions.
+- Vitest owns deterministic pure-function and projection microbenchmarks.
+
+No layer substitutes for another.  The existing UI benchmark remains useful as
+a source of bundle and lazy-boundary facts while scenario ownership moves into
+the structured benchmark tree.
+
+*** Repository Layout
+
+#+begin_example
+benchmarks/
+  scenarios/
+    blog-index.json
+    article-zen.json
+    gallery-heavy.json
+    travel-heavy.json
+    agenda-cockpit.json
+    theme-minimal-mobile.json
+  baselines/
+    deterministic.json
+    timing.json
+  fixtures/
+  reports/                  # gitignored
+#+end_example
+
+Every scenario fixes its route, content fixture, theme, variant, viewport or
+device, interaction sequence, deterministic budgets, timing warning threshold,
+and timing hard limit.
+
+*** Hybrid Gate
+
+Deterministic facts block CI immediately:
+
+- JavaScript and CSS bytes;
+- request and resource bytes/counts;
+- DOM node count;
+- selected and unselected theme import boundaries;
+- lazy chunk boundaries;
+- horizontal document overflow;
+- minimum touch target size;
+- console and page errors;
+- serious accessibility failures.
+
+Machine-sensitive timing metrics use Git-tracked baselines.  Normal p50/p95,
+FCP, LCP, CLS, and TBT movement produces trend warnings.  A timing metric blocks
+only when it exceeds a calibrated hard limit such as
+=max(baseline * 1.35, baseline + fixedAllowance)=.
+
+The initial hard limits are normative:
+
+| Metric | Warning | Blocking limit |
+|--------+---------+----------------|
+| FCP | > 110 percent of baseline | =max(baseline * 1.35, baseline + 250ms)= |
+| LCP | > 110 percent of baseline | =max(baseline * 1.35, baseline + 350ms)= |
+| TBT | > 115 percent of baseline | =max(baseline * 1.40, baseline + 100ms)= |
+| scenario duration p95 | > 115 percent of baseline | =max(baseline * 1.35, baseline + 500ms)= |
+| action latency p95 | > 115 percent of baseline | =max(baseline * 1.40, baseline + 75ms)= |
+| CLS | any increase above 0.02 | baseline + 0.05, capped at 0.10 |
+
+Timing baselines are collected in the pinned CI container with the lockfile's
+browser version, five cold runs, one discarded warm-up, and the median run as the
+record.  A baseline expires after 90 days, a browser major upgrade, or a runner
+class change.  Updating an expired or regressed baseline requires an explicit PR
+command, the generated delta receipt, and reviewer approval; CI never updates it.
+
+Scenario definitions, fixtures, deterministic baselines, timing baselines, and
+necessary visual references are committed.  Raw traces, HTML reports, and
+Lighthouse reports are CI artifacts and remain outside Git.
+
+Baseline updates require an explicit command.  The command reports old value,
+new value, and percentage change; ordinary test runs never rewrite baselines.
+
+*** Device Matrix
+
+| Project | Viewport | Primary role |
+|---------------+----------+------------------------------------|
+| compact-phone | 360x800 | minimum supported phone width |
+| modern-phone | 390x844 | primary touch baseline |
+| tablet | 768x1024 | tablet and split-layout transition |
+| desktop | 1440x900 | non-Mobile comparison baseline |
+
+Playwright projects also declare touch capability, mobile browser behavior,
+orientation cases, color scheme, and reduced-motion cases where relevant.
+
+The engine and platform matrix is:
+
+| Project | Engine profile | Viewports | Cadence |
+|---------+----------------+-----------+---------|
+| chromium-android | Chromium with Android touch/mobile emulation | 360x800, 390x844 | every PR |
+| webkit-ios | WebKit with iPhone touch/mobile emulation | 390x844 | every PR |
+| chromium-tablet | Chromium touch tablet emulation | 768x1024 | every PR |
+| chromium-desktop | Desktop Chromium | 1440x900 | every PR |
+| webkit-tablet | WebKit tablet emulation | 768x1024 | nightly |
+| firefox-responsive | Desktop Firefox responsive viewport | 390x844, 768x1024, 1440x900 | nightly |
+
+Emulation is not represented as testing physical Android or iOS hardware.  A
+release candidate additionally receives manual Safari iOS and Chrome Android
+smoke verification, recorded as a release receipt.
+
+** Mobile Support RFC
+
+*** Dependency Decision
+
+Mobile support reuses mature ecosystem owners:
+
+- =@radix-ui/react-dialog= owns the Mobile navigation overlay, focus trap,
+  Escape handling, Portal, inert background behavior, and accessible title and
+  description semantics.
+- Playwright owns device, touch, orientation, keyboard, and screenshot scenarios.
+- Lighthouse CI owns mobile performance and accessibility audits.
+- Native CSS owns responsive layout, container queries, dynamic viewport units,
+  safe-area insets, coarse-pointer behavior, and reduced motion.
+
+Org Zhixing does not implement its own dialog, focus manager, device emulator,
+or performance auditor.
+
+*** Responsive Ranges
+
+| Range | Width |
+|---------+---------------|
+| compact | <= 480px |
+| mobile | 481px-767px |
+| tablet | 768px-1023px |
+| desktop | >= 1024px |
+
+Container queries control reusable view components.  Viewport media queries are
+reserved for the application shell, safe-area behavior, and orientation.
+
+*** Mobile Shell
+
+The Mobile header contains one-line brand context, current view, and a menu
+trigger.  Navigation is rendered in a Radix Dialog drawer.  Opening the drawer
+locks background interaction and transfers focus; route selection closes it and
+restores focus.  Interactive targets are at least =44x44px=.
+
+The desktop navigation remains the existing structure.  Mobile support does not
+load a second application or structural theme.
+
+*** View Requirements
+
+- Blog, Notes, and Memory render as a single readable column.
+- Gallery and Travel use one or two adaptive columns with no document-level
+  horizontal overflow.
+- Agenda collapses its toolbar and presents secondary panels vertically or in a
+  drawer.
+- Zen reader progress avoids safe-area and navigation overlap.
+- Long links wrap safely; tables and code blocks use local scrolling rather than
+  widening the document.
+- Input and capture views use dynamic viewport units so the software keyboard
+  does not hide active controls.
+
+The shell and every view support portrait, landscape, safe-area insets, coarse
+pointer input, absent hover, =prefers-reduced-motion=, color-scheme preference,
+keyboard navigation, screen readers, and 200 percent text scaling.
+
+*** Mobile CSS Contract
+
+The implementation uses =100dvh= where viewport height matters,
+=env(safe-area-inset-*)= for shell padding, =touch-action: manipulation= on
+activation controls, and scoped =overscroll-behavior= for drawers and local
+scroll regions.  Safe-area values augment theme tokens rather than replacing
+them.
+
+*** Mobile Scenario Matrix
+
+| Scenario | 360x800 | 390x844 | 768x1024 | 1440x900 |
+|-------------------+---------+---------+----------+----------|
+| Blog index | yes | yes | yes | yes |
+| Zen article | yes | yes | yes | yes |
+| Mobile navigation | yes | yes | yes | no |
+| Gallery heavy | yes | yes | yes | yes |
+| Travel heavy | yes | yes | yes | yes |
+| Agenda cockpit | yes | yes | yes | yes |
+| Theme and variant | yes | yes | yes | yes |
+
+*** Delivery Order
+
+1. Add the Scenario Benchmark schema, runner, fixtures, and Git baselines.
+2. Add Playwright, Lighthouse CI, and Radix Dialog.
+3. Implement the Mobile shell and navigation.
+4. Repair Blog, Gallery, Travel, Agenda, and input surfaces against the matrix.
+5. Generate and review the four viewport baselines.
+6. Use browser visual assistance only at final engineering verification, then
+   correct remaining visual defects.
