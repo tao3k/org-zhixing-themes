@@ -1,0 +1,304 @@
+* 10.07 Org Zhixing Multi-Theme RFC and Design
+
+This is the canonical RFC and specification for multiple Org Zhixing themes,
+custom theme authoring, runtime visual variants, and framework adapters.
+
+** RFC Record
+
+- Status :: Accepted
+- Date :: 2026-07-12
+- Decision :: Themes are versioned npm packages with one
+  =package.json#orgZhixing= manifest.  Stable semantic slots and typed variants
+  form the customization API.  Renderer adapters consume a portable site model.
+
+** Context
+
+Org Zhixing must let site authors install several themes and select one through
+=org-zhixing.toml=.  The workspace must maintain several built-in themes, users
+must be able to create normal package-based custom themes, and modern frameworks
+such as Next.js must be able to render the same theme identities without owning
+the theme protocol.
+
+Hugo demonstrates useful theme composition, but unrestricted path shadowing
+makes internal files an implicit API.  Org Zhixing instead combines package
+distribution, explicit compatibility, semantic slots, and design-token variants.
+
+** Decision and Boundaries
+
+#+begin_example
+org-zhixing content model
+          |
+portable theme definition
+          |
+framework renderer binding
+          |
+Next.js / React SPA / future adapters
+#+end_example
+
+A complete theme owns structure and components.  A visual variant changes only
+declared tokens and variant-safe styles.  Site authors select complete themes at
+build time.  Visitors may switch variants at runtime; switching complete themes
+at runtime is out of scope.
+
+Built-in, local, and published themes use the same manifest and contract suite.
+Configuration selects themes; =package.json=, workspaces, and the lockfile install
+and version them.  There is no separate =org-zhixing-theme.toml= manifest.
+
+** Workspace Specification
+
+#+begin_example
+.data/org-zhixing/
+  package.json
+  packages/
+    core/package.json
+    theme-runtime/package.json
+  themes/
+    elegant-blog/package.json
+    minimal-notes/package.json
+    research-garden/package.json
+  adapters/
+    next/package.json
+    react-spa/package.json
+#+end_example
+
+The root declares =packages/*=, =themes/*=, and =adapters/*= as workspaces.  Every
+workspace has its own =package.json=.  External themes have the same shape whether
+linked locally or installed from npm.
+
+** Theme Package Specification
+
+#+begin_src json
+{
+  "name": "@org-zhixing/theme-minimal-notes",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js",
+    "./react": "./dist/react.js"
+  },
+  "peerDependencies": {
+    "@org-zhixing/core": "^0.4.0",
+    "react": "^19.0.0"
+  },
+  "orgZhixing": {
+    "schemaVersion": 1,
+    "id": "minimal-notes",
+    "displayName": "Minimal Notes",
+    "engine": ">=0.4 <0.5",
+    "defaultVariant": "light",
+    "variants": ["light", "solarized-dark"],
+    "capabilities": ["blog", "agenda", "search"],
+    "publicSlots": ["site-header", "article-footer", "sidebar"],
+    "renderers": {
+      "react": {"export": "./react", "serverComponents": true}
+    },
+    "renderModes": ["static", "ssr", "streaming"],
+    "configSchema": "./theme-config.schema.json",
+    "preview": "./assets/preview.webp"
+  }
+}
+#+end_src
+
+=schemaVersion= versions the manifest.  =id= is the configuration name.
+=engine= declares core compatibility.  =capabilities= declares site surfaces.
+=publicSlots= is the stable customization surface.  =renderers= maps theme
+identity to framework bindings.  =renderModes= declares deployment support.
+=configSchema= validates theme-owned options.
+
+** Site Configuration Specification
+
+#+begin_src toml
+theme = "minimal-notes"
+theme_variant = "solarized-dark"
+
+[theme_config]
+show_toc = true
+density = "compact"
+#+end_src
+
+=theme= selects structure.  =theme_variant= selects a compatible visual overlay.
+=[theme_config]= is validated by the selected package.  The legacy
+=[theme].name= shape receives a bounded =org-zhixing config migrate= route and is
+then removed with its parser branch, tests, and documentation.
+
+** Discovery and Registry Specification
+
+Discovery follows explicit workspace and installed dependencies, not arbitrary
+directory scanning:
+
+#+begin_example
+dependencies -> orgZhixing manifests -> validation -> generated registry
+             -> org-zhixing.toml selection -> adapter build
+#+end_example
+
+The generated registry uses analyzable imports:
+
+#+begin_src typescript
+export const themes = {
+  "elegant-blog": () => import("@org-zhixing/theme-elegant-blog/react"),
+  "minimal-notes": () => import("@org-zhixing/theme-minimal-notes/react"),
+} as const;
+#+end_src
+
+Only the selected structural theme enters production output.  Duplicate IDs are
+errors naming both packages; local packages do not silently shadow remote ones.
+
+** Portable Platform Specification
+
+The core exposes a serializable site model:
+
+#+begin_src typescript
+interface ZhixingSiteModel {
+  site: SiteMetadata;
+  navigation: NavigationModel;
+  pages: PageProjection[];
+  assets: ThemeAssetManifest;
+}
+#+end_src
+
+Themes consume a narrow platform interface:
+
+#+begin_src typescript
+interface ThemePlatform {
+  Link: ThemeLinkComponent;
+  Image: ThemeImageComponent;
+  navigate?: NavigateFunction;
+  capabilities: ReadonlySet<PlatformCapability>;
+}
+#+end_src
+
+Routing, optimized images, request APIs, and caching belong to adapters.  Themes
+declare optional capabilities instead of importing framework-private APIs.
+
+** Renderer Adapter Specification
+
+The initial packages are =@org-zhixing/core=,
+=@org-zhixing/theme-runtime=, =@org-zhixing/adapter-react-spa=, and
+=@org-zhixing/adapter-next=.
+
+React is the first renderer binding.  The Next.js adapter maps Org projections
+to App Router routes, supplies static parameters and metadata, maps semantic
+links and images, and renders static structure in Server Components by default.
+Search and variant controls remain small client leaves.  Static export is the
+first target; SSR, streaming, and revalidation require declared capabilities.
+Themes do not directly call request-time APIs such as cookies or headers.
+
+Public components declare =server=, =client=, or =universal= runtime.  Layouts,
+articles, navigation, and tables of contents default to =server=.  Interactive
+controls are leaf-level =client= islands.
+
+** Stable Slot Specification
+
+#+begin_src typescript
+type StableThemeSlot =
+  | "site-header"
+  | "site-footer"
+  | "sidebar"
+  | "article-before"
+  | "article-after"
+  | "agenda-toolbar";
+#+end_src
+
+Each slot declares versioned props, =replace= and/or =wrap= behavior, runtime,
+and =stable=, =experimental=, or =internal= status.  Only stable slots receive
+semantic-version guarantees.  Internal components and file paths are not public
+override surfaces.
+
+** Token and Variant Specification
+
+Tokens use typed semantic names with CSS custom-property output for canvas,
+surface, text, accent, typography, and spacing roles.  A variant may override
+declared tokens and variant-safe component parameters.  It may not replace
+layout structure or content projection.
+
+** Custom Theme Workflow
+
+#+begin_example
+org-zhixing theme create my-theme
+org-zhixing theme create my-variant --extends minimal-notes
+org-zhixing theme check ./themes/my-theme
+org-zhixing theme preview ./themes/my-theme
+#+end_example
+
+The generated package contains =package.json=, =src/index.ts=, a configuration
+schema, preview asset, and contract test.  Authors choose a React server-first,
+React universal, or tokens-only template and supported adapter fixtures.
+
+** Diagnostics
+
+| Code       | Meaning                                   |
+|------------+-------------------------------------------|
+| THEME-E001 | unknown theme ID                          |
+| THEME-E002 | duplicate theme ID                        |
+| THEME-E003 | incompatible core version                 |
+| THEME-E004 | missing renderer for selected adapter     |
+| THEME-E005 | unknown variant                           |
+| THEME-E006 | invalid =[theme_config]=                  |
+| THEME-E007 | unresolved package export                 |
+| THEME-E008 | server/client boundary violation          |
+| THEME-E009 | invalid manifest or out-of-root asset      |
+| THEME-E010 | performance budget exceeded               |
+
+Successful builds emit a compact receipt containing theme package and version,
+variant, adapter, render mode, client JavaScript size, and route count.
+
+** Performance Requirements
+
+- Unselected complete themes do not enter production output.
+- Variant switching does not load a second structural theme.
+- Static themes do not accidentally opt into request-time rendering.
+- Client JavaScript and CSS have explicit budgets.
+- Server-only dependencies never enter client bundles.
+- Adapter receipts report route modes, client islands, and asset sizes.
+
+** Test Requirements
+
+Each theme verifies its manifest and exports; IDs, variants, capabilities, and
+slots; renderer bindings against supported adapter fixtures; server/client
+boundaries; configuration fixtures; resource containment; accessibility;
+visual regression; bundle budgets; and representative Org content.
+
+Repository tests cover workspace and external discovery, duplicate rejection,
+theme selection, runtime variants, unselected-bundle exclusion, current SPA and
+Next.js fixtures, scaffolding, and legacy configuration migration.
+
+** Delivery Stages
+
+*** Stage 1: Workspace Theme Packages
+
+Define =package.json#orgZhixing=, migrate =elegant-blog= to an ordinary theme
+package, generate the registry, and preserve behavior through the SPA adapter.
+
+*** Stage 2: Canonical Configuration
+
+Add top-level theme configuration, schema validation, diagnostics, receipts, and
+the bounded legacy migration route.
+
+*** Stage 3: Customization Surface
+
+Add stable slots, runtime declarations, typed variants, authoring commands,
+accessibility fixtures, visual tests, and bundle budgets.
+
+*** Stage 4: Next-Generation Adapters
+
+Finalize portable contracts, implement the Next.js adapter, verify static export
+and Server Components, and document the adapter protocol for future frameworks.
+
+** Non-Goals
+
+- Visitor switching between complete structural themes.
+- Package installation through =org-zhixing.toml=.
+- Arbitrary file shadowing.
+- Permanent dual configuration routes.
+- Requiring every theme to support every framework.
+- Migrating the application shell to Next.js in this RFC.
+
+** Acceptance Criteria
+
+1. Two workspace themes install together and top-level =theme= selects either.
+2. Duplicate IDs and incompatible packages fail before bundling.
+3. Variants switch without loading another structural theme.
+4. A generated theme is a normal package passing the shared contract suite.
+5. SPA and Next.js fixtures consume the same portable content and theme identity.
+6. Production evidence excludes unselected themes and server-only client leaks.
+7. The legacy =[theme].name= route is removed after migration.

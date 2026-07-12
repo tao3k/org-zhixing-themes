@@ -22,6 +22,7 @@ This is the coordinate map for durable Org Zhixing documentation.
 | 20.01 | [[file:../20_design/20.01_elegant_system.org][Elegant System]] | Active |
 | 90.01 | [[file:../90_operations/90.01_performance_notes.org][Performance Notes]] | Active |
 
+| 10.07 | [[file:../10_architecture/10.07_org_zhixing_multi_theme_design.org][Org Zhixing Multi-Theme RFC and Design]] | accepted |
 ** Rules
 
 - Docs are Org-first.  Markdown can appear only when an external tool requires
