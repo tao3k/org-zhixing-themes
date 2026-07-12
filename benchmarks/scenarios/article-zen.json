@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "article-zen",
+  "route": "/blogs/1",
+  "theme": "elegant-blog",
+  "variant": "default",
+  "fixture": "static-site",
+  "projects": ["compact-phone", "modern-phone", "tablet", "desktop"],
+  "actions": [
+    { "type": "goto" },
+    { "type": "scroll", "value": 800 },
+    { "type": "screenshot", "target": "article" }
+  ],
+  "gates": {
+    "maxHorizontalOverflowPx": 0,
+    "maxConsoleErrors": 0,
+    "maxPageErrors": 0,
+    "minTapTargetPx": 44
+  }
+}

@@ -74,7 +74,7 @@ than Hugo's full site configuration model:
 [site]
 title = "Org Zhixing"
 locale = "zh-CN"
-base_url = "https://tao3k.github.io/org-zhixing-ts/"
+base_url = "https://tao3k.github.io/org-zhixing-themes/"
 
 [content]
 content_dir = "blog"

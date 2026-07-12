@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "travel-heavy",
+  "route": "/travel",
+  "theme": "elegant-blog",
+  "variant": "default",
+  "fixture": "travel-heavy",
+  "projects": ["compact-phone", "modern-phone", "tablet", "desktop"],
+  "actions": [
+    { "type": "goto" },
+    { "type": "scroll", "value": 1200 },
+    { "type": "screenshot", "target": "travel" }
+  ],
+  "gates": {
+    "maxHorizontalOverflowPx": 0,
+    "maxConsoleErrors": 0,
+    "maxPageErrors": 0,
+    "minTapTargetPx": 44
+  }
+}

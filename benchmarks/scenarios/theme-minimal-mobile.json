@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "theme-minimal-mobile",
+  "route": "/blogs",
+  "theme": "minimal-notes",
+  "variant": "midnight",
+  "fixture": "static-site",
+  "projects": ["compact-phone", "modern-phone", "tablet"],
+  "actions": [{ "type": "goto" }, { "type": "screenshot", "target": "page" }],
+  "gates": {
+    "maxHorizontalOverflowPx": 0,
+    "maxConsoleErrors": 0,
+    "maxPageErrors": 0,
+    "minTapTargetPx": 44
+  }
+}

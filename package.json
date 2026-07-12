@@ -3,14 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "themes/*"
+  ],
   "description": "A browser demo for viewing Org blog, records, and agenda data through orgize WASM.",
   "scripts": {
-    "dev": "npm run generate:theme && npm run generate:static && rsbuild dev",
-    "generate:theme": "node scripts/build-elegant-theme.mjs",
+    "dev": "npm run generate:themes && npm run generate:theme-assets && npm run generate:static && rsbuild dev",
+    "generate:themes": "node scripts/generate-theme-registry.mjs",
+    "generate:theme-assets": "node scripts/build-elegant-theme.mjs",
+    "theme:check": "node packages/theme-tooling/src/theme-check.mjs",
+    "theme:create": "node packages/theme-tooling/src/theme-create.mjs",
+    "theme:list": "node packages/theme-tooling/src/theme-list.mjs",
+    "theme:preview": "node packages/theme-tooling/src/theme-preview.mjs",
     "generate:static": "node scripts/generate-static-site.mjs",
-    "build": "npm run generate:theme && npm run generate:static && tsc -b && rsbuild build && node scripts/write-spa-fallback.mjs",
-    "test": "vitest run",
-    "ci": "npm run generate:theme && npm run typecheck && npm run harness && npm test && npm run build",
+    "build": "npm run generate:themes && npm run generate:theme-assets && npm run generate:static && tsc -b && rsbuild build && node --import tsx scripts/write-spa-fallback.mjs",
+    "test": "vitest run tests",
+    "ci": "npm run generate:themes && npm run generate:theme-assets && npm run typecheck && npm run harness && npm test && npm run build && npm run scenario:check",
     "typecheck": "tsc -b --pretty false",
     "harness": "typescript-project-harness .",
     "harness:json": "typescript-project-harness --json .",
@@ -19,12 +28,17 @@
     "perf:wasm": "node scripts/bench-orgize-wasm.mjs",
     "perf:ui": "npm run build && node scripts/bench-org-zhixing-ui.mjs",
     "perf:all": "npm run perf:wasm -- --source=blog/travel.org && npm run perf:ui",
-    "preview": "npm run generate:theme && npm run generate:static && rsbuild preview"
+    "scenario:check": "node packages/scenario-benchmark/src/runner.mjs check",
+    "scenario:update-baseline": "node packages/scenario-benchmark/src/runner.mjs update-baseline",
+    "scenario:browser": "env -u FORCE_COLOR -u NO_COLOR playwright test --config benchmarks/playwright.config.ts",
+    "scenario:lighthouse": "node packages/scenario-benchmark/src/prepare-lighthouse.mjs && lhci collect --config benchmarks/lighthouserc.cjs && lhci assert --config benchmarks/lighthouserc.cjs && lhci upload --config benchmarks/lighthouserc.cjs",
+    "preview": "npm run generate:themes && npm run generate:theme-assets && npm run generate:static && rsbuild preview"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource/roboto-mono": "^5.2.9",
     "@radix-ui/colors": "^3.0.0",
+    "@radix-ui/react-dialog": "^1.1.19",
     "@tanstack/query-core": "^5.100.13",
     "@tanstack/react-query": "^5.100.13",
     "@tanstack/react-router": "^1.170.7",
@@ -32,15 +46,18 @@
     "@zag-js/floating-panel": "^1.41.0",
     "@zag-js/vanilla": "^1.41.0",
     "masonry-layout": "^4.2.2",
-    "orgize": "github:tao3k/orgize-wasm#2807b600c5e9908078443b4cb408c39cee9c06e6",
+    "orgize": "github:tao3k/orgize-wasm#14bc952548d40df49d6db5ae29ff7ccb073df529",
     "photoswipe": "^5.4.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "sharp": "^0.34.5",
     "smol-toml": "^1.6.1"
   },
   "devDependencies": {
     "@capsizecss/core": "^4.1.3",
     "@capsizecss/metrics": "^4.0.0",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.61.1",
     "@rsbuild/core": "^2.0.7",
     "@rsbuild/plugin-react": "^2.0.0",
     "@tailwindcss/cli": "^4.3.0",
@@ -51,8 +68,14 @@
     "happy-dom": "^20.9.0",
     "style-dictionary": "^5.4.1",
     "tailwindcss": "^4.3.0",
+    "tsx": "^4.23.0",
     "typescript": "^5.9.3",
     "typescript-lang-project-harness": "git+https://github.com/tao3k/typescript-lang-project-harness.git#04524b55706e77080e30795b9b7cfe014d24cfce",
     "vitest": "^4.1.7"
+  },
+  "overrides": {
+    "inquirer": "^9.3.8",
+    "tmp": "^0.2.6",
+    "uuid": "^11.1.1"
   }
 }

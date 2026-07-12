@@ -28,7 +28,7 @@ type TimingStats = {
   htmlMs?: number;
 };
 
-type RenderViewOptions = {
+export type RenderViewOptions = {
   view: ViewKey;
   document: OrgizeDocumentView | null;
   pendingMessage?: string;

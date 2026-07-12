@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "blog-index",
+  "route": "/blogs",
+  "theme": "elegant-blog",
+  "variant": "default",
+  "fixture": "static-site",
+  "projects": ["compact-phone", "modern-phone", "tablet", "desktop"],
+  "actions": [{ "type": "goto" }, { "type": "screenshot", "target": "page" }],
+  "gates": {
+    "maxHorizontalOverflowPx": 0,
+    "maxConsoleErrors": 0,
+    "maxPageErrors": 0,
+    "minTapTargetPx": 44
+  }
+}

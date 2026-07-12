@@ -71,13 +71,30 @@ describe("Org Zhixing performance regression gates", () => {
     const contentServices = readFileSync("src/services/contentServices.ts", "utf8");
     const orgizeClient = readFileSync("src/orgizeClient.ts", "utf8");
     const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
+    const staticSiteData = readFileSync("src/staticSiteData.ts", "utf8");
+    const galleryPage = readFileSync("src/react/GalleryPage.tsx", "utf8");
+    const appViewRender = readFileSync("src/appViewRender.ts", "utf8");
 
     expect(orgizeClient).not.toContain("this.#worker = options.createWorker();");
     expect(orgizeClient).toContain("#workerForRequest()");
     expect(router).toContain("shell.staticSite?.blog");
-    expect(router).toContain("shell.staticSite?.attachmentGallery");
+    expect(router).toContain("loadGalleryQuery(context)");
+    expect(galleryPage).toContain("galleryRoute.useLoaderData()");
+    expect(router).toContain('webpackChunkName: "route-gallery"');
+    expect(router).toContain('"./GalleryPage"');
+    expect(staticSiteData).toContain("loadStaticGalleryData");
+    expect(staticSiteData).toContain('publicAssetUrl("org-zhixing.gallery.json")');
+    expect(router).not.toContain("shell.staticSite?.attachmentGallery");
+    expect(router).not.toContain("attachmentGalleryRender");
+    expect(router).not.toContain("attachmentGalleryViewer");
+    expect(appViewRender).not.toContain("attachmentGalleryRender");
+    expect(galleryPage).toContain(
+      'import { renderAttachmentGallery } from "../attachmentGalleryRender"',
+    );
+    expect(galleryPage).toContain('import("../attachmentGalleryViewer")');
     expect(router).toContain("travelViewFromStaticSite(shell.staticSite)");
-    expect(router).toContain("prefetchTravelGlanceRuntime");
+    expect(router).toContain("scheduleTravelGlanceRuntimePrefetch");
+    expect(router).toContain("scheduleTravelIdleTask");
     expect(contentServices).toContain("loadStaticSourceFor(shell.staticSite, source)");
     expect(contentServices).toContain("loadAllStaticSources(shell.staticSite");
     expect(perfScript).toContain("lazyParserWorker: true");
@@ -165,7 +182,7 @@ describe("Org Zhixing performance regression gates", () => {
     const contentServices = readFileSync("src/services/contentServices.ts", "utf8");
     const rsbuildConfig = readFileSync("rsbuild.config.ts", "utf8");
     const perfScript = readFileSync("scripts/bench-org-zhixing-ui.mjs", "utf8");
-    const pagesWorkflow = readFileSync(".github/workflows/github-page.yml", "utf8");
+    const pagesWorkflow = readFileSync(".github/workflows/ci.yml", "utf8");
     const publicConfig = readFileSync("public/org-zhixing.toml", "utf8");
 
     expect(packageJson.scripts.dev).toContain("rsbuild dev");
@@ -199,10 +216,14 @@ describe("Org Zhixing performance regression gates", () => {
     expect(rsbuildConfig).toContain("pluginReact()");
     expect(rsbuildConfig).toContain("__ORG_ZHIXING_BASE_PATH__");
     expect(rsbuildConfig).toContain("deploymentBasePathFromConfig(publicConfigPath)");
-    expect(rsbuildConfig).not.toContain("process.env.ORG_ZHIXING_BASE_PATH");
+    expect(rsbuildConfig).toContain(
+      "process.env.ORG_ZHIXING_BASE_PATH ?? deploymentBasePathFromConfig(publicConfigPath)",
+    );
     expect(rsbuildConfig).not.toContain("@tanstack/router-plugin");
     expect(pagesWorkflow).not.toContain("ORG_ZHIXING_BASE_PATH");
-    expect(publicConfig).toContain('base_url = "https://tao3k.github.io/org-zhixing-ts/"');
+    expect(pagesWorkflow).toContain("actions/upload-pages-artifact@v5");
+    expect(pagesWorkflow).toContain("actions/deploy-pages@v5");
+    expect(publicConfig).toContain('base_url = "https://tao3k.github.io/org-zhixing-themes/"');
     expect(perfScript).toContain("distAssetPath");
     expect(perfScript).toContain("eagerReactQuery: false");
     expect(perfScript).toContain("dynamicReactQueryChunk");
@@ -287,10 +308,17 @@ describe("Org Zhixing performance regression gates", () => {
 
   it("keeps attachment lightbox code behind an image-opener lazy boundary", () => {
     const router = readFileSync("src/react/router.tsx", "utf8");
+    const galleryPage = readFileSync("src/react/GalleryPage.tsx", "utf8");
+    const routeShellWriter = readFileSync("src/node/routeShellWriter.mjs", "utf8");
 
     expect(router).not.toMatch(/import\s+\{?\s*bindAttachmentGalleryViewer/);
-    expect(router).toContain('import("../attachmentGalleryViewer")');
-    expect(router).toContain('html.includes("data-attachment-open")');
+    expect(router).not.toContain("attachmentGalleryViewer");
+    expect(galleryPage).toContain('import("../attachmentGalleryViewer")');
+    expect(galleryPage).toContain('html.includes("data-attachment-open")');
+    expect(routeShellWriter).toContain("renderAttachmentGallery(galleryData");
+    expect(routeShellWriter).toContain("stripApplicationScripts");
+    expect(routeShellWriter).toContain('activeView: "gallery"');
+    expect(routeShellWriter).not.toContain("attachmentGalleryViewer");
   });
 
   it("keeps link soft wrapping free of the heavyweight CSS line-break runtime", () => {

@@ -1,0 +1,64 @@
+{
+  "name": "@org-zhixing/theme-elegant-blog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "orgZhixing": {
+    "schemaVersion": 1,
+    "id": "elegant-blog",
+    "displayName": "Elegant Blog",
+    "engine": ">=0.1 <0.2",
+    "defaultVariant": "default",
+    "variants": [
+      "default"
+    ],
+    "capabilities": [
+      "blog",
+      "agenda",
+      "gallery",
+      "notes",
+      "travel"
+    ],
+    "publicSlots": [
+      {
+        "id": "site-header",
+        "strategies": [
+          "wrap",
+          "replace"
+        ],
+        "runtime": "universal",
+        "stability": "stable"
+      },
+      {
+        "id": "site-hero",
+        "strategies": [
+          "wrap",
+          "replace"
+        ],
+        "runtime": "universal",
+        "stability": "stable"
+      },
+      {
+        "id": "runtime-state",
+        "strategies": [
+          "wrap",
+          "replace"
+        ],
+        "runtime": "client",
+        "stability": "stable"
+      }
+    ],
+    "renderers": {
+      "react-spa": {
+        "export": ".",
+        "serverComponents": false
+      }
+    },
+    "renderModes": [
+      "static"
+    ]
+  }
+}

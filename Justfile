@@ -9,6 +9,18 @@ install:
 dev port="5173":
     npm run dev -- --port {{port}}
 
+# List installed workspace themes and their variants.
+theme-list:
+    npm run theme:list
+
+# Validate one theme workspace package.
+theme-check theme="themes/elegant-blog":
+    npm run theme:check -- {{theme}}
+
+# Preview a theme without modifying the tracked org-zhixing.toml.
+theme-preview theme="elegant-blog" port="5173":
+    node packages/theme-tooling/src/theme-preview.mjs --theme {{theme}} --port {{port}}
+
 typecheck:
     npm run typecheck
 

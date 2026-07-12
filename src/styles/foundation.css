@@ -24,6 +24,14 @@ button {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.mobile-menu-trigger,
+.mobile-nav-overlay,
+.mobile-nav-drawer,
+.static-mobile-navigation {
+  display: none;
 }
 
 .site-header,
@@ -572,4 +580,39 @@ h1 {
 #view {
   min-height: 0;
   padding: 0;
+}
+.theme-variant-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  width: min(100% - 28px, 1120px);
+  margin: 10px auto 0;
+  color: var(--face-faded);
+  font-family: var(--font-mono);
+  font-size: var(--type-label-size);
+}
+
+.theme-variant-navigation > div {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius-label);
+  background: var(--surface-paper);
+}
+
+.theme-variant-navigation button {
+  min-height: 32px;
+  border: 0;
+  border-radius: calc(var(--radius-label) - 2px);
+  padding: 4px 10px;
+  color: var(--face-faded);
+  background: transparent;
+  cursor: pointer;
+}
+
+.theme-variant-navigation button[aria-pressed="true"] {
+  color: var(--face-strong);
+  background: var(--surface-salient);
 }

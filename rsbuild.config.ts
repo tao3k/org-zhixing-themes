@@ -8,16 +8,19 @@ import { parse } from "smol-toml";
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const orgizePackageRoot = resolve(projectRoot, "node_modules/orgize");
 const publicRoot = resolve(projectRoot, "public");
-const publicConfigPath = resolve(publicRoot, "org-zhixing.toml");
-const staticManifestPath = resolve(projectRoot, ".cache/org-zhixing/static-site.json");
-const staticSourceShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.sources");
-const staticMemoryShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.memory");
-const staticSectionShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.sections");
-const staticAttachmentShardRoot = resolve(
-  projectRoot,
-  ".cache/org-zhixing/org-zhixing.attachments",
-);
-const staticAgendaShardRoot = resolve(projectRoot, ".cache/org-zhixing/org-zhixing.agenda");
+const cacheRoot = resolve(projectRoot, process.env.ORG_ZHIXING_CACHE_ROOT ?? ".cache/org-zhixing");
+const publicConfigPath = process.env.ORG_ZHIXING_CONFIG
+  ? resolve(projectRoot, process.env.ORG_ZHIXING_CONFIG)
+  : resolve(publicRoot, "org-zhixing.toml");
+const publicConfigSource = readFileSync(publicConfigPath, "utf8");
+const staticManifestPath = resolve(cacheRoot, "static-site.json");
+const staticGalleryPath = resolve(cacheRoot, "org-zhixing.gallery.json");
+const staticSourceShardRoot = resolve(cacheRoot, "org-zhixing.sources");
+const staticMemoryShardRoot = resolve(cacheRoot, "org-zhixing.memory");
+const staticSectionShardRoot = resolve(cacheRoot, "org-zhixing.sections");
+const staticAttachmentShardRoot = resolve(projectRoot, cacheRoot, "org-zhixing.attachments");
+const staticAgendaShardRoot = resolve(cacheRoot, "org-zhixing.agenda");
+const staticThumbnailRoot = resolve(cacheRoot, "org-zhixing.thumbnails");
 const orgizePackageWatchFiles = existsSync(orgizePackageRoot)
   ? [
       resolve(orgizePackageRoot, "worker.js"),
@@ -26,14 +29,22 @@ const orgizePackageWatchFiles = existsSync(orgizePackageRoot)
       resolve(orgizePackageRoot, "dist/**/*"),
     ]
   : [];
-const deploymentBasePath = deploymentBasePathFromConfig(publicConfigPath);
+const deploymentBasePath = normalizeBasePath(
+  process.env.ORG_ZHIXING_BASE_PATH ?? deploymentBasePathFromConfig(publicConfigPath),
+);
 const assetPrefix = deploymentBasePath === "/" ? "auto" : `${deploymentBasePath}/`;
 
 export default defineConfig({
   plugins: [pluginReact()],
+  resolve: {
+    alias: {
+      "@org-zhixing-cache": cacheRoot,
+    },
+  },
   source: {
     define: {
       __ORG_ZHIXING_BASE_PATH__: JSON.stringify(deploymentBasePath),
+      __ORG_ZHIXING_CONFIG_SOURCE__: JSON.stringify(publicConfigSource),
     },
     entry: {
       app: resolve(projectRoot, "src/main.tsx"),
@@ -66,6 +77,9 @@ export default defineConfig({
       ...(existsSync(staticManifestPath)
         ? [{ from: staticManifestPath, to: "org-zhixing.static.json" }]
         : []),
+      ...(existsSync(staticGalleryPath)
+        ? [{ from: staticGalleryPath, to: "org-zhixing.gallery.json" }]
+        : []),
       ...(existsSync(staticSourceShardRoot)
         ? [
             {
@@ -96,11 +110,20 @@ export default defineConfig({
       ...(existsSync(staticAgendaShardRoot)
         ? [{ from: resolve(staticAgendaShardRoot, "*.json"), to: "org-zhixing.agenda/[name][ext]" }]
         : []),
+      ...(existsSync(staticThumbnailRoot)
+        ? [
+            {
+              from: resolve(staticThumbnailRoot, "*.webp"),
+              to: "org-zhixing.thumbnails/[name][ext]",
+            },
+          ]
+        : []),
     ],
   },
   server: {
     host: "127.0.0.1",
     port: 5173,
+    strictPort: true,
     historyApiFallback: true,
     publicDir: {
       name: publicRoot,

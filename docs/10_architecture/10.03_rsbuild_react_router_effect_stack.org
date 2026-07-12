@@ -70,7 +70,7 @@ translates =?view= into a page; stale query/hash state must disappear at the
 route boundary instead of being normalized by an old host app.
 
 Project-site deployments such as
-=https://tao3k.github.io/org-zhixing-ts/= are configured in
+=https://tao3k.github.io/org-zhixing-themes/= are configured in
 =org-zhixing.toml=, not in GitHub Actions.  The Pages job only publishes
 =dist/=; it does not own route semantics.
 

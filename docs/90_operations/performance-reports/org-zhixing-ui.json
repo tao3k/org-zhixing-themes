@@ -35,16 +35,16 @@
     "idleInteractionChunkPrefetch": true
   },
   "metrics": {
-    "staticManifestBytes": 66457,
+    "staticManifestBytes": 68467,
     "sourceShardBytes": 65704,
     "sourceShardCount": 8,
     "agendaShardBytes": 79188,
     "agendaShardCount": 8,
     "largestAgendaShardBytes": 21440,
     "largestAgendaShard": "org-zhixing.agenda/org-zhixing-demo.json",
-    "attachmentShardBytes": 173541,
+    "attachmentShardBytes": 175635,
     "attachmentShardCount": 8,
-    "largestAttachmentShardBytes": 107275,
+    "largestAttachmentShardBytes": 109285,
     "largestAttachmentShard": "org-zhixing.attachments/wallpaper-gallery.json",
     "memoryShardBytes": 517761,
     "memoryShardCount": 8,
@@ -119,7 +119,7 @@
       "schemaVersion": 8
     },
     "attachmentShardFieldBytes": {
-      "attachmentInventory": 172647,
+      "attachmentInventory": 174741,
       "sourceFile": 207,
       "sourceId": 135,
       "schemaVersion": 8
@@ -136,12 +136,12 @@
       "sourceId": 135,
       "schemaVersion": 8
     },
-    "initialScriptBytes": 394990,
+    "initialScriptBytes": 402614,
     "initialScriptCount": 3,
     "initialScripts": [
       "assets/lib-react.4fa030ab.js",
       "assets/836.e1b72ad0.js",
-      "assets/app.c6922ff1.js"
+      "assets/app.23954df9.js"
     ],
     "generatedTailwindCssBytes": 774,
     "tailwindContentUtilityLeak": false,
@@ -161,6 +161,10 @@
         "bytes": 39943
       },
       {
+        "path": "assets/990.cd590d43.js",
+        "bytes": 32491
+      },
+      {
         "path": "assets/594.ddc1e80d.js",
         "bytes": 26365
       },
@@ -175,10 +179,6 @@
       {
         "path": "assets/883.083266ee.js",
         "bytes": 14442
-      },
-      {
-        "path": "assets/43.dbf8c8f5.js",
-        "bytes": 10018
       }
     ],
     "blogArticles": 8,
@@ -212,11 +212,11 @@
     "idleInteractionChunkPrefetch": true,
     "staticManifestParse": {
       "name": "staticManifestParse",
-      "minMs": 0.12,
-      "p50Ms": 0.12,
-      "p95Ms": 0.13,
-      "maxMs": 0.15,
-      "avgMs": 0.13
+      "minMs": 0.13,
+      "p50Ms": 0.13,
+      "p95Ms": 0.31,
+      "maxMs": 1,
+      "avgMs": 0.17
     },
     "travelProjectionRead": {
       "name": "travelProjectionRead",
@@ -229,7 +229,7 @@
   },
   "budgetResults": {
     "staticManifestBytes": {
-      "actual": 66457,
+      "actual": 68467,
       "budget": 500000,
       "pass": true
     },
@@ -244,7 +244,7 @@
       "pass": true
     },
     "attachmentShardBytes": {
-      "actual": 173541,
+      "actual": 175635,
       "budget": 1000000,
       "pass": true
     },
@@ -264,7 +264,7 @@
       "pass": true
     },
     "initialScriptBytes": {
-      "actual": 394990,
+      "actual": 402614,
       "budget": 1500000,
       "pass": true
     },
@@ -284,12 +284,12 @@
       "pass": true
     },
     "staticManifestParseP50Ms": {
-      "actual": 0.12,
+      "actual": 0.13,
       "budget": 15,
       "pass": true
     },
     "staticManifestParseP95Ms": {
-      "actual": 0.13,
+      "actual": 0.31,
       "budget": 80,
       "pass": true
     },
@@ -372,7 +372,7 @@
   "recommendations": [
     {
       "area": "static-manifest-shards",
-      "signal": "entry manifest is 65 KiB; 8 source shards are 64 KiB",
+      "signal": "entry manifest is 67 KiB; 8 source shards are 64 KiB",
       "action": "Keep site-wide Gallery and Travel on compact projections; load full source shards only for source-scoped or Records views."
     },
     {
@@ -392,7 +392,7 @@
     },
     {
       "area": "static-attachment-shards",
-      "signal": "8 attachment shards are 169 KiB and source shards contain no attachmentInventory field",
+      "signal": "8 attachment shards are 172 KiB and source shards contain no attachmentInventory field",
       "action": "Keep Gallery, Notes, Memory, and Zen link rewriting on the attachment-shard path while preserving lighter source shards for other views."
     },
     {

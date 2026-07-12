@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "environment": {
+    "node": "v24.14.1",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "observed": {
+    "totalJsBytes": 797437,
+    "entryJsBytes": 122323,
+    "totalCssBytes": 93089,
+    "jsAssetCount": 22,
+    "cssAssetCount": 1,
+    "unselectedThemeMarkers": 1
+  },
+  "limits": {
+    "totalJsBytes": 837309,
+    "entryJsBytes": 128440,
+    "totalCssBytes": 97744,
+    "jsAssetCount": 22,
+    "cssAssetCount": 1,
+    "unselectedThemeMarkers": 1
+  }
+}

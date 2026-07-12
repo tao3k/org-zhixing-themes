@@ -1,9 +1,21 @@
-import { attachmentPublicUrl, basename } from "./attachmentPaths";
+import {
+  attachmentPublicPath,
+  attachmentPublicUrl,
+  attachmentThumbnailUrl,
+  basename,
+} from "./attachmentPaths";
 import type { AttachmentGalleryRecord, AttachmentGalleryView } from "./attachmentGalleryModel";
 import type { AttachmentDisplayRecord } from "./model";
 import { renderOrgTagRow } from "./orgSemanticHtml";
 
-export const renderAttachmentGallery = (gallery: AttachmentGalleryView | null): string => {
+export type AttachmentGalleryRenderOptions = {
+  publicAssetHref?: (path: string) => string;
+};
+
+export const renderAttachmentGallery = (
+  gallery: AttachmentGalleryView | null,
+  options: AttachmentGalleryRenderOptions = {},
+): string => {
   if (!gallery) {
     return `<div class="empty">Loading attachment gallery...</div>`;
   }
@@ -20,7 +32,7 @@ export const renderAttachmentGallery = (gallery: AttachmentGalleryView | null): 
     <section class="attachment-gallery" aria-label="Attachment gallery">
       ${renderAttachmentGalleryHeader(gallery)}
       <div class="attachment-grid">
-        ${records.map((record, index) => renderAttachmentCard(record, index)).join("")}
+        ${records.map((record, index) => renderAttachmentCard(record, index, options)).join("")}
       </div>
     </section>
   `;
@@ -45,10 +57,20 @@ const renderAttachmentGalleryHeader = (gallery: AttachmentGalleryView): string =
 const renderAttachmentCard = (
   { record, sourceFile, sourceName }: AttachmentGalleryRecord,
   index: number,
+  options: AttachmentGalleryRenderOptions,
 ): string => {
   const title = attachmentSectionTitle(record) || basename(record.linkPath) || "Attachment";
   const outline = attachmentOutlinePath(record).join(" / ") || record.directoryPath;
-  const url = attachmentPublicUrl(record, sourceFile);
+  const url = options.publicAssetHref
+    ? options.publicAssetHref(attachmentPublicPath(record, sourceFile))
+    : attachmentPublicUrl(record, sourceFile);
+  const thumbnailPath = (record as AttachmentDisplayRecord & { thumbnailPath?: unknown })
+    .thumbnailPath;
+  const thumbnailUrl = options.publicAssetHref
+    ? typeof thumbnailPath === "string" && thumbnailPath.length > 0
+      ? options.publicAssetHref(thumbnailPath)
+      : null
+    : attachmentThumbnailUrl(record);
   const tags = [...new Set(record.effectiveTags)].slice(0, 5);
   return `
     <article class="attachment-card">
@@ -63,7 +85,7 @@ const renderAttachmentCard = (
         target="_blank"
         rel="noreferrer"
       >
-        ${renderAttachmentMedia(record, url, title)}
+        ${renderAttachmentMedia(record, url, thumbnailUrl, title, index)}
         <div class="attachment-card-body">
           <span>${escapeHtml(record.mediaKind)}</span>
           <h3>${escapeHtml(title)}</h3>
@@ -78,10 +100,12 @@ const renderAttachmentCard = (
 const renderAttachmentMedia = (
   record: AttachmentDisplayRecord,
   url: string,
+  thumbnailUrl: string | null,
   title: string,
+  index: number,
 ): string =>
   record.mediaKind === "image"
-    ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(title)}" loading="lazy" decoding="async" data-attachment-thumbnail>`
+    ? `<img src="${escapeHtml(thumbnailUrl ?? url)}" alt="${escapeHtml(title)}" loading="${index === 0 ? "eager" : "lazy"}"${index === 0 ? ' fetchpriority="high"' : ""} decoding="async" data-attachment-thumbnail>`
     : `<div class="attachment-file-preview">${escapeHtml(record.mediaKind.toUpperCase())}</div>`;
 
 const attachmentSectionTitle = (record: AttachmentDisplayRecord): string => {

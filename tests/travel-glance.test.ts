@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AppDomNodes } from "../src/appDom";
 import { bindTravelGlance } from "../src/travelGlance";
 
@@ -145,32 +145,28 @@ const mountTravelDom = (): AppDomNodes => {
 };
 
 const waitForElement = async (selector: string): Promise<HTMLElement> => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    const element = document.body.querySelector<HTMLElement>(selector);
-    if (element) {
-      return element;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 0));
+  let element: HTMLElement | null = null;
+  await vi.waitFor(
+    () => {
+      element = document.body.querySelector<HTMLElement>(selector);
+      expect(element).toBeTruthy();
+    },
+    { timeout: 2_000 },
+  );
+  if (!element) {
+    throw new Error(`Expected ${selector} to be mounted`);
   }
-  throw new Error(`Expected ${selector} to be mounted`);
+  return element;
 };
 
 const waitForEmpty = async (selector: string): Promise<void> => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    if (!document.body.querySelector(selector)) {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-  throw new Error(`Expected ${selector} to be unmounted`);
+  await vi.waitFor(() => expect(document.body.querySelector(selector)).toBeNull(), {
+    timeout: 2_000,
+  });
 };
 
 const waitForLayout = async (element: HTMLElement): Promise<void> => {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    if (element.dataset.layout !== "pending") {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-  throw new Error("Expected travel glance layout to leave pending state");
+  await vi.waitFor(() => expect(element.dataset.layout).not.toBe("pending"), {
+    timeout: 2_000,
+  });
 };

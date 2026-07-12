@@ -52,8 +52,28 @@ export const bindTravelGlance = (dom: AppDomNodes, signal: AbortSignal): void =>
   signal.addEventListener("abort", () => activeGlance?.destroy(), { once: true });
 };
 
-export const prefetchTravelGlanceRuntime = (): void => {
-  void Promise.all([loadFloatingPanelRuntime(), loadMasonryRuntime()]);
+export const scheduleTravelGlanceRuntimePrefetch = (signal: AbortSignal): void => {
+  scheduleTravelIdleTask(
+    () => Promise.all([loadFloatingPanelRuntime(), loadMasonryRuntime()]).then(() => undefined),
+    signal,
+  );
+};
+
+export const scheduleTravelIdleTask = (
+  task: () => void | Promise<void>,
+  signal: AbortSignal,
+): void => {
+  if (signal.aborted) return;
+  const run = (): void => {
+    if (!signal.aborted) void task();
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    const idleId = window.requestIdleCallback(run, { timeout: 2_000 });
+    signal.addEventListener("abort", () => window.cancelIdleCallback(idleId), { once: true });
+    return;
+  }
+  const timer = window.setTimeout(run, 1_000);
+  signal.addEventListener("abort", () => window.clearTimeout(timer), { once: true });
 };
 
 const handleTravelClick = (event: Event): void => {

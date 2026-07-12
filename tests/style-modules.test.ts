@@ -12,7 +12,7 @@ describe("style module boundaries", () => {
     expect(entry).toEqual([
       '@import "photoswipe/style.css";',
       '@import "./styles/theme.css";',
-      '@import "../.cache/org-zhixing/tailwind.css";',
+      '@import "@org-zhixing-cache/tailwind.css";',
       '@import "./styles/foundation.css";',
       '@import "./styles/blog.css";',
       '@import "./styles/attachments.css";',
@@ -93,8 +93,12 @@ describe("style module boundaries", () => {
     expect(packageJson.devDependencies.effect).toBeTruthy();
     expect(packageJson.devDependencies.tailwindcss).toBeTruthy();
     expect(packageJson.devDependencies["@tailwindcss/cli"]).toBeTruthy();
-    expect(packageJson.scripts["generate:theme"]).toBe("node scripts/build-elegant-theme.mjs");
-    expect(packageJson.scripts.build).toContain("npm run generate:theme");
+    expect(packageJson.scripts["generate:themes"]).toBe("node scripts/generate-theme-registry.mjs");
+    expect(packageJson.scripts["generate:theme-assets"]).toBe(
+      "node scripts/build-elegant-theme.mjs",
+    );
+    expect(packageJson.scripts.build).toContain("npm run generate:themes");
+    expect(packageJson.scripts.build).toContain("npm run generate:theme-assets");
     expect(tailwind).not.toContain("tailwindcss/theme.css");
     expect(tailwind).toContain(
       '@import "tailwindcss/utilities.css" layer(utilities) source(none);',

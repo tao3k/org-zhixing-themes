@@ -8,8 +8,9 @@ import { entireMetricsCollection } from "@capsizecss/metrics/entireMetricsCollec
 import StyleDictionary from "style-dictionary";
 
 const projectRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const generatedVarsPath = resolve(projectRoot, ".cache/org-zhixing/elegant-theme-vars.css");
-const generatedTailwindPath = resolve(projectRoot, ".cache/org-zhixing/tailwind.css");
+const cacheRoot = resolve(projectRoot, process.env.ORG_ZHIXING_CACHE_ROOT ?? ".cache/org-zhixing");
+const generatedVarsPath = resolve(cacheRoot, "elegant-theme-vars.css");
+const generatedTailwindPath = resolve(cacheRoot, "tailwind.css");
 const themePath = resolve(projectRoot, "src/styles/theme.css");
 const tailwindInputPath = resolve(projectRoot, "src/styles/tailwind.css");
 const tailwindBinaryPath = resolve(
@@ -155,7 +156,7 @@ const styleDictionary = new StyleDictionary({
   platforms: {
     css: {
       transformGroup: "css",
-      buildPath: ".cache/org-zhixing/",
+      buildPath: `${cacheRoot}/`,
       files: [
         {
           destination: "elegant-theme-vars.css",

@@ -1,0 +1,13 @@
+{
+  "name": "@org-zhixing/scenario-benchmark",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "org-zhixing-scenario-benchmark": "./src/runner.mjs"
+  },
+  "type": "module",
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "smol-toml": "^1.6.1"
+  }
+}

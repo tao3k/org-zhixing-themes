@@ -9,11 +9,11 @@ import {
 } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
 import type { MouseEventHandler, ReactNode } from "react";
-import { useEffect, useMemo } from "react";
+import { lazy, useEffect, useMemo, useState } from "react";
 import { adjacentBlogArticleSelection } from "../blogNavigation";
 import type { AgendaPanelKey } from "../agendaTypes";
 import { isAgendaMode, isAgendaPanel } from "../agendaState";
-import { renderView } from "../render";
+import { renderAppView as renderView } from "../appViewRender";
 import { travelViewFromStaticSite } from "../travelSiteProjection";
 import type { ContentShellData } from "../services/contentServices";
 import type { ViewKey } from "../model";
@@ -21,6 +21,11 @@ import { isEditableTarget, viewDomNodes, viewForPath } from "./routeViewHelpers"
 import { getReactQueryClient } from "./queryClient";
 import { ShellChrome } from "./ShellChrome";
 import { orgZhixingBasePath } from "./deploymentBasePath";
+import { createAgendaSurfaceClickHandler } from "./agendaSurfaceNavigation";
+import { HtmlSurface } from "./HtmlSurface";
+import { renderReactSpaThemeSlot } from "./themeBinding";
+import { applyThemeVariant, createDefaultThemeRegistry, resolveConfiguredTheme } from "../library";
+import { loadThemeVariantPreference, storeThemeVariantPreference } from "./themeVariantPreference";
 
 export type OrgZhixingRouterContext = {
   getQueryClient: () => Promise<QueryClient>;
@@ -52,10 +57,13 @@ const blogArticleRoute = createRoute({
   validateSearch: (search: Record<string, unknown>) => search,
 });
 
-const galleryRoute = createRoute({
+const GalleryPage = lazy(() => import(/* webpackChunkName: "route-gallery" */ "./GalleryPage"));
+
+export const galleryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/gallery",
   component: GalleryPage,
+  loader: ({ context }) => loadGalleryQuery(context),
 });
 const notesRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -137,6 +145,19 @@ async function loadContentShellQuery(context: OrgZhixingRouterContext): Promise<
   });
 }
 
+async function loadGalleryQuery(
+  context: OrgZhixingRouterContext,
+): Promise<Awaited<ReturnType<typeof import("../staticSiteData").loadStaticGalleryData>>> {
+  const queryClient = await context.getQueryClient();
+  return queryClient.ensureQueryData({
+    queryKey: ["org-zhixing", "gallery"],
+    queryFn: async () => {
+      const { loadStaticGalleryData } = await import("../staticSiteData");
+      return loadStaticGalleryData();
+    },
+  });
+}
+
 async function loadArticleQuery(
   context: OrgZhixingRouterContext,
   articleId: string,
@@ -195,8 +216,17 @@ function RootLayout(): ReactNode {
   const location = useLocation();
   const view = viewForPath(location.pathname);
   const readerMode = location.pathname.startsWith("/blogs/") ? "zen" : "library";
+  const selectedTheme = useMemo(
+    () => resolveConfiguredTheme(createDefaultThemeRegistry(), shell.siteConfig),
+    [shell.siteConfig],
+  );
+  const [activeVariantId, setActiveVariantId] = useState(() =>
+    loadThemeVariantPreference(selectedTheme, shell.siteConfig.theme.variant),
+  );
 
   useEffect(() => {
+    applyThemeVariant(selectedTheme, activeVariantId);
+    storeThemeVariantPreference(selectedTheme.name, activeVariantId);
     document.documentElement.lang = shell.siteConfig.locale;
     document.title = shell.siteConfig.title;
     const app = document.querySelector<HTMLElement>("#app");
@@ -204,10 +234,16 @@ function RootLayout(): ReactNode {
       app.dataset.view = view;
       app.dataset.readerMode = readerMode;
     }
-  }, [readerMode, shell.siteConfig.locale, shell.siteConfig.title, view]);
+  }, [activeVariantId, readerMode, selectedTheme, shell.siteConfig, view]);
 
   return (
-    <ShellChrome readerMode={readerMode} shell={shell}>
+    <ShellChrome
+      activeVariantId={activeVariantId}
+      onVariantChange={setActiveVariantId}
+      readerMode={readerMode}
+      shell={shell}
+      theme={selectedTheme}
+    >
       <Outlet />
     </ShellChrome>
   );
@@ -215,6 +251,7 @@ function RootLayout(): ReactNode {
 
 function BlogIndexPage(): ReactNode {
   const shell = rootRoute.useLoaderData();
+  const selectedTheme = resolveConfiguredTheme(createDefaultThemeRegistry(), shell.siteConfig);
   const search = blogsRoute.useSearch() as { tag?: string; time?: string };
   const navigate = useNavigate();
   const html = useMemo(
@@ -277,7 +314,12 @@ function BlogIndexPage(): ReactNode {
       } as never);
     }
   };
-  return <HtmlSurface html={html} onClick={onClick} />;
+  return renderReactSpaThemeSlot(
+    selectedTheme,
+    "blog-index",
+    { shell },
+    <HtmlSurface html={html} onClick={onClick} />,
+  );
 }
 
 function BlogArticlePage(): ReactNode {
@@ -347,28 +389,6 @@ function BlogArticlePage(): ReactNode {
   return <HtmlSurface html={html} />;
 }
 
-function GalleryPage(): ReactNode {
-  const shell = rootRoute.useLoaderData();
-  const html = renderView({
-    view: "gallery",
-    document: null,
-    attachmentGallery: shell.staticSite?.attachmentGallery ?? null,
-  });
-  useEffect(() => {
-    if (!html.includes("data-attachment-open")) {
-      return;
-    }
-    const controller = new AbortController();
-    void import("../attachmentGalleryViewer").then(({ bindAttachmentGalleryViewer }) => {
-      if (!controller.signal.aborted) {
-        bindAttachmentGalleryViewer(viewDomNodes(), controller.signal);
-      }
-    });
-    return () => controller.abort();
-  }, [html]);
-  return <HtmlSurface html={html} />;
-}
-
 function TravelPage(): ReactNode {
   const shell = rootRoute.useLoaderData();
   const html = renderView({
@@ -378,19 +398,22 @@ function TravelPage(): ReactNode {
   });
   useEffect(() => {
     const controller = new AbortController();
-    void import("../travelGlance").then(({ bindTravelGlance, prefetchTravelGlanceRuntime }) => {
-      if (!controller.signal.aborted) {
-        bindTravelGlance(viewDomNodes(), controller.signal);
-        prefetchTravelGlanceRuntime();
-      }
-    });
-    if (html.includes("data-travel-virtual-list")) {
-      void import("../travelVirtualList").then(({ bindTravelVirtualList }) => {
+    void import("../travelGlance").then(
+      ({ bindTravelGlance, scheduleTravelGlanceRuntimePrefetch, scheduleTravelIdleTask }) => {
         if (!controller.signal.aborted) {
-          bindTravelVirtualList(viewDomNodes(), controller.signal);
+          bindTravelGlance(viewDomNodes(), controller.signal);
+          scheduleTravelGlanceRuntimePrefetch(controller.signal);
+          if (html.includes("data-travel-virtual-list")) {
+            scheduleTravelIdleTask(async () => {
+              const { bindTravelVirtualList } = await import("../travelVirtualList");
+              if (!controller.signal.aborted) {
+                bindTravelVirtualList(viewDomNodes(), controller.signal);
+              }
+            }, controller.signal);
+          }
         }
-      });
-    }
+      },
+    );
     return () => controller.abort();
   }, [html]);
   return <HtmlSurface html={html} />;
@@ -423,19 +446,34 @@ function AgendaPage(): ReactNode {
     rule?: string;
   };
   const shell = rootRoute.useLoaderData();
+  const navigate = useNavigate();
   const agendaMode = isAgendaMode(search.agenda) ? search.agenda : shell.siteConfig.agenda.mode;
   const agendaPanel: AgendaPanelKey = isAgendaPanel(search.panel) ? search.panel : "trace";
-  return (
-    <HtmlSurface
-      html={renderView({
+  const html = useMemo(
+    () =>
+      renderView({
         view: "agenda",
         document: data.document,
         agendaMode,
         agendaPanel,
         agendaRuleId: search.rule ?? null,
-      })}
-    />
+      }),
+    [agendaMode, agendaPanel, data.document, search.rule],
   );
+  const onClick = useMemo(
+    () =>
+      createAgendaSurfaceClickHandler({
+        navigateToAgenda: (nextSearch) => {
+          void navigate({
+            search: nextSearch,
+            to: "/agenda",
+          } as never);
+        },
+        search,
+      }),
+    [navigate, search],
+  );
+  return <HtmlSurface html={html} onClick={onClick} />;
 }
 
 function CapturePage(): ReactNode {
@@ -446,16 +484,6 @@ function CapturePage(): ReactNode {
 function DiagnosticsPage(): ReactNode {
   const data = diagnosticsRoute.useLoaderData();
   return <HtmlSurface html={renderView({ view: "diagnostics", document: data.document })} />;
-}
-
-function HtmlSurface({
-  html,
-  onClick,
-}: {
-  html: string;
-  onClick?: MouseEventHandler<HTMLDivElement>;
-}): ReactNode {
-  return <div id="view" onClick={onClick} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 declare module "@tanstack/react-router" {

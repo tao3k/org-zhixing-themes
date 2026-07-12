@@ -1,10 +1,8 @@
 import type {
   OrgizeAgendaViewResponseDto,
   OrgizeAttachmentInventoryResponseDto,
-  OrgizeLintResponseDto,
   OrgizeMemoryResponseDto,
   OrgizeSectionIndexResponseDto,
-  OrgizeViewIndexResponseDto,
 } from "orgize/dto";
 import type { AgendaSettings, SiteConfig, SourceItem } from "./config";
 import { publicAssetUrl } from "./config";
@@ -26,41 +24,9 @@ import {
   loadCachedStaticSectionShard,
   loadCachedStaticSourceShard,
 } from "./staticSiteShards";
+import type { StaticSourceProjection, StaticSourceSummary } from "./staticSite/model";
 
-export type StaticSourceSummary = {
-  id: string;
-  name: string;
-  orgTitle?: string;
-  file: string;
-  sourceFile: string;
-  sourceBytes: number;
-  shardPath?: string;
-  agendaShardPath?: string;
-  attachmentShardPath?: string;
-  memoryShardPath?: string;
-  sectionShardPath?: string;
-};
-
-export type StaticSourceProjection = {
-  id: string;
-  name: string;
-  orgTitle?: string;
-  file: string;
-  sourceFile: string;
-  sourceBytes: number;
-  agendaRange?: AgendaSettings;
-  agendaShardPath?: string;
-  viewIndex: OrgizeViewIndexResponseDto;
-  sectionIndex?: OrgizeSectionIndexResponseDto;
-  sectionShardPath?: string;
-  html: string;
-  attachmentInventory?: OrgizeAttachmentInventoryResponseDto;
-  attachmentShardPath?: string;
-  memory?: OrgizeMemoryResponseDto;
-  memoryShardPath?: string;
-  agendaView?: OrgizeAgendaViewResponseDto;
-  lint: OrgizeLintResponseDto;
-};
+export type { StaticSourceProjection, StaticSourceSummary } from "./staticSite/model";
 
 export type StaticAgendaShard = {
   schemaVersion: 1;
@@ -107,6 +73,18 @@ export type StaticBlogIndex = {
   tagFacets: Array<{ count: number; tag: string }>;
 };
 
+export type StaticGallerySummary = {
+  shardPath: string;
+  recordCount: number;
+  entryCount: number;
+  sourceCount: number;
+  label: string;
+  siteWide: boolean;
+  firstThumbnailPath: string | null;
+};
+
+export type StaticGalleryData = AttachmentGalleryView & { schemaVersion: 1 };
+
 export type StaticSiteData = {
   schemaVersion: 1;
   generatedAt: string;
@@ -115,7 +93,7 @@ export type StaticSiteData = {
     buildTime: string;
     gitHash: string;
   };
-  attachmentGallery?: AttachmentGalleryView;
+  attachmentGallery?: StaticGallerySummary;
   blog?: StaticBlogIndex;
   travel?: TravelView;
   sources: StaticSource[];
@@ -143,6 +121,22 @@ export const loadStaticSiteData = async (): Promise<StaticSiteData | null> => {
       return null;
     }
     return value as StaticSiteData;
+  } catch {
+    return null;
+  }
+};
+
+export const loadStaticGalleryData = async (): Promise<StaticGalleryData | null> => {
+  try {
+    const response = await fetch(publicAssetUrl("org-zhixing.gallery.json"));
+    if (!response.ok) {
+      return null;
+    }
+    const value = (await response.json()) as Partial<StaticGalleryData>;
+    if (value.schemaVersion !== 1 || !Array.isArray(value.records)) {
+      return null;
+    }
+    return value as StaticGalleryData;
   } catch {
     return null;
   }

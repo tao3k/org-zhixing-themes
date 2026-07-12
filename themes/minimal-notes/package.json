@@ -1,0 +1,56 @@
+{
+  "name": "@org-zhixing/theme-minimal-notes",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "orgZhixing": {
+    "schemaVersion": 1,
+    "id": "minimal-notes",
+    "displayName": "Minimal Notes",
+    "engine": ">=0.1 <0.2",
+    "defaultVariant": "paper",
+    "variants": [
+      "paper",
+      "midnight"
+    ],
+    "capabilities": [
+      "blog",
+      "notes",
+      "search"
+    ],
+    "publicSlots": [
+      {
+        "id": "site-header",
+        "strategies": [
+          "wrap",
+          "replace"
+        ],
+        "runtime": "universal",
+        "stability": "stable"
+      },
+      {
+        "id": "site-hero",
+        "strategies": [
+          "replace"
+        ],
+        "runtime": "universal",
+        "stability": "stable"
+      }
+    ],
+    "renderers": {
+      "react-spa": {
+        "export": ".",
+        "serverComponents": false
+      }
+    },
+    "renderModes": [
+      "static"
+    ]
+  }
+}

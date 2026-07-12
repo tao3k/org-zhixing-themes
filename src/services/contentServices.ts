@@ -74,11 +74,10 @@ class StaticContentError extends Error {
 export const loadContentShellData = (): Promise<ContentShellData> =>
   Effect.runPromise(
     Effect.gen(function* () {
-      const staticSite = yield* promiseEffect("static manifest", () => loadStaticSiteData());
-      const config = withStaticSiteSources(
-        yield* promiseEffect("site config", () => loadSiteConfig()),
-        staticSite,
+      const [staticSite, loadedConfig] = yield* promiseEffect("shell inputs", () =>
+        Promise.all([loadStaticSiteData(), loadSiteConfig()]),
       );
+      const config = withStaticSiteSources(loadedConfig, staticSite);
       return {
         initialSource: resolveInitialSource(config),
         showPerformance: showPerformanceFromUrl(config.behavior.showPerformance),

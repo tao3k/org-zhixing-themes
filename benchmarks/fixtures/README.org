@@ -1,0 +1,5 @@
+* Scenario Benchmark Fixtures
+
+Scenario fixture names are stable identities.  The browser runner maps them to
+generated static projections; large generated JSON and raw reports are not
+committed here.

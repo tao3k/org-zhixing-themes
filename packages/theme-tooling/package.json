@@ -1,0 +1,15 @@
+{
+  "name": "@org-zhixing/theme-tooling",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "org-zhixing-theme-check": "./src/theme-check.mjs",
+    "org-zhixing-theme-create": "./src/theme-create.mjs",
+    "org-zhixing-theme-list": "./src/theme-list.mjs",
+    "org-zhixing-theme-preview": "./src/theme-preview.mjs"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/theme-manifest.mjs"
+  }
+}

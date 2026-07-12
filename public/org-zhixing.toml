@@ -1,7 +1,12 @@
+theme = "elegant-blog"
+theme_variant = "default"
+
+[theme_config]
+
 [site]
 title = "知行合一"
 locale = "zh-CN"
-base_url = "https://tao3k.github.io/org-zhixing-ts/"
+base_url = "https://tao3k.github.io/org-zhixing-themes/"
 
 [content]
 content_dir = "blog"

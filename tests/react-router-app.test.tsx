@@ -4,7 +4,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { attachmentGalleryFromSources } from "../src/attachmentGalleryModel";
 import { createOrgZhixingRouter } from "../src/react/router";
-import type { StaticSiteData, StaticSourceProjection } from "../src/staticSiteData";
+import type {
+  StaticGalleryData,
+  StaticGallerySummary,
+  StaticSiteData,
+  StaticSourceProjection,
+} from "../src/staticSiteData";
 import { record, sectionRecord, sourceRange } from "./modelFixtures";
 import { staticProjection } from "./staticProjection.fixture";
 
@@ -113,7 +118,8 @@ describe("Org Zhixing React Router app", () => {
   });
 
   it("keeps Zen reading chrome-free and handles keyboard article navigation", async () => {
-    await mountStaticRouter("/blogs", fetchBlogStaticFixture());
+    const fetch = fetchBlogStaticFixture();
+    await mountStaticRouter("/blogs", fetch);
 
     await waitForText("First Article");
     await act(async () => {
@@ -127,6 +133,9 @@ describe("Org Zhixing React Router app", () => {
     expect(document.querySelector(".site-header")).toBeNull();
     expect(document.querySelector(".site-hero")).toBeNull();
     expect(document.querySelector(".runtime-state")).toBeNull();
+    expect(
+      fetch.mock.calls.some(([input]) => String(input).includes("org-zhixing.gallery.json")),
+    ).toBe(false);
 
     await act(async () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "ArrowRight" }));
@@ -145,14 +154,120 @@ describe("Org Zhixing React Router app", () => {
     expect(document.body.textContent).not.toContain("Second body");
   });
 
+  it("starts Gallery, shell manifest, and config requests without serial blocking", async () => {
+    const requested: string[] = [];
+    let resolveConfig!: (response: Response) => void;
+    let resolveManifest!: (response: Response) => void;
+    let resolveGallery!: (response: Response) => void;
+    const configResponse = new Promise<Response>((resolve) => (resolveConfig = resolve));
+    const manifestResponse = new Promise<Response>((resolve) => (resolveManifest = resolve));
+    const galleryResponse = new Promise<Response>((resolve) => (resolveGallery = resolve));
+    const fetch = vi.fn((input: RequestInfo | URL): Promise<Response> => {
+      const url = input instanceof URL ? input : new URL(String(input), window.location.href);
+      requested.push(url.pathname);
+      if (url.pathname.endsWith("/org-zhixing.toml")) return configResponse;
+      if (url.pathname.endsWith("/org-zhixing.static.json")) return manifestResponse;
+      if (url.pathname.endsWith("/org-zhixing.gallery.json")) return galleryResponse;
+      return Promise.resolve(new Response("not found", { status: 404 }));
+    });
+
+    const mounting = mountStaticRouter("/gallery", fetch);
+    await vi.waitFor(() => {
+      expect(requested).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/org-zhixing\.toml$/),
+          expect.stringMatching(/org-zhixing\.static\.json$/),
+          expect.stringMatching(/org-zhixing\.gallery\.json$/),
+        ]),
+      );
+    });
+    resolveConfig(textResponse(configText));
+    resolveManifest(jsonResponse(staticSiteFixture()));
+    resolveGallery(jsonResponse(staticGalleryFixture()));
+    await mounting;
+    await waitForText("2 image items");
+  });
+
+  it("replaces the static initial shell without hydration or console errors", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await mountStaticRouter(
+      "/blogs",
+      fetchBlogStaticFixture(),
+      '<div data-initial-app-shell role="status">Loading Zhixing</div>',
+    );
+
+    await waitForText("First Article");
+    expect(document.querySelector("[data-initial-app-shell]")).toBeNull();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("opens accessible Mobile navigation and closes it after route selection", async () => {
+    await mountStaticRouter("/gallery");
+    await waitForText("2 image items");
+
+    const trigger = document.querySelector<HTMLButtonElement>('[aria-label="Open navigation"]');
+    expect(trigger).toBeTruthy();
+    expect(trigger?.getBoundingClientRect).toBeTypeOf("function");
+    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+    await act(async () => trigger?.click());
+
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeTruthy());
+    expect(trigger?.getAttribute("aria-expanded")).toBe("true");
+    expect(document.body.textContent).toContain("Choose a view from the life archive.");
+    const notes = document.querySelector<HTMLAnchorElement>('.mobile-nav-list a[href="/notes"]');
+    expect(notes).toBeTruthy();
+    await act(async () => notes?.click());
+
+    await waitForText("2 indexed notes from 2 Org sources");
+    expect(window.location.pathname).toBe("/notes");
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("handles static agenda program and inspector clicks through router search", async () => {
+    await mountStaticRouter("/agenda");
+
+    await waitForText("Classic");
+    expect(window.location.pathname).toBe("/agenda");
+    expect(window.location.search).toBe("");
+
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>('button[data-agenda-mode="auto"]')?.click();
+    });
+    await waitForText("Auto Grouping");
+    expect(window.location.pathname).toBe("/agenda");
+    expect(window.location.search).toContain("agenda=auto");
+    expect(document.querySelector('button[data-agenda-mode="auto"]')?.className).toContain(
+      "active",
+    );
+
+    await act(async () => {
+      document.querySelector<HTMLElement>("[data-agenda-rule-select]")?.click();
+    });
+    expect(window.location.search).toContain("rule=");
+
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>('button[data-agenda-panel="selectors"]')?.click();
+    });
+    await waitForText("Super-agenda selector coverage");
+    expect(window.location.search).toContain("panel=selectors");
+    expect(
+      document
+        .querySelector<HTMLButtonElement>('button[data-agenda-panel="selectors"]')
+        ?.getAttribute("aria-selected"),
+    ).toBe("true");
+  });
+
   const mountStaticRouter = async (
     path = "/gallery",
     fetch = fetchStaticFixture(),
+    initialHtml = "",
   ): Promise<ReturnType<typeof createOrgZhixingRouter>> => {
     window.history.replaceState(null, "", path);
     vi.stubGlobal("fetch", fetch);
     const rootNode = document.createElement("div");
     rootNode.id = "app";
+    rootNode.innerHTML = initialHtml;
     document.body.append(rootNode);
     const router = createOrgZhixingRouter({ getQueryClient: testQueryClientFactory() });
     await act(async () => {
@@ -190,6 +305,7 @@ const testQueryClientFactory = (): (() => Promise<import("@tanstack/react-query"
 
 const fetchStaticFixture = () => {
   const staticSite = staticSiteFixture();
+  const gallery = staticGalleryFixture();
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = input instanceof URL ? input : new URL(String(input), window.location.href);
     if (url.pathname.endsWith("/org-zhixing.toml")) {
@@ -197,6 +313,9 @@ const fetchStaticFixture = () => {
     }
     if (url.pathname.endsWith("/org-zhixing.static.json")) {
       return jsonResponse(staticSite);
+    }
+    if (url.pathname.endsWith("/org-zhixing.gallery.json")) {
+      return jsonResponse(gallery);
     }
     return new Response("not found", { status: 404 });
   });
@@ -223,12 +342,23 @@ const fetchBlogStaticFixture = () => {
 
 const staticSiteFixture = (): StaticSiteData => ({
   ...staticSiteBase(),
-  attachmentGallery: attachmentGalleryFromSources([
-    staticProjection(),
-    demoProjection(),
-    travelProjection(),
-  ]),
+  attachmentGallery: staticGallerySummary(),
   sources: [staticProjection(), demoProjection(), travelProjection()],
+});
+
+const staticGalleryFixture = (): StaticGalleryData => ({
+  schemaVersion: 1,
+  ...attachmentGalleryFromSources([staticProjection(), demoProjection(), travelProjection()]),
+});
+
+const staticGallerySummary = (): StaticGallerySummary => ({
+  shardPath: "org-zhixing.gallery.json",
+  recordCount: 2,
+  entryCount: 3,
+  sourceCount: 3,
+  label: "3 Org sources",
+  siteWide: true,
+  firstThumbnailPath: null,
 });
 
 const staticSiteBase = (): Omit<StaticSiteData, "sources"> => ({

@@ -6,6 +6,14 @@ export const attachmentPublicUrl = (
   sourceFile: string | undefined,
 ): string => publicAssetUrl(attachmentPublicPath(record, sourceFile)).toString();
 
+export const attachmentThumbnailUrl = (record: AttachmentDisplayRecord): string | null => {
+  const thumbnailPath = (record as AttachmentDisplayRecord & { thumbnailPath?: unknown })
+    .thumbnailPath;
+  return typeof thumbnailPath === "string" && thumbnailPath.length > 0
+    ? publicAssetUrl(thumbnailPath).toString()
+    : null;
+};
+
 export const attachmentPublicPath = (
   record: AttachmentDisplayRecord,
   sourceFile: string | undefined,

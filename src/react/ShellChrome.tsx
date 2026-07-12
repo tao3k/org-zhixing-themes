@@ -1,47 +1,98 @@
-import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { Link, useLocation } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import type { ContentShellData } from "../services/contentServices";
-import { lifeFacetFor, routePathForView } from "./routeViewHelpers";
+import type { ZhixingTheme } from "../library";
+import { renderReactSpaThemeSlot } from "./themeBinding";
+import { NavigationItems } from "./NavigationItems";
+import { ThemeVariantNavigation } from "./ThemeVariantNavigation";
+
+const MobileNavigationDrawer = lazy(() => import("./MobileNavigationDrawer"));
 
 export function ShellChrome({
   children,
   readerMode,
   shell,
+  theme,
+  activeVariantId,
+  onVariantChange,
 }: {
+  activeVariantId: string;
   children: ReactNode;
+  onVariantChange: (variantId: string) => void;
   readerMode: "library" | "zen";
   shell: ContentShellData;
+  theme: ZhixingTheme;
 }): ReactNode {
   return (
-    <main className={`shell${readerMode === "zen" ? " shell--zen" : ""}`}>
-      {readerMode === "library" ? <SiteHeader shell={shell} /> : null}
-      {readerMode === "library" ? <SiteHero title={shell.siteConfig.title} /> : null}
+    <main
+      className={`shell theme-surface theme-surface--${theme.name}${readerMode === "zen" ? " shell--zen" : ""}`}
+      data-theme-surface={theme.name}
+    >
+      {readerMode === "library"
+        ? renderReactSpaThemeSlot(theme, "site-header", { shell }, <SiteHeader shell={shell} />)
+        : null}
+      {readerMode === "library" ? (
+        <ThemeVariantNavigation
+          activeVariantId={activeVariantId}
+          onVariantChange={onVariantChange}
+          theme={theme}
+        />
+      ) : null}
+      {readerMode === "library"
+        ? renderReactSpaThemeSlot(
+            theme,
+            "site-hero",
+            { title: shell.siteConfig.title },
+            <SiteHero title={shell.siteConfig.title} />,
+          )
+        : null}
       <section className="viewer-pane">{children}</section>
-      {readerMode === "library" ? <RuntimeState shell={shell} /> : null}
+      {readerMode === "library"
+        ? renderReactSpaThemeSlot(theme, "runtime-state", { shell }, <RuntimeState shell={shell} />)
+        : null}
     </main>
   );
 }
 
 function SiteHeader({ shell }: { shell: ContentShellData }): ReactNode {
+  const location = useLocation();
+  const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const mobileNavigationTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => setMobileNavigationOpen(false), [location.pathname]);
+
   return (
     <header className="site-header">
       <Link className="site-brand" to="/blogs" aria-label="Zhixing home">
         <span>知行合一</span>
         <small>Zhixing</small>
       </Link>
-      <nav id="tabs" className="site-nav" aria-label="Life archive navigation">
-        {shell.siteConfig.menu.map((item) => (
-          <Link
-            key={item.view}
-            to={routePathForView(item.view)}
-            className="site-nav-item"
-            activeProps={{ className: "site-nav-item active" }}
-          >
-            <span>{item.name}</span>
-            <small>{lifeFacetFor(item.view)}</small>
-          </Link>
-        ))}
+      <nav id="tabs" className="site-nav site-nav--desktop" aria-label="Life archive navigation">
+        <NavigationItems shell={shell} />
       </nav>
+      <button
+        ref={mobileNavigationTriggerRef}
+        type="button"
+        className="mobile-menu-trigger"
+        aria-label="Open navigation"
+        aria-haspopup="dialog"
+        aria-expanded={mobileNavigationOpen}
+        aria-controls="mobile-navigation-drawer"
+        onClick={() => setMobileNavigationOpen(true)}
+      >
+        <span aria-hidden="true">☰</span>
+        <span>Menu</span>
+      </button>
+      {mobileNavigationOpen ? (
+        <Suspense fallback={null}>
+          <MobileNavigationDrawer
+            open
+            onOpenChange={setMobileNavigationOpen}
+            returnFocusRef={mobileNavigationTriggerRef}
+            shell={shell}
+          />
+        </Suspense>
+      ) : null}
       <output id="status" className="site-status">
         {shell.staticSite ? "static site-wide" : "live source"}
       </output>

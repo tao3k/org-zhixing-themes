@@ -2,17 +2,22 @@ import { createHash } from "node:crypto";
 import { access, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as Effect from "effect/Effect";
 import { Window } from "happy-dom";
 import init, { Org } from "orgize";
 import { parse } from "smol-toml";
+import {
+  generateAttachmentThumbnail,
+  resetAttachmentThumbnailOutput,
+} from "../src/node/attachmentThumbnailGenerator.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const publicRoot = resolve(projectRoot, "public");
-const outputRoot = resolve(projectRoot, ".cache/org-zhixing");
+const outputRoot = resolve(projectRoot, process.env.ORG_ZHIXING_CACHE_ROOT ?? ".cache/org-zhixing");
 const outputPath = resolve(outputRoot, "static-site.json");
+const galleryOutputPath = resolve(outputRoot, "org-zhixing.gallery.json");
 const sourceShardPublicDir = "org-zhixing.sources";
 const sourceShardRoot = resolve(outputRoot, sourceShardPublicDir);
 const sourceMemoryShardPublicDir = "org-zhixing.memory";
@@ -23,7 +28,10 @@ const sourceAttachmentShardPublicDir = "org-zhixing.attachments";
 const sourceAttachmentShardRoot = resolve(outputRoot, sourceAttachmentShardPublicDir);
 const sourceAgendaShardPublicDir = "org-zhixing.agenda";
 const sourceAgendaShardRoot = resolve(outputRoot, sourceAgendaShardPublicDir);
-const configPath = "org-zhixing.toml";
+const configFilePath = process.env.ORG_ZHIXING_CONFIG
+  ? resolve(projectRoot, process.env.ORG_ZHIXING_CONFIG)
+  : resolve(publicRoot, "org-zhixing.toml");
+const configPath = basename(configFilePath);
 const htmlWindow = new Window({
   settings: {
     navigation: {
@@ -34,11 +42,12 @@ const htmlWindow = new Window({
 });
 
 const main = async () => {
-  const configText = await readFile(resolve(publicRoot, configPath), "utf8");
+  const configText = await readFile(configFilePath, "utf8");
   const config = parseConfig(configText);
   config.sources = mergeSources(config.sources, await discoverOrgSources(config.contentRoot));
   const require = createRequire(import.meta.url);
   await init({ module_or_path: readFileSync(require.resolve("orgize/wasm")) });
+  await resetAttachmentThumbnailOutput(outputRoot);
 
   const sources = [];
   for (const source of config.sources) {
@@ -50,6 +59,12 @@ const main = async () => {
   }
 
   await writeSourceShards(sources);
+  const attachmentGallery = projectAttachmentGalleryView(sources);
+  await writeFile(
+    galleryOutputPath,
+    `${JSON.stringify({ schemaVersion: 1, ...attachmentGallery })}\n`,
+    "utf8",
+  );
   const manifest = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -59,7 +74,15 @@ const main = async () => {
       buildTime: Org.buildTime,
       gitHash: Org.gitHash,
     },
-    attachmentGallery: projectAttachmentGalleryView(sources),
+    attachmentGallery: {
+      shardPath: "org-zhixing.gallery.json",
+      recordCount: attachmentGallery.records.length,
+      entryCount: attachmentGallery.entryCount,
+      sourceCount: attachmentGallery.sourceCount,
+      label: attachmentGallery.label,
+      siteWide: attachmentGallery.siteWide,
+      firstThumbnailPath: attachmentGallery.records[0]?.record?.thumbnailPath ?? null,
+    },
     blog: projectBlogIndex(sources),
     travel: projectTravelView(sources),
     sources: sources.map(sourceSummary),
@@ -425,10 +448,18 @@ const articleDateText = (article) =>
 const projectAttachmentInventory = async (org, config, source) => {
   const inventory = parseJson(org.attachmentInventoryJson(JSON.stringify(config.attachments)));
   const display = await Promise.all(
-    inventory.display.map(async (record) => ({
-      ...record,
-      publicExists: await publicAttachmentExists(record, source.sourceFile),
-    })),
+    inventory.display.map(async (record) => {
+      const publicPath = attachmentPublicPath(record, source.sourceFile);
+      const publicExists = await publicAttachmentExists(record, source.sourceFile);
+      const thumbnailPath =
+        publicExists && record.mediaKind === "image"
+          ? await generateAttachmentThumbnail({
+              sourcePath: resolve(publicRoot, publicPath),
+              outputRoot,
+            })
+          : null;
+      return { ...record, publicExists, thumbnailPath };
+    }),
   );
   return { ...inventory, display };
 };

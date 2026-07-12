@@ -12,6 +12,7 @@ export type SiteConfig = {
   agenda: AgendaSettings;
   attachments: AttachmentSettings;
   behavior: SiteBehavior;
+  theme: SiteThemeSettings;
   menu: MenuItem[];
   sources: SourceItem[];
 };
@@ -54,6 +55,12 @@ export type SiteBehavior = {
   lazyLint: boolean;
 };
 
+export type SiteThemeSettings = {
+  id: string;
+  variant: string;
+  config: Readonly<Record<string, unknown>>;
+};
+
 type TomlRecord = Record<string, unknown>;
 
 const defaultContentDir = "blog";
@@ -61,8 +68,11 @@ const defaultSourcePath = "org-zhixing-demo.org";
 const defaultSourceId = "demo";
 
 export const loadSiteConfig = async (): Promise<SiteConfig> => {
-  const configPath = configPathFromUrl();
-  const response = await fetch(publicAssetUrl(configPath), { cache: "no-store" });
+  if (typeof __ORG_ZHIXING_CONFIG_SOURCE__ === "string") {
+    return parseSiteConfig(__ORG_ZHIXING_CONFIG_SOURCE__);
+  }
+  const configPath = "org-zhixing.toml";
+  const response = await fetch(publicAssetUrl(configPath));
   if (!response.ok) {
     throw new Error(`failed to load ${configPath}: HTTP ${response.status}`);
   }
@@ -116,8 +126,12 @@ export const showPerformanceFromUrl = (fallback: boolean): boolean => {
   return value !== "0" && value !== "false";
 };
 
-const parseSiteConfig = (source: string): SiteConfig => {
-  const raw = asRecord(parse(source));
+export const parseSiteConfig = (source: string): SiteConfig => {
+  return parseSiteConfigValue(parse(source));
+};
+
+export const parseSiteConfigValue = (value: unknown): SiteConfig => {
+  const raw = asRecord(value);
   const site = asOptionalRecord(raw.site);
   const content = asOptionalRecord(raw.content);
   const ui = asOptionalRecord(raw.ui);
@@ -140,6 +154,7 @@ const parseSiteConfig = (source: string): SiteConfig => {
     agenda,
     attachments,
     behavior,
+    theme: parseTheme(raw),
     menu: parseMenu(ui?.views),
     sources:
       sources.length > 0
@@ -178,6 +193,25 @@ const parseBehavior = (raw: TomlRecord | null, ui: TomlRecord | null): SiteBehav
   showPerformance: readBoolean(ui, "show_timings", true),
   lazyLint: readBoolean(raw, "lazy_lint", true),
 });
+
+const parseTheme = (raw: TomlRecord): SiteThemeSettings => {
+  if (asOptionalRecord(raw.theme)) {
+    throw new Error(
+      'THEME-E011 legacy [theme] is not supported; use top-level theme = "<id>", theme_variant = "<variant>", and [theme_config]',
+    );
+  }
+  if (raw.theme !== undefined && typeof raw.theme !== "string") {
+    throw new Error("THEME-E011 top-level theme must be a string");
+  }
+  if (raw.theme_variant !== undefined && typeof raw.theme_variant !== "string") {
+    throw new Error("THEME-E011 top-level theme_variant must be a string");
+  }
+  return {
+    id: readString(raw, "theme", "elegant-blog"),
+    variant: readString(raw, "theme_variant", "default"),
+    config: asOptionalRecord(raw.theme_config) ?? {},
+  };
+};
 
 export const agendaViewRequest = (agenda: AgendaSettings): OrgizeAgendaViewJsonRequestDto => ({
   start: agenda.start,
@@ -270,17 +304,6 @@ const defaultMenu = (): MenuItem[] => [
   { name: "Memory", view: "memory", weight: 25 },
   { name: "Agenda", view: "agenda", weight: 30 },
 ];
-
-const configPathFromUrl = (): string => {
-  const candidate = new URLSearchParams(window.location.search).get("config");
-  if (!candidate) {
-    return "org-zhixing.toml";
-  }
-  if (!candidate.endsWith(".toml") || candidate.includes("/") || candidate.includes("\\")) {
-    throw new Error("config must be a root public TOML file");
-  }
-  return candidate;
-};
 
 const normalizeDir = (value: string): string => {
   const normalized = value.replace(/^\/+|\/+$/g, "");

@@ -17,7 +17,7 @@ describe("React Router boundary", () => {
   it("normalizes the GitHub Pages project base path without a router plugin", () => {
     expect(normalizeOrgZhixingBasePath("")).toBe("/");
     expect(normalizeOrgZhixingBasePath("/")).toBe("/");
-    expect(normalizeOrgZhixingBasePath("org-zhixing-ts")).toBe("/org-zhixing-ts");
-    expect(normalizeOrgZhixingBasePath("/org-zhixing-ts/")).toBe("/org-zhixing-ts");
+    expect(normalizeOrgZhixingBasePath("org-zhixing-themes")).toBe("/org-zhixing-themes");
+    expect(normalizeOrgZhixingBasePath("/org-zhixing-themes/")).toBe("/org-zhixing-themes");
   });
 });

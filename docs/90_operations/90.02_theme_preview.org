@@ -1,0 +1,39 @@
+#+title: Theme Preview Workflow
+
+* List available themes
+
+#+begin_src sh
+direnv exec . just theme-list
+#+end_src
+
+* Start a temporary preview
+
+Elegant Blog:
+
+#+begin_src sh
+direnv exec . just theme-preview elegant-blog default 5173
+#+end_src
+
+Minimal Notes paper variant:
+
+#+begin_src sh
+direnv exec . just theme-preview minimal-notes paper 5173
+#+end_src
+
+Minimal Notes midnight variant:
+
+#+begin_src sh
+direnv exec . just theme-preview minimal-notes midnight 5173
+#+end_src
+
+The command prints the exact URL to open. It preserves the tracked
+=public/org-zhixing.toml=, uses a temporary config while the server is running,
+and restores the canonical generated registry when the process exits or receives
+=Ctrl-C=. Theme preview uses the root development base path; the production
+=base_path= remains unchanged.
+
+* Validate a theme package
+
+#+begin_src sh
+direnv exec . just theme-check themes/minimal-notes
+#+end_src

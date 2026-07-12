@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "agenda-cockpit",
+  "route": "/agenda",
+  "theme": "elegant-blog",
+  "variant": "default",
+  "fixture": "agenda-heavy",
+  "projects": ["compact-phone", "modern-phone", "tablet", "desktop"],
+  "actions": [
+    { "type": "goto" },
+    { "type": "click", "target": "[data-agenda-panel]" },
+    { "type": "screenshot", "target": "agenda" }
+  ],
+  "gates": {
+    "maxHorizontalOverflowPx": 0,
+    "maxConsoleErrors": 0,
+    "maxPageErrors": 0,
+    "minTapTargetPx": 44
+  }
+}

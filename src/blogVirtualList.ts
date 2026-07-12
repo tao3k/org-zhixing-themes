@@ -1,12 +1,4 @@
-import {
-  Virtualizer,
-  elementScroll,
-  measureElement,
-  observeElementOffset,
-  observeElementRect,
-  type Rect,
-  type VirtualizerOptions,
-} from "@tanstack/virtual-core";
+import { Virtualizer, elementScroll, type VirtualizerOptions } from "@tanstack/virtual-core";
 import type { AppDomNodes } from "./appDom";
 
 const virtualListSelector = "[data-blog-virtual-list]";
@@ -80,9 +72,6 @@ const virtualizeBlogList = (list: HTMLElement): VirtualListInstance => {
         return row;
       }),
     );
-    for (const row of spacer.querySelectorAll<HTMLElement>(".blog-virtual-row")) {
-      virtualizer.measureElement(row);
-    }
   };
 
   virtualizer = new Virtualizer<HTMLElement, HTMLElement>({
@@ -99,7 +88,6 @@ const virtualizeBlogList = (list: HTMLElement): VirtualListInstance => {
     observeElementRect: observeBlogElementRect,
     observeElementOffset: observeBlogElementOffset,
     scrollToFn: elementScroll,
-    measureElement,
     onChange: render,
   });
 
@@ -122,21 +110,25 @@ const observeBlogElementRect: VirtualizerOptions<HTMLElement, HTMLElement>["obse
   instance,
   callback,
 ) => {
-  const emitRect = (rect?: Rect): void => {
-    const element = instance.scrollElement;
-    callback({
-      height: rect?.height || element?.clientHeight || 640,
-      width: rect?.width || element?.clientWidth || 960,
-    });
-  };
-  emitRect();
-  return observeElementRect(instance, emitRect);
+  const element = instance.scrollElement;
+  callback({
+    height: element?.clientHeight || 640,
+    width: element?.clientWidth || 960,
+  });
+  return () => {};
 };
 
 const observeBlogElementOffset: VirtualizerOptions<
   HTMLElement,
   HTMLElement
 >["observeElementOffset"] = (instance, callback) => {
-  callback(instance.scrollElement?.scrollTop ?? 0, false);
-  return observeElementOffset(instance, callback);
+  const element = instance.scrollElement;
+  if (!element) {
+    callback(0, false);
+    return () => {};
+  }
+  const onScroll = (): void => callback(element.scrollTop, false);
+  callback(element.scrollTop, false);
+  element.addEventListener("scroll", onScroll, { passive: true });
+  return () => element.removeEventListener("scroll", onScroll);
 };
