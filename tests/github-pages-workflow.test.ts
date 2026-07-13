@@ -10,6 +10,10 @@ describe("GitHub Pages workflow", () => {
   it("deploys the build artifact only after the complete CI gates pass", () => {
     const workflow = readFileSync(ciWorkflowPath, "utf8");
 
+    expect(workflow).toContain("actions/checkout@v7");
+    expect(workflow).toContain("actions/setup-node@v6");
+    expect(workflow).not.toContain("actions/checkout@v4");
+    expect(workflow).not.toContain("actions/setup-node@v4");
     expect(workflow).toContain("actions/configure-pages@v6");
     expect(workflow).toContain("actions/upload-pages-artifact@v5");
     expect(workflow).toContain("actions/deploy-pages@v5");
