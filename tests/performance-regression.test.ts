@@ -1,5 +1,7 @@
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { describe, expect, it } from "vitest";
 import { renderView } from "../src/render";
@@ -30,7 +32,10 @@ describe("Org Zhixing performance regression gates", () => {
   });
 
   it("caches source-derived static Travel projections when manifest travel is absent", () => {
-    const staticSite = staticSiteWithTravelRecords({ sources: 8, recordsPerSource: 100 });
+    const staticSite = staticSiteWithTravelRecords({
+      sources: 8,
+      recordsPerSource: 100,
+    });
     const first = travelViewFromStaticSite(staticSite);
     const second = travelViewFromStaticSite(staticSite);
     const cached = sample("cachedTravelProjection", () => travelViewFromStaticSite(staticSite), 50);
@@ -255,10 +260,17 @@ describe("Org Zhixing performance regression gates", () => {
   });
 
   it("projects Blog article display titles from Org #+TITLE metadata", () => {
-    execFileSync("node", ["scripts/generate-static-site.mjs"], { stdio: "pipe" });
-    const manifest = JSON.parse(
-      readFileSync(".cache/org-zhixing/static-site.json", "utf8"),
-    ) as StaticSiteData;
+    const cacheRoot = mkdtempSync(join(tmpdir(), "org-zhixing-static-test-"));
+    let manifest: StaticSiteData;
+    try {
+      execFileSync("node", ["--import", "tsx", "scripts/generate-static-site.mjs"], {
+        env: { ...process.env, ORG_ZHIXING_CACHE_ROOT: cacheRoot },
+        stdio: "pipe",
+      });
+      manifest = JSON.parse(readFileSync(join(cacheRoot, "static-site.json"), "utf8"));
+    } finally {
+      rmSync(cacheRoot, { force: true, recursive: true });
+    }
     const sourceTitles = new Map(
       manifest.sources.map((source) => [source.sourceFile, source.orgTitle ?? source.name]),
     );
@@ -274,7 +286,7 @@ describe("Org Zhixing performance regression gates", () => {
     expect(travelArticle?.title).toBe("游山玩水");
     expect(travelArticle?.sourceName).toBe("游山玩水");
     expect(manifest.blog?.articles.map((article) => article.title)).toContain("Org Syntax Atlas");
-  });
+  }, 15_000);
 
   it("keeps Zen reader progress as a lazy reading affordance", () => {
     const router = readFileSync("src/react/router.tsx", "utf8");

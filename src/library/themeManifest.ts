@@ -22,4 +22,9 @@ export type ThemePackageManifest = {
   configSchema?: string;
   preview?: string;
   assets?: ThemeAssetManifest;
+  content?: {
+    base: "public" | "workspace";
+    directory: string;
+    routeMode: "application" | "documents";
+  };
 };

@@ -1,0 +1,73 @@
+{
+  "name": "@org-zhixing/theme-documents",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "@tanstack/react-router": "^1.170.0",
+    "react": "^19.0.0"
+  },
+  "orgZhixing": {
+    "schemaVersion": 1,
+    "id": "documents",
+    "displayName": "Documents",
+    "engine": ">=0.1 <0.2",
+    "defaultVariant": "mocha",
+    "variants": [
+      "latte",
+      "frappe",
+      "macchiato",
+      "mocha"
+    ],
+    "capabilities": [
+      "docs",
+      "search",
+      "org-roam",
+      "backlinks",
+      "graph"
+    ],
+    "content": {
+      "base": "workspace",
+      "directory": "docs",
+      "routeMode": "documents"
+    },
+    "publicSlots": [
+      {
+        "id": "site-header",
+        "strategies": [
+          "replace"
+        ],
+        "runtime": "universal",
+        "stability": "stable"
+      },
+      {
+        "id": "site-hero",
+        "strategies": [
+          "replace"
+        ],
+        "runtime": "universal",
+        "stability": "stable"
+      },
+      {
+        "id": "runtime-state",
+        "strategies": [
+          "replace"
+        ],
+        "runtime": "universal",
+        "stability": "stable"
+      }
+    ],
+    "renderers": {
+      "react-spa": {
+        "export": ".",
+        "serverComponents": false
+      }
+    },
+    "renderModes": [
+      "static"
+    ]
+  }
+}

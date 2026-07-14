@@ -1,0 +1,230 @@
+.theme-surface--documents .org-poo-flow {
+  margin: 1.5rem 0;
+  overflow: clip;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.theme-surface--documents .org-poo-flow__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.theme-surface--documents .org-poo-flow__status {
+  min-width: 0;
+  margin-inline-start: auto;
+  overflow: hidden;
+  color: color-mix(in srgb, currentColor 68%, transparent);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-surface--documents .org-poo-flow__run {
+  padding: 0.45rem 0.8rem;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 0.55rem;
+  color: inherit;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.theme-surface--documents .org-poo-flow__run:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.theme-surface--documents .org-poo-flow__graph-host {
+  height: clamp(20rem, 58vh, 42rem);
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.theme-surface--documents .poo-flow-graph {
+  width: 100%;
+  height: 100%;
+  color: inherit;
+}
+
+.theme-surface--documents .poo-flow-graph .react-flow__minimap,
+.theme-surface--documents .poo-flow-graph .react-flow__controls-button {
+  border-color: color-mix(in srgb, currentColor 18%, transparent);
+  color: inherit;
+  background: color-mix(in srgb, #1f2335 94%, transparent);
+  fill: currentColor;
+}
+
+.theme-surface--documents .poo-flow-graph .react-flow__minimap-mask {
+  fill: color-mix(in srgb, #1f2335 76%, transparent);
+}
+
+.theme-surface--documents .poo-flow-graph .react-flow__edge-path {
+  stroke: color-mix(in srgb, currentColor 58%, transparent);
+}
+
+.theme-surface--documents .poo-flow-node {
+  display: flex;
+  align-items: center;
+  border-color: color-mix(in srgb, currentColor 24%, transparent);
+  color: inherit;
+  background: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.theme-surface--documents .poo-flow-node--running {
+  border-color: #82aaff;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #82aaff 20%, transparent);
+}
+
+.theme-surface--documents .poo-flow-node--completed {
+  border-color: #c3e88d;
+  opacity: 0.86;
+}
+
+.theme-surface--documents .poo-flow-node--failed {
+  border-color: #ff757f;
+}
+
+.theme-surface--documents .poo-flow-node__content {
+  display: grid;
+  width: 100%;
+  gap: 0.2rem;
+  text-align: start;
+}
+
+.theme-surface--documents .poo-flow-node__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.theme-surface--documents .poo-flow-node__step,
+.theme-surface--documents .poo-flow-node__state {
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  font-family: var(--documents-mono, ui-monospace, monospace);
+  text-transform: uppercase;
+}
+
+.theme-surface--documents .poo-flow-node--running .poo-flow-node__state {
+  color: #82aaff;
+}
+
+.theme-surface--documents .poo-flow-node--completed .poo-flow-node__state {
+  color: #c3e88d;
+}
+
+.theme-surface--documents .poo-flow-node__content small {
+  overflow: hidden;
+  opacity: 0.7;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-surface--documents .poo-flow-edge--pending .react-flow__edge-path {
+  opacity: 0.34;
+}
+
+.theme-surface--documents .poo-flow-edge--running .react-flow__edge-path {
+  stroke: #82aaff;
+  stroke-width: 2.5;
+}
+
+.theme-surface--documents .poo-flow-edge--completed .react-flow__edge-path {
+  stroke: #c3e88d;
+  opacity: 0.7;
+}
+
+.theme-surface--documents .poo-flow-runner {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: calc(100% - 7rem);
+  padding: 0.45rem;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, #1f2335 92%, transparent);
+  box-shadow: 0 0.8rem 2.4rem color-mix(in srgb, #000 30%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.theme-surface--documents .poo-flow-runner button,
+.theme-surface--documents .poo-flow-runner select,
+.theme-surface--documents .poo-flow-inspector button {
+  min-height: 2rem;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 0.5rem;
+  color: inherit;
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.theme-surface--documents .poo-flow-runner button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.theme-surface--documents .poo-flow-runner__primary {
+  border-color: #82aaff !important;
+  background: color-mix(in srgb, #82aaff 20%, transparent) !important;
+}
+
+.theme-surface--documents .poo-flow-runner__status {
+  min-width: 10.5rem;
+  color: color-mix(in srgb, currentColor 76%, transparent);
+  font-family: var(--documents-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.theme-surface--documents .poo-flow-runner label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+}
+
+.theme-surface--documents .poo-flow-inspector {
+  display: grid;
+  min-width: 12rem;
+  max-width: 18rem;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, #1f2335 94%, transparent);
+  box-shadow: 0 0.8rem 2.4rem color-mix(in srgb, #000 28%, transparent);
+}
+
+.theme-surface--documents .poo-flow-inspector button {
+  justify-self: end;
+  min-width: 2rem;
+  padding: 0;
+}
+
+.theme-surface--documents .poo-flow-inspector code {
+  color: #c3e88d;
+}
+
+@media (max-width: 720px) {
+  .theme-surface--documents .poo-flow-runner {
+    max-width: calc(100% - 1rem);
+    flex-wrap: wrap;
+  }
+
+  .theme-surface--documents .poo-flow-runner__status {
+    width: 100%;
+  }
+}
+
+.theme-surface--documents .org-poo-flow > pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}

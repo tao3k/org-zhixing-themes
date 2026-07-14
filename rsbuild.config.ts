@@ -8,6 +8,9 @@ import { parse } from "smol-toml";
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const orgizePackageRoot = resolve(projectRoot, "node_modules/orgize");
 const publicRoot = resolve(projectRoot, "public");
+const externalContentRoot = process.env.ORG_ZHIXING_CONTENT_DIR
+  ? resolve(process.env.ORG_ZHIXING_CONTENT_DIR)
+  : null;
 const cacheRoot = resolve(projectRoot, process.env.ORG_ZHIXING_CACHE_ROOT ?? ".cache/org-zhixing");
 const publicConfigPath = process.env.ORG_ZHIXING_CONFIG
   ? resolve(projectRoot, process.env.ORG_ZHIXING_CONFIG)
@@ -127,7 +130,7 @@ export default defineConfig({
     historyApiFallback: true,
     publicDir: {
       name: publicRoot,
-      copyOnBuild: true,
+      copyOnBuild: !externalContentRoot,
       watch: true,
     },
   },
@@ -140,6 +143,7 @@ export default defineConfig({
       {
         paths: [
           resolve(publicRoot, "**/*.{org,toml}"),
+          ...(externalContentRoot ? [resolve(externalContentRoot, "**/*.org")] : []),
           resolve(projectRoot, "index.html"),
           ...orgizePackageWatchFiles,
         ],
@@ -149,6 +153,15 @@ export default defineConfig({
   },
   splitChunks: {
     chunks: "all",
+  },
+  tools: {
+    rspack: (_config, { appendRules }) => {
+      appendRules({
+        test: /typst_ts_(?:web_compiler|renderer)_bg\.wasm$/,
+        resourceQuery: /url/,
+        type: "asset/resource",
+      });
+    },
   },
 });
 

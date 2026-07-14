@@ -67,14 +67,19 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Cross-engine mobile scenarios
-        run: npm run scenario:browser
-
       - name: Lighthouse mobile scenarios
         run: npm run scenario:lighthouse
 
+      - name: Cross-engine mobile scenarios
+        run: npm run scenario:browser
+
+      - name: Documents Mermaid performance scenario
+        run: npm run scenario:documents
+
   pages-artifact:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs:
       - npm-test
       - scenario-mobile
@@ -108,7 +113,9 @@ jobs:
           path: dist
 
   deploy-pages:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs:
       - pages-artifact
     runs-on: ubuntu-latest

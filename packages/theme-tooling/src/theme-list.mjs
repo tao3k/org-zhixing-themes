@@ -21,6 +21,8 @@ export const discoverThemes = async (workspaceRoot = process.cwd()) => {
         if (!metadata.id) return null;
         return {
           directory,
+          capabilities: Array.isArray(metadata.capabilities) ? metadata.capabilities : [],
+          content: metadata.content ?? null,
           defaultVariant: metadata.defaultVariant ?? metadata.variants?.[0] ?? "default",
           id: metadata.id ?? entry.name,
           name: metadata.name ?? manifest.name ?? entry.name,

@@ -15,3 +15,4 @@ should choose a declared category and an unused coordinate before adding a file.
 - [[file:10_architecture/10.03_rsbuild_react_router_effect_stack.org][10.03 Rsbuild React Router Effect Stack]]
 - [[file:20_design/20.01_elegant_system.org][20.01 Elegant System]]
 - [[file:90_operations/90.01_performance_notes.org][90.01 Performance Notes]]
+- [[file:90_operations/90.04_github_pages_deployment.org][90.04 GitHub Pages Deployment]]

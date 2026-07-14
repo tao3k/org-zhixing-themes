@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import {
   replaceThemeSelection,
+  replaceThemePreviewSelection,
   resolveThemePreview,
   themePreviewConfigName,
   themePreviewEnvironment,
@@ -18,7 +19,7 @@ describe("theme preview tooling", () => {
     );
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toBe("elegant-blog\nminimal-notes\n");
+    expect(result.stdout).toBe("documents\nelegant-blog\nminimal-notes\n");
     expect(result.stderr).toBe("");
   });
 
@@ -36,6 +37,22 @@ describe("theme preview tooling", () => {
       id: "minimal-notes",
       defaultVariant: "paper",
     });
+    await expect(resolveThemePreview({ theme: "documents" })).resolves.toMatchObject({
+      id: "documents",
+      defaultVariant: "mocha",
+      variants: ["latte", "frappe", "macchiato", "mocha"],
+    });
+  });
+
+  it("binds the docs theme preview to workspace docs content and the root route", async () => {
+    const source = await readFile("public/org-zhixing.toml", "utf8");
+    const docsTheme = await resolveThemePreview({ theme: "documents" });
+    const preview = replaceThemePreviewSelection(source, docsTheme);
+
+    expect(preview).toContain('theme = "documents"');
+    expect(preview).toContain('content_dir = "docs"');
+    expect(preview).toContain('content_base = "workspace"');
+    expect(themePreviewUrl("5195", docsTheme)).toBe("http://127.0.0.1:5195/");
   });
 
   it("uses a root development base while keeping the selected config authoritative", async () => {
@@ -47,6 +64,16 @@ describe("theme preview tooling", () => {
       ORG_ZHIXING_BASE_PATH: "/",
       ORG_ZHIXING_CACHE_ROOT: "/tmp/cache-5195",
       ORG_ZHIXING_CONFIG: "/tmp/preview.toml",
+    });
+    expect(
+      themePreviewEnvironment(
+        {},
+        "/tmp/preview.toml",
+        "/tmp/cache-5195",
+        "/workspace/poo-flow/docs",
+      ),
+    ).toMatchObject({
+      ORG_ZHIXING_CONTENT_DIR: "/workspace/poo-flow/docs",
     });
     expect(await readFile("scripts/generate-static-site.mjs", "utf8")).toContain(
       "process.env.ORG_ZHIXING_CONFIG",

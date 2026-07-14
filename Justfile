@@ -1,5 +1,7 @@
 set dotenv-load := false
 
+poo-flow-docs := env_var_or_default("POO_FLOW_DOCS", "../../../poo-flow/docs")
+
 default:
     @just --list
 
@@ -20,6 +22,19 @@ theme-check theme="themes/elegant-blog":
 # Preview a theme without modifying the tracked org-zhixing.toml.
 theme-preview theme="elegant-blog" port="5173":
     node packages/theme-tooling/src/theme-preview.mjs --theme {{theme}} --port {{port}}
+
+# Preview the poo-flow Org corpus with the documents theme.
+documents-poo-flow port="5198":
+    npm run test:docs -- "{{poo-flow-docs}}"
+    node packages/theme-tooling/src/theme-preview.mjs --theme documents --content-dir "{{poo-flow-docs}}" --port {{port}}
+
+# Validate Mermaid syntax in the poo-flow Org corpus without rendering a browser page.
+documents-check content=poo-flow-docs:
+    npm run test:docs -- "{{content}}"
+
+# Run the fixed documents/Mermaid browser performance gate.
+scenario-documents:
+    npm run scenario:documents
 
 typecheck:
     npm run typecheck

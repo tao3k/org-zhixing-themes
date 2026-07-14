@@ -1,0 +1,49 @@
+#+title: Documents Mermaid Performance Scenario
+
+* Immediate architecture
+
+This diagram is intentionally inside the initial desktop viewport. It measures
+the user-visible path from navigation through Org projection to the first SVG.
+
+#+begin_src mermaid
+flowchart LR
+  Org[Org source] --> Parse[Orgize projection]
+  Parse --> Queue[Visible render queue]
+  Queue --> SVG[Mermaid SVG]
+#+end_src
+
+* Reading interval
+
+The benchmark keeps real document prose between diagrams so that later figures
+exercise intersection-driven rendering instead of being rendered eagerly.
+
+The documents theme must keep text interactive while optional diagrams are
+prepared. Navigation, selection, search, and scrolling cannot wait for Mermaid.
+
+The second paragraph creates a stable reading interval. It also makes the
+scenario representative of architecture notes rather than a diagram gallery.
+
+* Deferred execution graph
+
+#+begin_src mermaid
+sequenceDiagram
+  participant Reader
+  participant Documents
+  participant Mermaid
+  Reader->>Documents: scroll near diagram
+  Documents->>Mermaid: enqueue visible source
+  Mermaid-->>Documents: SVG ready
+  Documents-->>Reader: interactive diagram
+#+end_src
+
+* Theme projection
+
+Theme changes reuse the loaded Mermaid module and initialize its effective
+configuration once before redrawing visible figures.
+
+#+begin_src mermaid
+stateDiagram-v2
+  [*] --> Mocha
+  Mocha --> Latte: appearance change
+  Latte --> Mocha: appearance change
+#+end_src

@@ -24,6 +24,7 @@ import {
 import { record } from "./modelFixtures";
 import { generatedThemeCatalog, generatedThemeEntries } from "../src/generated/themeRegistry";
 import minimalNotesTheme from "@org-zhixing/theme-minimal-notes";
+import documentsTheme from "@org-zhixing/theme-documents";
 
 const testThemeApi: ThemeApi = {
   renderView,
@@ -40,17 +41,41 @@ describe("Org Zhixing library theme contract", () => {
       variants: ["default"],
       renderModes: ["static"],
     });
-    expect(generatedThemeCatalog.map(({ id }) => id)).toEqual(["elegant-blog", "minimal-notes"]);
+    expect(generatedThemeCatalog.map(({ id }) => id)).toEqual([
+      "documents",
+      "elegant-blog",
+      "minimal-notes",
+    ]);
     expect(generatedThemeEntries.map(([id, theme]) => [id, theme.name])).toEqual([
       ["elegant-blog", "elegant-blog"],
-      ["minimal-notes", "minimal-notes"],
     ]);
     expect(
       resolveConfiguredTheme(
-        createDefaultThemeRegistry(),
+        createThemeRegistry([minimalNotesTheme]),
         parseSiteConfig('theme = "minimal-notes"\ntheme_variant = "paper"'),
       ).name,
     ).toBe("minimal-notes");
+  });
+
+  it("ships Documents as a Catppuccin multi-flavor documentation theme", () => {
+    expect(documentsTheme.manifest).toMatchObject({
+      id: "documents",
+      defaultVariant: "mocha",
+      variants: ["latte", "frappe", "macchiato", "mocha"],
+      capabilities: expect.arrayContaining(["docs", "org-roam", "backlinks", "graph"]),
+    });
+    expect(documentsTheme.variants?.map(({ id }) => id)).toEqual([
+      "latte",
+      "frappe",
+      "macchiato",
+      "mocha",
+    ]);
+    expect(documentsTheme.variants?.find(({ id }) => id === "mocha")?.tokens.color).toEqual({
+      canvas: "#1e1e2e",
+      surface: "#313244",
+      text: "#cdd6f4",
+      accent: "#cba6f7",
+    });
   });
 
   it("lets downstream themes render through the public library entrypoint", async () => {

@@ -14,6 +14,7 @@ export const stableShellSlots = [
   "site-hero",
   "runtime-state",
   "blog-index",
+  "theme-controls",
 ] as const;
 export type StableShellSlot = (typeof stableShellSlots)[number];
 

@@ -5,24 +5,76 @@ import type { ZhixingTheme } from "../library";
 import { renderReactSpaThemeSlot } from "./themeBinding";
 import { NavigationItems } from "./NavigationItems";
 import { ThemeVariantNavigation } from "./ThemeVariantNavigation";
+import { isOrgSearchShortcut, ORG_SEARCH_REQUEST_EVENT } from "./orgSearchEvents";
+import { isEditableKeyboardTarget, isZenModeShortcut } from "./readerShortcuts";
 
 const MobileNavigationDrawer = lazy(() => import("./MobileNavigationDrawer"));
+const OrgSearchPalette = lazy(() => import("./OrgSearchPalette"));
 
-export function ShellChrome({
+export type ShellChromeProps = {
+  activeVariantId: string;
+  children: ReactNode;
+  onVariantChange: (variantId: string) => void;
+  onEnterZen: () => void;
+  onExitZen?: () => void;
+  readerMode: "library" | "zen";
+  shell: ContentShellData;
+  theme: ZhixingTheme;
+};
+
+export function ShellChrome(props: ShellChromeProps): ReactNode {
+  return <ShellChromeView {...props} />;
+}
+
+function ShellChromeView({
   children,
   readerMode,
   shell,
   theme,
   activeVariantId,
   onVariantChange,
-}: {
-  activeVariantId: string;
-  children: ReactNode;
-  onVariantChange: (variantId: string) => void;
-  readerMode: "library" | "zen";
-  shell: ContentShellData;
-  theme: ZhixingTheme;
-}): ReactNode {
+  onEnterZen,
+  onExitZen,
+}: ShellChromeProps): ReactNode {
+  const [orgSearchOpen, setOrgSearchOpen] = useState(false);
+  const searchEnabled = Boolean(shell.staticSite?.sources.length);
+
+  useEffect(() => {
+    const openSearch = (): void => setOrgSearchOpen(true);
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape" && readerMode === "zen" && onExitZen) {
+        event.preventDefault();
+        onExitZen();
+        return;
+      }
+      if (readerMode !== "library") return;
+      if (isZenModeShortcut(event) && !isEditableKeyboardTarget(event.target)) {
+        event.preventDefault();
+        onEnterZen();
+        return;
+      }
+      if (searchEnabled && isOrgSearchShortcut(event)) {
+        event.preventDefault();
+        openSearch();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    if (searchEnabled && readerMode === "library") {
+      window.addEventListener(ORG_SEARCH_REQUEST_EVENT, openSearch);
+    }
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener(ORG_SEARCH_REQUEST_EVENT, openSearch);
+    };
+  }, [onEnterZen, onExitZen, readerMode, searchEnabled]);
+
+  const themeControls = (
+    <ThemeVariantNavigation
+      activeVariantId={activeVariantId}
+      onVariantChange={onVariantChange}
+      theme={theme}
+    />
+  );
   return (
     <main
       className={`shell theme-surface theme-surface--${theme.name}${readerMode === "zen" ? " shell--zen" : ""}`}
@@ -31,18 +83,25 @@ export function ShellChrome({
       {readerMode === "library"
         ? renderReactSpaThemeSlot(theme, "site-header", { shell }, <SiteHeader shell={shell} />)
         : null}
-      {readerMode === "library" ? (
-        <ThemeVariantNavigation
-          activeVariantId={activeVariantId}
-          onVariantChange={onVariantChange}
-          theme={theme}
-        />
-      ) : null}
+      {readerMode === "library"
+        ? renderReactSpaThemeSlot(
+            theme,
+            "theme-controls",
+            {
+              activeVariantId,
+              onEnterZen,
+              onVariantChange,
+              shell,
+              theme,
+            },
+            themeControls,
+          )
+        : null}
       {readerMode === "library"
         ? renderReactSpaThemeSlot(
             theme,
             "site-hero",
-            { title: shell.siteConfig.title },
+            { title: shell.siteConfig.title, shell },
             <SiteHero title={shell.siteConfig.title} />,
           )
         : null}
@@ -50,6 +109,21 @@ export function ShellChrome({
       {readerMode === "library"
         ? renderReactSpaThemeSlot(theme, "runtime-state", { shell }, <RuntimeState shell={shell} />)
         : null}
+      {onExitZen ? (
+        <button
+          type="button"
+          className="zen-mode-exit"
+          onClick={onExitZen}
+          aria-label="Exit Zen mode"
+        >
+          Exit Zen
+        </button>
+      ) : null}
+      {searchEnabled ? (
+        <Suspense fallback={null}>
+          <OrgSearchPalette open={orgSearchOpen} onOpenChange={setOrgSearchOpen} shell={shell} />
+        </Suspense>
+      ) : null}
     </main>
   );
 }

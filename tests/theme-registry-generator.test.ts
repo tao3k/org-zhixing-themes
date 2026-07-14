@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe("theme registry generator", () => {
-  it("imports every discovered theme while retaining the configured selection", () => {
+  it("keeps the complete metadata catalog while importing only the configured theme", () => {
     const root = mkdtempSync(join(tmpdir(), "org-zhixing-registry-"));
     roots.push(root);
     const config = join(root, "org-zhixing.toml");
@@ -28,12 +28,15 @@ describe("theme registry generator", () => {
     const generated = readFileSync(output, "utf8");
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("selected=minimal-notes variant=midnight catalog=2");
-    expect(generated).toContain('import theme0 from "@org-zhixing/theme-elegant-blog"');
-    expect(generated).toContain('import theme1 from "@org-zhixing/theme-minimal-notes"');
-    expect(generated).toContain('"id": "elegant-blog"');
-    expect(generated).toContain('["elegant-blog", theme0]');
-    expect(generated).toContain('["minimal-notes", theme1]');
+    expect(result.stdout).toContain("selected=minimal-notes variant=midnight catalog=3");
+    expect(generated).toContain(
+      'import generatedSelectedTheme from "@org-zhixing/theme-minimal-notes"',
+    );
+    expect(generated).not.toContain('from "@org-zhixing/theme-documents"');
+    expect(generated).not.toContain('from "@org-zhixing/theme-elegant-blog"');
+    expect(generated).toContain('id: "documents"');
+    expect(generated).toContain('id: "elegant-blog"');
+    expect(generated).toContain('["minimal-notes", generatedSelectedTheme]');
   });
 
   it("rejects an unknown configured theme before writing runtime imports", () => {
@@ -55,7 +58,7 @@ describe("theme registry generator", () => {
     expect(result.stderr).toContain('THEME-E001 unknown theme "missing-theme"');
   });
 
-  it("keeps the shared registry complete under concurrent theme selections", async () => {
+  it("keeps the selected runtime import atomic under concurrent theme selections", async () => {
     const root = mkdtempSync(join(tmpdir(), "org-zhixing-registry-"));
     roots.push(root);
     const elegantConfig = join(root, "elegant.toml");
@@ -71,8 +74,11 @@ describe("theme registry generator", () => {
     const generated = readFileSync(output, "utf8");
 
     expect(results.map(({ code }) => code)).toEqual([0, 0]);
-    expect(generated).toContain('["elegant-blog", theme0]');
-    expect(generated).toContain('["minimal-notes", theme1]');
+    expect(generated).toContain('id: "documents"');
+    const selectedEntries = ["elegant-blog", "minimal-notes"].filter((id) =>
+      generated.includes(`["${id}", generatedSelectedTheme]`),
+    );
+    expect(selectedEntries).toHaveLength(1);
   });
 });
 

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "theme-documents-mobile",
+  "route": "/",
+  "theme": "documents",
+  "variant": "mocha",
+  "fixture": "static-site",
+  "projects": ["compact-phone", "modern-phone", "tablet", "desktop"],
+  "actions": [
+    { "type": "goto" },
+    { "type": "click", "target": "[data-theme-variant-option='latte']" },
+    { "type": "screenshot", "target": "page" }
+  ],
+  "gates": {
+    "maxHorizontalOverflowPx": 0,
+    "maxConsoleErrors": 0,
+    "maxPageErrors": 0,
+    "minTapTargetPx": 44
+  }
+}

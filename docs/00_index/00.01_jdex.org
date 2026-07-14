@@ -21,6 +21,7 @@ This is the coordinate map for durable Org Zhixing documentation.
 | 10.03 | [[file:../10_architecture/10.03_rsbuild_react_router_effect_stack.org][Rsbuild React Router Effect Stack]] | Active |
 | 20.01 | [[file:../20_design/20.01_elegant_system.org][Elegant System]] | Active |
 | 90.01 | [[file:../90_operations/90.01_performance_notes.org][Performance Notes]] | Active |
+| 90.04 | [[file:../90_operations/90.04_github_pages_deployment.org][GitHub Pages Deployment]] | Active |
 
 | 10.07 | [[file:../10_architecture/10.07_org_zhixing_multi_theme_design.org][Org Zhixing Multi-Theme RFC and Design]] | accepted |
 ** Rules
