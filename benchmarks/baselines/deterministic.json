@@ -6,19 +6,19 @@
     "arch": "arm64"
   },
   "observed": {
-    "totalJsBytes": 797437,
-    "entryJsBytes": 122323,
-    "totalCssBytes": 93089,
-    "jsAssetCount": 22,
+    "totalJsBytes": 826074,
+    "entryJsBytes": 126164,
+    "totalCssBytes": 93861,
+    "jsAssetCount": 24,
     "cssAssetCount": 1,
-    "unselectedThemeMarkers": 1
+    "unselectedThemeMarkers": 0
   },
   "limits": {
-    "totalJsBytes": 837309,
-    "entryJsBytes": 128440,
-    "totalCssBytes": 97744,
-    "jsAssetCount": 22,
+    "totalJsBytes": 867378,
+    "entryJsBytes": 132473,
+    "totalCssBytes": 98555,
+    "jsAssetCount": 24,
     "cssAssetCount": 1,
-    "unselectedThemeMarkers": 1
+    "unselectedThemeMarkers": 0
   }
 }

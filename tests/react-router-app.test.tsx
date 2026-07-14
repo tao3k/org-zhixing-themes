@@ -269,7 +269,9 @@ describe("Org Zhixing React Router app", () => {
     rootNode.id = "app";
     rootNode.innerHTML = initialHtml;
     document.body.append(rootNode);
-    const router = createOrgZhixingRouter({ getQueryClient: testQueryClientFactory() });
+    const router = createOrgZhixingRouter({
+      getQueryClient: testQueryClientFactory(),
+    });
     await act(async () => {
       mountedRoot = createRoot(rootNode);
       mountedRoot.render(<RouterProvider router={router} />);
@@ -509,11 +511,21 @@ const appReaderMode = (): string | undefined =>
   document.querySelector("#app")?.getAttribute("data-reader-mode") ?? undefined;
 
 const waitForText = async (text: string): Promise<void> => {
-  await vi.waitFor(() => expect(document.body.textContent).toContain(text));
+  const deadline = Date.now() + 4_000;
+  while (!document.body.textContent?.includes(text)) {
+    if (Date.now() >= deadline) {
+      expect(document.body.textContent).toContain(text);
+    }
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+  }
 };
 
 const textResponse = (body: string): Response =>
   new Response(body, { headers: { "content-type": "text/plain" } });
 
 const jsonResponse = (body: unknown): Response =>
-  new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
+  new Response(JSON.stringify(body), {
+    headers: { "content-type": "application/json" },
+  });

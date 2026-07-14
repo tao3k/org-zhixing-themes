@@ -47,28 +47,48 @@ if (command === "check") {
 }
 
 async function loadScenarios() {
-  const files = (await readdir(scenarioRoot)).filter((file) => extname(file) === ".json").sort();
+  const sources = [
+    ...(await scenarioFiles(scenarioRoot)),
+    ...(
+      await Promise.all(
+        [...catalog.values()].map((theme) =>
+          scenarioFiles(join(theme.directory, "benchmarks/scenarios")),
+        ),
+      )
+    ).flat(),
+  ].sort((left, right) => left.path.localeCompare(right.path));
   const ids = new Set();
   const loaded = [];
-  for (const file of files) {
-    const scenario = JSON.parse(await readFile(join(scenarioRoot, file), "utf8"));
+  for (const source of sources) {
+    const scenario = JSON.parse(await readFile(source.path, "utf8"));
     if (!validate(scenario)) {
       throw new Error(
-        `SCENARIO-E001 ${file}: ${validate.errors?.map((error) => `${error.instancePath} ${error.message}`).join("; ")}`,
+        `SCENARIO-E001 ${source.label}: ${validate.errors?.map((error) => `${error.instancePath} ${error.message}`).join("; ")}`,
       );
     }
     if (ids.has(scenario.id))
       throw new Error(`SCENARIO-E001 duplicate scenario id "${scenario.id}"`);
     ids.add(scenario.id);
     const theme = catalog.get(scenario.theme);
-    if (!theme) throw new Error(`SCENARIO-E001 ${file}: unknown theme "${scenario.theme}"`);
+    if (!theme) throw new Error(`SCENARIO-E001 ${source.label}: unknown theme "${scenario.theme}"`);
     if (!theme.variants.includes(scenario.variant)) {
-      throw new Error(`SCENARIO-E001 ${file}: unknown variant "${scenario.variant}"`);
+      throw new Error(`SCENARIO-E001 ${source.label}: unknown variant "${scenario.variant}"`);
     }
     loaded.push(scenario);
   }
   if (loaded.length === 0) throw new Error("SCENARIO-E001 no scenarios found");
   return loaded;
+}
+
+async function scenarioFiles(directory) {
+  try {
+    return (await readdir(directory))
+      .filter((file) => extname(file) === ".json")
+      .map((file) => ({ label: file, path: join(directory, file) }));
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
 }
 
 async function loadThemeCatalog() {
@@ -79,6 +99,7 @@ async function loadThemeCatalog() {
     const packageJson = await optionalJson(join(themeRoot, entry.name, "package.json"));
     if (!packageJson?.orgZhixing) continue;
     catalog.set(packageJson.orgZhixing.id, {
+      directory: join(themeRoot, entry.name),
       variants: packageJson.orgZhixing.variants ?? [],
       package: packageJson.name,
     });
@@ -118,7 +139,7 @@ function limitsFor(metrics) {
     totalCssBytes: Math.ceil(metrics.totalCssBytes * 1.05),
     jsAssetCount: metrics.jsAssetCount,
     cssAssetCount: metrics.cssAssetCount,
-    unselectedThemeMarkers: Math.max(0, catalog.size - 1),
+    unselectedThemeMarkers: 0,
   };
 }
 

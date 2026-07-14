@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { mkdir, open, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { discoverThemes, formatThemeList } from "./theme-list.mjs";
 
@@ -11,6 +11,33 @@ export const replaceThemeSelection = (source, theme, variant) => {
     return line.test(text) ? text.replace(line, assignment) : `${assignment}\n${text}`;
   };
   return replace(replace(source, "theme", theme), "theme_variant", variant);
+};
+
+export const replaceThemePreviewSelection = (source, theme) => {
+  const selected = replaceThemeSelection(source, theme.id, theme.defaultVariant);
+  if (theme.content?.routeMode !== "documents") return selected;
+  return replaceSectionAssignment(
+    replaceSectionAssignment(selected, "content", "content_dir", theme.content.directory),
+    "content",
+    "content_base",
+    theme.content.base,
+  );
+};
+
+const replaceSectionAssignment = (source, section, key, value) => {
+  const header = new RegExp(`^\\[${section}\\]\\s*$`, "mu");
+  const match = header.exec(source);
+  if (!match) return `${source.trimEnd()}\n\n[${section}]\n${key} = ${JSON.stringify(value)}\n`;
+  const bodyStart = match.index + match[0].length;
+  const nextHeaderOffset = source.slice(bodyStart).search(/^\s*\[/mu);
+  const bodyEnd = nextHeaderOffset === -1 ? source.length : bodyStart + nextHeaderOffset;
+  const body = source.slice(bodyStart, bodyEnd);
+  const assignment = `${key} = ${JSON.stringify(value)}`;
+  const line = new RegExp(`^${key}\\s*=.*$`, "mu");
+  const nextBody = line.test(body)
+    ? body.replace(line, assignment)
+    : `${body.trimEnd()}\n${assignment}\n`;
+  return `${source.slice(0, bodyStart)}${nextBody}${source.slice(bodyEnd)}`;
 };
 
 export const resolveThemePreview = async ({ theme, workspaceRoot = process.cwd() }) => {
@@ -28,13 +55,20 @@ export const resolveThemePreview = async ({ theme, workspaceRoot = process.cwd()
 
 export const themePreviewConfigName = (theme, port) => `org-zhixing-preview-${theme}-${port}.toml`;
 
-export const themePreviewUrl = (port) => `http://127.0.0.1:${port}/blogs`;
+export const themePreviewUrl = (port, theme) =>
+  `http://127.0.0.1:${port}${theme?.content?.routeMode === "documents" ? "/" : "/blogs"}`;
 
-export const themePreviewEnvironment = (environment, previewConfig, cacheRoot) => ({
+export const themePreviewEnvironment = (
+  environment,
+  previewConfig,
+  cacheRoot,
+  contentDir = null,
+) => ({
   ...environment,
   ORG_ZHIXING_BASE_PATH: "/",
   ORG_ZHIXING_CACHE_ROOT: cacheRoot,
   ORG_ZHIXING_CONFIG: previewConfig,
+  ...(contentDir ? { ORG_ZHIXING_CONTENT_DIR: contentDir } : {}),
 });
 
 const parseArgs = (argv) => {
@@ -43,6 +77,7 @@ const parseArgs = (argv) => {
     return index === -1 ? fallback : argv[index + 1];
   };
   return {
+    contentDir: value("--content-dir", null),
     dryRun: argv.includes("--dry-run"),
     port: value("--port", "5173"),
     theme: argv[0] === "list" ? "list" : value("--theme", "elegant-blog"),
@@ -51,13 +86,18 @@ const parseArgs = (argv) => {
 
 const main = async () => {
   const workspaceRoot = process.cwd();
-  const { dryRun, port, theme } = parseArgs(process.argv.slice(2));
+  const { contentDir, dryRun, port, theme } = parseArgs(process.argv.slice(2));
   if (theme === "list") {
     console.log(formatThemeList(await discoverThemes(workspaceRoot)));
     return;
   }
   if (!/^\d{2,5}$/u.test(port)) throw new Error(`THEME-E022 invalid port ${port}`);
   const selected = await resolveThemePreview({ theme, workspaceRoot });
+  if (contentDir && selected.content?.routeMode !== "documents") {
+    throw new Error("THEME-E025 --content-dir requires a documents theme");
+  }
+  const externalContentDir = contentDir ? resolve(workspaceRoot, contentDir) : null;
+  if (externalContentDir) await assertContentDirectory(externalContentDir);
   const previewConfigName = themePreviewConfigName(selected.id, port);
   const trackedConfig = resolve(workspaceRoot, "public/org-zhixing.toml");
   const previewCacheRoot = resolve(workspaceRoot, ".cache/org-zhixing-preview", port);
@@ -66,14 +106,11 @@ const main = async () => {
   try {
     const source = await readFile(trackedConfig, "utf8");
     await mkdir(previewCacheRoot, { recursive: true });
-    await writeFile(
-      previewConfig,
-      replaceThemeSelection(source, selected.id, selected.defaultVariant),
-      "utf8",
-    );
+    await writeFile(previewConfig, replaceThemePreviewSelection(source, selected), "utf8");
     const cleanup = () => rm(previewConfig, { force: true });
     console.log(`theme-preview theme=${selected.id} initial-variant=${selected.defaultVariant}`);
-    console.log(`open ${themePreviewUrl(port)}`);
+    if (externalContentDir) console.log(`content ${externalContentDir}`);
+    console.log(`open ${themePreviewUrl(port, selected)}`);
     if (dryRun) {
       await cleanup();
       return;
@@ -83,7 +120,12 @@ const main = async () => {
     try {
       const child = spawn("npm", ["run", "dev", "--", "--port", port], {
         cwd: workspaceRoot,
-        env: themePreviewEnvironment(process.env, previewConfig, previewCacheRoot),
+        env: themePreviewEnvironment(
+          process.env,
+          previewConfig,
+          previewCacheRoot,
+          externalContentDir,
+        ),
         stdio: "inherit",
       });
       const stop = (signal) => {
@@ -104,6 +146,15 @@ const main = async () => {
   } finally {
     await releaseLease();
   }
+};
+
+const assertContentDirectory = async (directory) => {
+  try {
+    if ((await stat(directory)).isDirectory()) return;
+  } catch {
+    // Normalize missing and inaccessible paths to the public tooling error.
+  }
+  throw new Error(`THEME-E026 content directory is not a directory: ${directory}`);
 };
 
 const acquirePreviewLease = async (workspaceRoot, port) => {

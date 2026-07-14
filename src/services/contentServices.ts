@@ -136,6 +136,13 @@ export const loadSiteNotesData = (shell: ContentShellData): Promise<SiteNoteSour
     }),
   );
 
+export const loadOrgSearchSources = (shell: ContentShellData): Promise<StaticSourceProjection[]> =>
+  Effect.runPromise(
+    promiseEffect("Org search corpus", () =>
+      loadAllStaticSources(shell.staticSite, { sectionIndex: true }),
+    ),
+  );
+
 const staticDocumentEffect = (
   shell: ContentShellData,
   options: StaticDocumentOptions,

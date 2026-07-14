@@ -1,0 +1,187 @@
+#+title: Documents Theme
+#+author: Org Zhixing
+
+* Purpose
+
+=documents= is the documentation-oriented theme for Org Zhixing.  It keeps the
+familiar three-part documentation layout while treating Org concepts as native
+navigation:
+
+- the document outline remains visible beside the reading surface;
+- source nodes and article counts come from the generated Org projection;
+- linked references use Org-roam bracket notation;
+- Notes, Memory, and Agenda remain first-class knowledge views;
+- TODO keywords, properties, source blocks, and node identifiers have distinct
+  semantic colors.
+
+The theme does not depend on a React Native runtime.  It uses the existing
+React, TanStack Router, and Radix infrastructure so the same package works in
+the static Web build and the mobile-responsive hybrid shell.
+
+* Preview
+
+Theme selection belongs to =just=.  Color flavor selection belongs to the
+Appearance navigator in the page.
+
+#+begin_src sh
+direnv exec . just theme-preview documents 5173
+#+end_src
+
+Then open =http://127.0.0.1:5173/=.  The index and document routes are generated
+from =docs/**/*.org=; the docs theme does not expose a =/blogs= route.  Use
+Appearance to switch between Latte, Frappé, Macchiato, and Mocha.  The
+preference is stored only for the =documents= theme.
+
+* Catppuccin flavors
+
+| Flavor     | Role                          |
+|------------+-------------------------------|
+| Latte      | light documentation           |
+| Frappé     | softened dark documentation   |
+| Macchiato  | medium-contrast dark reading  |
+| Mocha      | default deep-focus dark theme |
+
+The palette values are owned by =themes/documents/src/index.ts= and the
+additional semantic colors by =themes/documents/src/theme.css=.
+
+* Org-roam surface contract
+
+The first release exposes the graph as a theme-level local overview backed by
+the static source and article inventory.  It does not invent backlink edges.
+When the content projection gains an explicit backlink-edge schema, the same
+=site-hero= slot can consume it without changing the theme package manifest.
+
+The stable package slots are =site-header=, =site-hero=, and =runtime-state=.
+The theme intentionally does not bind the =blog-index= slot: documentation and
+blog rendering are separate scenarios with separate owners.
+
+* Reading space and linked-note workspace
+
+The desktop reader uses a compact documentation index, a readable main column,
+and a narrow context rail.  Fixed chrome must not reduce the main prose column
+below a useful technical-reading width.  The layout follows two complementary
+ideas:
+
+- Johnny.Decimal-style context is compact, stable, and subordinate to the
+  document rather than presented as a large dashboard;
+- Andy Matuschak-style linked notes preserve the source document while opening
+  a related Org node as adjacent working context.
+
+An ordinary primary click on an internal Org document link opens the target in
+the linked-note workspace.  Modified clicks retain browser-native behavior.
+Opening another note automatically collapses unpinned transient notes.  A
+pinned note stays expanded while further links are explored.  The workspace can
+move between the left and right viewport edges, =Escape= collapses transient
+notes, and the close control removes a note from the current workspace.
+
+The core internal-link interception contract belongs to
+=src/react/RoutedHtmlSurface.tsx=.  Loading policy, stack limits, pinning, and
+floating-window presentation belong exclusively to
+=themes/documents/src/LinkedNoteWorkspace.tsx=.
+
+* Mermaid diagrams
+
+Documents renders Mermaid source blocks as interactive technical diagrams. The renderer is loaded only when a diagram approaches the viewport, while the original Org source remains available as an accessible fallback.
+
+#+begin_src mermaid
+flowchart LR
+  Org[Org source] --> Index[Static section index]
+  Index --> Reader[Documents reader]
+  Reader --> Mermaid[Lazy Mermaid renderer]
+  Mermaid --> SVG[Accessible SVG]
+#+end_src
+
+The integration uses Mermaid's strict security mode and limits diagram text and edge counts. Use ordinary Org source blocks; no embedded script or page-specific JavaScript is required.
+
+* Reading workspace controls
+
+Documents keeps theme-local reading controls in a bottom-left workspace button
+instead of spending permanent header space.  Its popover reports the number of
+indexed Org documents, switches the Catppuccin flavor, opens core Org search,
+and enters Zen Mode.  Zen Mode removes both navigation rails and linked-note
+chrome while preserving a focused technical-reading column and an explicit exit
+control.
+
+* Core Org search
+
+=Ctrl+F= and =Command+F= open the centered Org search palette rather than the
+browser's text-only finder.  The index belongs to =src/orgSearch.ts= because it
+is an Org content capability shared by themes.  It ranks document and section
+titles, body text, source paths, tags, and TODO states; prefix and bounded fuzzy
+matching cover incomplete technical terms.  Arrow keys select results, =Enter=
+opens the selected route, and =Escape= closes the palette.
+
+The palette uses React deferred values so typing remains responsive while a
+larger local index is ranked, and a React transition wraps TanStack Router
+navigation.  MiniSearch owns ranking only; React owns interaction scheduling,
+lazy rendering, accessibility state, and route transitions.
+
+The MiniSearch dependency and index are loaded only when search is requested.
+Themes may expose a search button, but they must dispatch the stable core search
+request rather than implement a separate index.
+
+* Reader shortcuts and section anchors
+
+=Ctrl+Z= enters Zen Mode when focus is outside an editable control.  =Escape=
+leaves Zen Mode, while an open Radix dialog consumes =Escape= first according
+to its focus-layer contract.  The shortcut owner is the core React shell, not
+the documents theme.
+
+The core =src/react/orgSectionAnchors.ts= binder reconciles asynchronously
+rendered Org headings with parser-indexed section identities.  This keeps the
+documents =On this page= links, direct URL fragments, fixed-header offsets, and
+active-section observation on the same stable ids even though HTML projection
+is installed after the parent React effect.
+
+* Org Babel syntax highlighting
+
+Org =src= blocks are highlighted by the core renderer in
+=src/react/orgCodeHighlighting.ts=.  Shiki uses its browser JavaScript regex
+engine, a bounded language registry, and the active Catppuccin flavor.  The
+highlighter is lazy-loaded when a block approaches the viewport, and the raw
+source remains readable until it is ready.
+
+The documents theme owns only presentation.  Its =pre= background is the active
+Catppuccin crust color, while =code=, line, and token spans are forced
+transparent so exported HTML styles cannot reintroduce white strips behind
+individual lines or tokens.  Mermaid blocks remain under the dedicated diagram
+renderer and are excluded from syntax highlighting.
+
+* LaTeX mathematics
+
+Inline Org math such as \(E = mc^2\) and display equations are rendered by the
+core content-enhancement pipeline.  KaTeX is loaded only when a document
+contains a supported delimiter; source blocks, inline code, and preformatted
+content are excluded from delimiter discovery.
+
+\[
+  e^{i\pi} + 1 = 0
+\]
+
+#+begin_src latex
+\frac{d}{dx}\left(\int_0^x f(t)\,dt\right) = f(x)
+#+end_src
+
+Rendering is configured with untrusted commands disabled.  If the renderer is
+unavailable, the original Org math remains readable rather than disappearing.
+
+* Typst documents
+
+Typst source receives both Shiki syntax highlighting and a rendered SVG
+preview.  Compilation and rendering use =@myriaddreamin/typst.ts= inside a
+dedicated Web Worker, so the compiler WASM never blocks the reader's main
+thread and is not requested by documents that contain no Typst blocks.
+
+#+begin_src typst
+#set page(width: 12cm, height: auto, margin: 1cm)
+#set text(size: 13pt)
+= Typst in Org
+
+Fast typesetting stays outside the reading interaction loop.
+
+$ integral_0^1 x^2 dif x = 1/3 $
+#+end_src
+
+The generated SVG is loaded through an image object URL rather than inserted as
+active markup.  A failed compile hides only the preview; the highlighted Typst
+source remains the durable fallback.

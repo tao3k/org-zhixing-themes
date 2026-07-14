@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { access, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { basename, dirname, resolve } from "node:path";
@@ -12,6 +12,9 @@ import {
   generateAttachmentThumbnail,
   resetAttachmentThumbnailOutput,
 } from "../src/node/attachmentThumbnailGenerator.mjs";
+import { projectOrgDocumentLinks } from "../src/node/orgDocumentLinks.mjs";
+import { orgFiles } from "../src/node/orgSources.ts";
+import { orgDocumentIdFromPath } from "../src/orgIdLinks.ts";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const publicRoot = resolve(projectRoot, "public");
@@ -32,6 +35,9 @@ const configFilePath = process.env.ORG_ZHIXING_CONFIG
   ? resolve(projectRoot, process.env.ORG_ZHIXING_CONFIG)
   : resolve(publicRoot, "org-zhixing.toml");
 const configPath = basename(configFilePath);
+const externalContentDiskRoot = process.env.ORG_ZHIXING_CONTENT_DIR
+  ? resolve(process.env.ORG_ZHIXING_CONTENT_DIR)
+  : null;
 const htmlWindow = new Window({
   settings: {
     navigation: {
@@ -44,7 +50,10 @@ const htmlWindow = new Window({
 const main = async () => {
   const configText = await readFile(configFilePath, "utf8");
   const config = parseConfig(configText);
-  config.sources = mergeSources(config.sources, await discoverOrgSources(config.contentRoot));
+  config.sources = mergeSources(
+    config.sources,
+    await discoverOrgSources(config.contentRoot, config.contentDiskRoot),
+  );
   const require = createRequire(import.meta.url);
   await init({ module_or_path: readFileSync(require.resolve("orgize/wasm")) });
   await resetAttachmentThumbnailOutput(outputRoot);
@@ -94,7 +103,7 @@ const main = async () => {
 };
 
 const projectSource = async (source, config) => {
-  const sourceText = await readFile(resolve(publicRoot, source.sourceFile), "utf8");
+  const sourceText = await readFile(resolve(config.contentDiskRoot, source.file), "utf8");
   const org = new Org(sourceText);
   try {
     const metadata = parseJson(org.metadataJson());
@@ -107,7 +116,11 @@ const projectSource = async (source, config) => {
       sourceBytes: Buffer.byteLength(sourceText),
       viewIndex,
       sectionIndex: parseJson(org.sectionIndexJson(source.sourceFile)),
-      html: org.html(),
+      html: projectOrgDocumentLinks(org.html(), {
+        currentFile: source.file,
+        document: htmlWindow.document,
+        sources: config.sources,
+      }),
       attachmentInventory,
       memory: parseJson(org.memoryJson()),
       agendaRange: agendaProjection.range,
@@ -245,12 +258,18 @@ const safeShardId = (value) =>
 const parseConfig = (text) => {
   const raw = asRecord(parse(text));
   const content = asOptionalRecord(raw.content);
-  const contentRoot = normalizeDir(
-    readString(content, "content_dir", readString(content, "root", "blog")),
-  );
+  const contentRoot = externalContentDiskRoot
+    ? normalizeDir(basename(externalContentDiskRoot))
+    : normalizeDir(readString(content, "content_dir", readString(content, "root", "blog")));
+  const contentBase = readContentBase(content?.content_base);
+  const contentDiskRoot =
+    externalContentDiskRoot ??
+    resolve(contentBase === "workspace" ? projectRoot : publicRoot, contentRoot);
   const sources = parseSources(content?.sources, contentRoot);
   return {
     contentRoot,
+    contentBase,
+    contentDiskRoot,
     sources,
     attachments: parseAttachments(asOptionalRecord(raw.attachments), contentRoot),
     agenda: agendaSettings(asOptionalRecord(raw.agenda)),
@@ -928,29 +947,17 @@ const parseSources = (raw, contentRoot) =>
         )
     : [];
 
-const discoverOrgSources = async (contentRoot) => {
-  const root = resolve(publicRoot, contentRoot);
-  const files = await orgFiles(root);
+const discoverOrgSources = async (contentRoot, contentDiskRoot) => {
+  const files = await orgFiles(contentDiskRoot);
   return files.map((file) =>
-    sourceFromPath(contentRoot, sourceIdFromPath(file), file, sourceTitleFromPath(file)),
+    sourceFromPath(contentRoot, orgDocumentIdFromPath(file), file, sourceTitleFromPath(file)),
   );
 };
 
-const orgFiles = async (dir, prefix = "") => {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    if (entry.name.startsWith(".")) {
-      continue;
-    }
-    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) {
-      files.push(...(await orgFiles(resolve(dir, entry.name), relative)));
-    } else if (entry.isFile() && entry.name.endsWith(".org")) {
-      files.push(relative);
-    }
-  }
-  return files.sort((left, right) => left.localeCompare(right));
+const readContentBase = (value) => {
+  if (value === undefined) return "public";
+  if (value === "public" || value === "workspace") return value;
+  throw new Error('content.content_base must be "public" or "workspace"');
 };
 
 const mergeSources = (configured, discovered) => {
@@ -963,13 +970,6 @@ const mergeSources = (configured, discovered) => {
   }
   return [...sources.values()];
 };
-
-const sourceIdFromPath = (file) =>
-  file
-    .replace(/\.org$/, "")
-    .replace(/[^A-Za-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase();
 
 const sourceTitleFromPath = (file) =>
   file

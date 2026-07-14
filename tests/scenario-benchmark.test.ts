@@ -17,6 +17,8 @@ describe("Scenario Benchmark contracts", () => {
       "theme-minimal-mobile.json",
       "travel-heavy.json",
     ]);
+    const themeScenario = "themes/documents/benchmarks/scenarios/theme-documents-mobile.json";
+    expect(validate(JSON.parse(readFileSync(themeScenario, "utf8"))), themeScenario).toBe(true);
     for (const file of files) {
       const scenario = JSON.parse(readFileSync(join("benchmarks/scenarios", file), "utf8"));
       expect(validate(scenario), `${file}: ${JSON.stringify(validate.errors)}`).toBe(true);
@@ -31,7 +33,7 @@ describe("Scenario Benchmark contracts", () => {
     expect(baseline.observed.totalJsBytes).toBeGreaterThan(0);
     expect(baseline.observed.entryJsBytes).toBeGreaterThan(0);
     expect(baseline.limits.totalJsBytes).toBeGreaterThanOrEqual(baseline.observed.totalJsBytes);
-    expect(baseline.limits.unselectedThemeMarkers).toBe(1);
+    expect(baseline.limits.unselectedThemeMarkers).toBe(0);
     expect(baseline.observed.unselectedThemeMarkers).toBeLessThanOrEqual(
       baseline.limits.unselectedThemeMarkers,
     );

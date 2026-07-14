@@ -4,12 +4,12 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
-  useLocation,
   useNavigate,
+  redirect,
 } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
 import type { MouseEventHandler, ReactNode } from "react";
-import { lazy, useEffect, useMemo, useState } from "react";
+import { lazy, useEffect, useMemo } from "react";
 import { adjacentBlogArticleSelection } from "../blogNavigation";
 import type { AgendaPanelKey } from "../agendaTypes";
 import { isAgendaMode, isAgendaPanel } from "../agendaState";
@@ -17,15 +17,19 @@ import { renderAppView as renderView } from "../appViewRender";
 import { travelViewFromStaticSite } from "../travelSiteProjection";
 import type { ContentShellData } from "../services/contentServices";
 import type { ViewKey } from "../model";
-import { isEditableTarget, viewDomNodes, viewForPath } from "./routeViewHelpers";
+import { isEditableTarget, viewDomNodes } from "./routeViewHelpers";
 import { getReactQueryClient } from "./queryClient";
-import { ShellChrome } from "./ShellChrome";
 import { orgZhixingBasePath } from "./deploymentBasePath";
 import { createAgendaSurfaceClickHandler } from "./agendaSurfaceNavigation";
 import { HtmlSurface } from "./HtmlSurface";
 import { renderReactSpaThemeSlot } from "./themeBinding";
-import { applyThemeVariant, createDefaultThemeRegistry, resolveConfiguredTheme } from "../library";
-import { loadThemeVariantPreference, storeThemeVariantPreference } from "./themeVariantPreference";
+import { createDefaultThemeRegistry, resolveConfiguredTheme } from "../library";
+import {
+  contentRoutesForShell,
+  loadThemeDocument,
+  themeOwnsContentRoutes,
+} from "./themeContentRouting";
+import { ThemeRootLayout } from "./ThemeRootLayout";
 
 export type OrgZhixingRouterContext = {
   getQueryClient: () => Promise<QueryClient>;
@@ -39,13 +43,14 @@ const rootRoute = createRootRouteWithContext<OrgZhixingRouterContext>()({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: () => <Navigate replace to="/blogs" />,
+  component: HomePage,
 });
 
 const blogsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/blogs",
   component: BlogIndexPage,
+  beforeLoad: redirectToThemeContentRoot,
   validateSearch: (search: Record<string, unknown>) => search,
 });
 
@@ -53,6 +58,7 @@ const blogArticleRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/blogs/$articleId",
   component: BlogArticlePage,
+  beforeLoad: redirectToThemeContentRoot,
   loader: ({ context, params }) => loadArticleQuery(context, params.articleId),
   validateSearch: (search: Record<string, unknown>) => search,
 });
@@ -107,6 +113,13 @@ const diagnosticsRoute = createRoute({
   loader: ({ context }) => loadDocumentQuery(context, "diagnostics", {}),
 });
 
+const themeDocumentRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/$docId",
+  component: ThemeDocumentPage,
+  loader: ({ context, params }) => loadThemeDocumentQuery(context, params.docId),
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   blogsRoute,
@@ -118,6 +131,7 @@ const routeTree = rootRoute.addChildren([
   agendaRoute,
   captureRoute,
   diagnosticsRoute,
+  themeDocumentRoute,
 ]);
 
 export const createOrgZhixingRouter = (
@@ -187,6 +201,17 @@ async function loadNotesQuery(
   });
 }
 
+async function loadThemeDocumentQuery(context: OrgZhixingRouterContext, docId: string) {
+  const shell = await loadContentShellQuery(context);
+  const routes = contentRoutesForShell(shell);
+  if (!routes) throw redirect({ to: "/blogs" });
+  return loadThemeDocument(shell, docId, await context.getQueryClient());
+}
+
+async function redirectToThemeContentRoot({ context }: { context: OrgZhixingRouterContext }) {
+  if (themeOwnsContentRoutes(await loadContentShellQuery(context))) throw redirect({ to: "/" });
+}
+
 async function loadDocumentQuery(
   context: OrgZhixingRouterContext,
   view: ViewKey,
@@ -212,41 +237,22 @@ async function loadDocumentQuery(
 }
 
 function RootLayout(): ReactNode {
-  const shell = rootRoute.useLoaderData();
-  const location = useLocation();
-  const view = viewForPath(location.pathname);
-  const readerMode = location.pathname.startsWith("/blogs/") ? "zen" : "library";
-  const selectedTheme = useMemo(
-    () => resolveConfiguredTheme(createDefaultThemeRegistry(), shell.siteConfig),
-    [shell.siteConfig],
-  );
-  const [activeVariantId, setActiveVariantId] = useState(() =>
-    loadThemeVariantPreference(selectedTheme, shell.siteConfig.theme.variant),
-  );
-
-  useEffect(() => {
-    applyThemeVariant(selectedTheme, activeVariantId);
-    storeThemeVariantPreference(selectedTheme.name, activeVariantId);
-    document.documentElement.lang = shell.siteConfig.locale;
-    document.title = shell.siteConfig.title;
-    const app = document.querySelector<HTMLElement>("#app");
-    if (app) {
-      app.dataset.view = view;
-      app.dataset.readerMode = readerMode;
-    }
-  }, [activeVariantId, readerMode, selectedTheme, shell.siteConfig, view]);
-
   return (
-    <ShellChrome
-      activeVariantId={activeVariantId}
-      onVariantChange={setActiveVariantId}
-      readerMode={readerMode}
-      shell={shell}
-      theme={selectedTheme}
-    >
+    <ThemeRootLayout shell={rootRoute.useLoaderData()}>
       <Outlet />
-    </ShellChrome>
+    </ThemeRootLayout>
   );
+}
+
+function HomePage(): ReactNode {
+  const shell = rootRoute.useLoaderData();
+  return contentRoutesForShell(shell)?.renderHome(shell) ?? <Navigate replace to="/blogs" />;
+}
+
+function ThemeDocumentPage(): ReactNode {
+  const shell = rootRoute.useLoaderData();
+  const data = themeDocumentRoute.useLoaderData();
+  return contentRoutesForShell(shell)?.renderDocument(data) ?? <Navigate replace to="/blogs" />;
 }
 
 function BlogIndexPage(): ReactNode {

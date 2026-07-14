@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "sampleCount": 5,
+  "route": "/mermaid-performance",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "budgets": {
+    "firstReadyMedianMs": 900,
+    "firstReadyP95Ms": 2200,
+    "preparedToReadyMedianMs": 350,
+    "preparedToReadyP95Ms": 1200,
+    "deferredReadyP95Ms": 950,
+    "themeReadyP95Ms": 900,
+    "headingFontPxMax": 44,
+    "consoleErrors": 0
+  },
+  "reference": {
+    "environment": "local Chromium dev preview",
+    "firstReadyMedianMs": 469,
+    "firstReadyP95Ms": 1684,
+    "preparedToReadyMedianMs": 238,
+    "preparedToReadyP95Ms": 1058,
+    "deferredReadyP95Ms": 797,
+    "themeReadyP95Ms": 57,
+    "headingFontPx": 41.6
+  }
+}

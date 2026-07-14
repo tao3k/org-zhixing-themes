@@ -1,0 +1,282 @@
+#+title: 90.04 GitHub Pages Deployment
+#+author: Org Zhixing
+
+* Purpose
+
+Org Zhixing supports two GitHub Pages ownership modes:
+
+1. the =org-zhixing-themes= repository builds its bundled example content;
+2. a downstream repository owns =docs/**/*.org= and uses Org Zhixing only as
+   a versioned static-site builder.
+
+Both modes produce a normal =dist= directory and deploy it through GitHub's
+official Pages artifact protocol.  A =gh-pages= branch, committed build output,
+or downstream Node package is not required.
+
+The reference downstream implementation is
+=poo-flow/.github/workflows/github-page.yml= with its site contract in
+=poo-flow/org-zhixing.toml=.
+
+* Repository setting
+
+For each new downstream repository, an administrator performs this once:
+
+1. open =Settings -> Pages=;
+2. under =Build and deployment= select =GitHub Actions= as the source;
+3. optionally add protection rules to the =github-pages= environment;
+4. run the =GitHub Pages= workflow from =Actions=.
+
+The workflow cannot enable Pages with the ordinary =GITHUB_TOKEN=.  GitHub's
+=actions/configure-pages= requires a separate administration token if automatic
+enablement is desired, so Org Zhixing deliberately keeps that one-time setting
+outside the build.
+
+* Downstream files
+
+A consumer owns exactly two integration files:
+
+- =org-zhixing.toml=: site identity, theme, content root, and deployment base;
+- =.github/workflows/github-page.yml=: checkout, validation, build, artifact,
+  and deployment policy.
+
+The consumer's =docs= tree remains ordinary Org source.  It does not need a
+=package.json= and must not copy Org Zhixing implementation files into the
+content repository.
+
+* Site configuration
+
+The minimal documents-site configuration is:
+
+#+begin_src toml
+theme = "documents"
+theme_variant = "mocha"
+
+[theme_config]
+
+[site]
+title = "My Project Documentation"
+locale = "en-US"
+base_url = "https://OWNER.github.io/REPOSITORY/"
+
+[content]
+content_dir = "docs"
+content_base = "workspace"
+
+[behavior]
+lazy_lint = true
+
+[attachments]
+attach_id_dir = ".attach"
+check_vcs = false
+check_annex = false
+scan_orphans = false
+#+end_src
+
+** Theme and flavor
+
+=theme= selects an installed theme package.  For technical documentation use
+=documents=.  =theme_variant= selects only its initial Catppuccin flavor:
+=latte=, =frappe=, =macchiato=, or =mocha=.  Readers can change the flavor in
+the page without changing the deployment workflow.
+
+** Content ownership
+
+=content_dir = "docs"= is the logical source name embedded in generated
+manifests.  =content_base = "workspace"= declares that the directory belongs to
+the downstream checkout rather than to Org Zhixing's bundled =public= tree.
+
+The workflow also passes the absolute downstream directory through
+=ORG_ZHIXING_CONTENT_DIR=.  This separates the logical public name from the
+runner's disk location and prevents local checkout paths from entering browser
+DTOs.
+
+** Base URL rules
+
+The base URL is part of the build contract, not cosmetic metadata.
+
+| Pages kind       | Value                                      |
+|------------------+--------------------------------------------|
+| Project site     | =https://OWNER.github.io/REPOSITORY/=      |
+| User/org site    | =https://OWNER.github.io/=                 |
+| Custom domain    | =https://docs.example.com/=                |
+
+For a project site, omitting =/REPOSITORY/= causes JavaScript, CSS, static
+shards, TanStack Router links, and SPA fallback routes to resolve at the wrong
+origin path.  Keep the trailing slash.  When a custom domain is configured in
+GitHub, update =base_url= in the same change.
+
+* Downstream workflow
+
+The complete consumer workflow is:
+
+#+begin_src yaml
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/github-page.yml"
+      - "docs/**"
+      - "org-zhixing.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  ORG_ZHIXING_REPOSITORY: tao3k/org-zhixing-themes
+  ORG_ZHIXING_REF: main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      ORG_ZHIXING_ROOT: ${{ runner.temp }}/org-zhixing
+      PAGES_OUTPUT: ${{ runner.temp }}/org-zhixing-pages
+    steps:
+      - name: Checkout downstream content
+        uses: actions/checkout@v7
+
+      - name: Fetch Org Zhixing site builder
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init "$ORG_ZHIXING_ROOT"
+          git -C "$ORG_ZHIXING_ROOT" remote add origin \
+            "https://github.com/${ORG_ZHIXING_REPOSITORY}.git"
+          git -C "$ORG_ZHIXING_ROOT" fetch --depth=1 origin "$ORG_ZHIXING_REF"
+          git -C "$ORG_ZHIXING_ROOT" checkout --detach FETCH_HEAD
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install Org Zhixing
+        working-directory: ${{ runner.temp }}/org-zhixing
+        run: npm ci
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Build documents site
+        working-directory: ${{ runner.temp }}/org-zhixing
+        run: |
+          npm run pages:build -- \
+            --config "$GITHUB_WORKSPACE/org-zhixing.toml" \
+            --content "$GITHUB_WORKSPACE/docs" \
+            --base /REPOSITORY/ \
+            --out "$PAGES_OUTPUT"
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ env.PAGES_OUTPUT }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+#+end_src
+
+** Version policy
+
+=ORG_ZHIXING_REF= is the only builder upgrade point.  During active integration
+=main= follows the current development channel.  Production consumers should
+replace it with an immutable release tag or full commit SHA and update it in a
+reviewed change.  The ref used by =actions/checkout= and the documentation for
+that release must agree.
+
+* Build command contract
+
+The public deployment boundary is one npm command:
+
+#+begin_src sh
+npm run pages:build -- \
+  --config /workspace/org-zhixing.toml \
+  --content /workspace/docs \
+  --base /REPOSITORY/ \
+  --out /runner-temp/pages
+#+end_src
+
+| Argument    | Owner       | Meaning                              |
+|-------------+-------------+--------------------------------------|
+| =--config=  | downstream  | absolute path to site TOML           |
+| =--content= | downstream  | absolute path to recursive Org root  |
+| =--base=    | deployment  | Pages project base; must match TOML  |
+| =--out=     | workflow    | final artifact directory             |
+
+The CLI rejects a =--base= value that disagrees with =site.base_url= or
+=site.base_path=.  It privately owns =ORG_ZHIXING_CONFIG=,
+=ORG_ZHIXING_CONTENT_DIR=, =ORG_ZHIXING_CACHE_ROOT=, and
+=ORG_ZHIXING_BASE_PATH=; downstream workflows must not assemble those internal
+variables.
+
+When =ORG_ZHIXING_CONTENT_DIR= is present, the production build does not copy
+Org Zhixing's bundled demo =public= directory.  Only the downstream projection,
+theme assets, application chunks, and SPA route shells enter =dist=.
+
+* Validation and deployment gates
+
+Before rendering, =npm run test:docs= recursively parses every Org Mermaid
+source block with Mermaid's parser.  A failure reports a stable error code,
+source file, source line, and block number, then prevents publication.
+
+=npm run pages:build= owns Mermaid validation, theme registry generation,
+static Org projection, TypeScript checking, Rsbuild production output, SPA
+fallback generation, output copying, cache cleanup, and canonical registry
+restoration.  The workflow uploads only =PAGES_OUTPUT=.  The temporary builder
+never becomes part of the downstream workspace or repository model.
+
+The deploy job has only =pages: write= and =id-token: write=.  Pull requests do
+not deploy.  Pushes that do not touch docs, the workflow, or the site config do
+not rebuild the documentation site.  =workflow_dispatch= remains the one-click
+manual recovery and verification path.
+
+* Local reproduction
+
+From an Org Zhixing checkout, a downstream consumer can reproduce the CI build
+with the same public command:
+
+#+begin_src sh
+direnv exec . npm run pages:build -- \
+  --config /absolute/path/to/downstream/org-zhixing.toml \
+  --content /absolute/path/to/downstream/docs \
+  --base /REPOSITORY/ \
+  --out /tmp/org-zhixing-pages
+#+end_src
+
+Inspect =dist/index.html= and =dist/404.html=.  Their script, stylesheet, static
+manifest, and route links must all begin with the configured project base path.
+
+* Failure guide
+
+| Symptom                         | Check                                      |
+|---------------------------------+--------------------------------------------|
+| Pages job says site not enabled | Settings -> Pages source is GitHub Actions |
+| CSS or JS returns 404           | =site.base_url= repository path            |
+| Deep URL returns Pages 404      | =dist/404.html= and build completion       |
+| No Org pages appear             | content env path and =docs/**/*.org=       |
+| Mermaid build fails             | reported file, line, and block number      |
+| Wrong theme                     | =theme= and pinned builder revision        |
+| Old output remains              | Actions deployment URL and concurrency run |
+
+Do not repair these failures by committing =dist=, creating a =gh-pages=
+branch, copying upstream demo content, or turning =bindings/runtime-ts= into a
+site package.  Those routes violate the downstream ownership boundary.
