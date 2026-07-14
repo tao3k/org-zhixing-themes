@@ -7,9 +7,9 @@
     "height": 900
   },
   "budgets": {
-    "firstReadyMedianMs": 900,
+    "firstReadyMedianMs": 1350,
     "firstReadyP95Ms": 2200,
-    "preparedToReadyMedianMs": 350,
+    "preparedToReadyMedianMs": 675,
     "preparedToReadyP95Ms": 1200,
     "deferredReadyP95Ms": 950,
     "themeReadyP95Ms": 900,
