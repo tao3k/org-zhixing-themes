@@ -67,14 +67,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Lighthouse mobile scenarios
+        run: npm run scenario:lighthouse
+
       - name: Cross-engine mobile scenarios
         run: npm run scenario:browser
 
       - name: Documents Mermaid performance scenario
         run: npm run scenario:documents
-
-      - name: Lighthouse mobile scenarios
-        run: npm run scenario:lighthouse
 
   pages-artifact:
     if: >-

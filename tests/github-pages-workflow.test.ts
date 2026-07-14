@@ -36,6 +36,9 @@ describe("GitHub Pages workflow", () => {
     expect(workflow).toContain("pages: write");
     expect(workflow).toContain("id-token: write");
     expect(workflow).toContain("url: ${{ steps.deployment.outputs.page_url }}");
+    expect(workflow.indexOf("Lighthouse mobile scenarios")).toBeLessThan(
+      workflow.indexOf("Cross-engine mobile scenarios"),
+    );
   });
 
   it("does not retain the legacy branch-publishing workflow", () => {
