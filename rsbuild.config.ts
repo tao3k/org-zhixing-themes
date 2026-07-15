@@ -35,7 +35,7 @@ const orgizePackageWatchFiles = existsSync(orgizePackageRoot)
 const deploymentBasePath = normalizeBasePath(
   process.env.ORG_ZHIXING_BASE_PATH ?? deploymentBasePathFromConfig(publicConfigPath),
 );
-const assetPrefix = deploymentBasePath === "/" ? "auto" : `${deploymentBasePath}/`;
+const assetPrefix = deploymentBasePath === "/" ? "/" : `${deploymentBasePath}/`;
 
 export default defineConfig({
   plugins: [pluginReact()],
@@ -135,7 +135,6 @@ export default defineConfig({
     },
   },
   dev: {
-    assetPrefix: "auto",
     hmr: true,
     liveReload: true,
     progressBar: true,

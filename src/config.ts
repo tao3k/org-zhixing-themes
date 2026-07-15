@@ -1,5 +1,6 @@
 import { parse } from "smol-toml";
 import type { OrgizeAgendaViewJsonRequestDto } from "orgize/dto";
+import { orgZhixingBasePath } from "./deploymentBasePath";
 import type { ViewKey } from "./model";
 
 export type SiteConfig = {
@@ -285,13 +286,8 @@ const sourceFromPath = (
 const sourceFileFor = (contentRoot: string, file: string): string => `${contentRoot}/${file}`;
 
 const publicRootUrl = (): URL => {
-  const assetScript = Array.from(document.scripts).find((script) =>
-    script.src ? new URL(script.src).pathname.includes("/assets/") : false,
-  );
-  if (assetScript?.src) {
-    return new URL("../", assetScript.src);
-  }
-  return new URL(".", document.baseURI);
+  const basePath = orgZhixingBasePath();
+  return new URL(basePath === "/" ? "/" : `${basePath}/`, window.location.origin);
 };
 
 const stripLeadingSlash = (path: string): string => path.replace(/^\/+/, "");

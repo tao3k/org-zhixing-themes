@@ -1,8 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
+import { scenarioSitePath } from "./playwright/sitePath";
 
 delete process.env.FORCE_COLOR;
+delete process.env.NO_COLOR;
 
-const baseURL = "http://127.0.0.1:4173/org-zhixing-themes";
+const previewOrigin = "http://127.0.0.1:4173";
 
 export default defineConfig({
   testDir: "./playwright",
@@ -10,14 +12,14 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never", outputFolder: "./reports/playwright-html" }]],
   retries: process.env.CI ? 1 : 0,
   use: {
-    baseURL,
+    baseURL: previewOrigin,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
   webServer: {
     command: "npx rsbuild preview --host 127.0.0.1 --port 4173",
     cwd: process.cwd(),
-    url: `${baseURL}/`,
+    url: `${previewOrigin}${scenarioSitePath("/")}`,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
   },
