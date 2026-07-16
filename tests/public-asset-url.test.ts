@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { attachmentPublicPath } from "../src/attachmentPaths";
 import { publicAssetUrl } from "../src/config";
 
 describe("public asset URLs", () => {
@@ -16,6 +17,17 @@ describe("public asset URLs", () => {
     );
     expect(publicAssetUrl("blog/.attach/00/example.jpeg").pathname).toBe(
       "/org-zhixing-themes/blog/.attach/00/example.jpeg",
+    );
+  });
+
+  it("projects hidden Org attachment directories onto a Pages-safe media path", () => {
+    const record = {
+      directoryPath: "blog/.attach/00/example-id",
+      linkPath: "wallpaper.jpeg",
+    } as Parameters<typeof attachmentPublicPath>[0];
+
+    expect(attachmentPublicPath(record, "blog/wallpaper-gallery.org")).toBe(
+      "org-zhixing.media/blog/attach/00/example-id/wallpaper.jpeg",
     );
   });
 });

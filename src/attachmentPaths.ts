@@ -22,10 +22,11 @@ export const attachmentPublicPath = (
   const linkPath = normalizePublicPath(record.linkPath);
   const joined = joinPath(directoryPath, linkPath);
   const sourceRoot = sourceFile ? normalizePublicPath(sourceFile).split("/")[0] : "";
-  if (!sourceFile || (sourceRoot && directoryPath.startsWith(`${sourceRoot}/`))) {
-    return joined;
-  }
-  return joinPath(dirname(sourceFile), joined);
+  const sourcePath =
+    !sourceFile || (sourceRoot && directoryPath.startsWith(`${sourceRoot}/`))
+      ? joined
+      : joinPath(dirname(sourceFile), joined);
+  return joinPath("org-zhixing.media", ...publicSegments(sourcePath).map(publicMediaSegment));
 };
 
 export const normalizePublicPath = (value: string): string => publicSegments(value).join("/");
@@ -42,6 +43,8 @@ const dirname = (path: string): string => {
 };
 
 const joinPath = (...parts: string[]): string => parts.flatMap(publicSegments).join("/");
+
+const publicMediaSegment = (segment: string): string => segment.replace(/^\.+/, "");
 
 const publicSegments = (value: string): string[] => {
   const segments = value.split("/").filter((segment) => segment.length > 0 && segment !== ".");

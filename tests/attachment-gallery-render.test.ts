@@ -59,11 +59,13 @@ describe("attachment gallery render contract", () => {
     expect(thumbnails[0]).toContain('loading="eager"');
     expect(thumbnails[0]).toContain('fetchpriority="high"');
     expect(thumbnails[1]).toContain(
-      'src="http://localhost:3000/blog/attachments/second-photo.jpg"',
+      'src="http://localhost:3000/org-zhixing.media/blog/attachments/second-photo.jpg"',
     );
     expect(thumbnails[1]).toContain('alt="Second photo"');
     expect(thumbnails[1]).toContain('loading="lazy"');
     expect(thumbnails[1]).not.toContain("fetchpriority");
-    expect(html).toContain('href="http://localhost:3000/blog/attachments/first%20photo.jpg"');
+    expect(html).toContain(
+      'href="http://localhost:3000/org-zhixing.media/blog/attachments/first%20photo.jpg"',
+    );
   });
 });

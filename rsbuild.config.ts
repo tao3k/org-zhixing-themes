@@ -16,6 +16,13 @@ const publicConfigPath = process.env.ORG_ZHIXING_CONFIG
   ? resolve(projectRoot, process.env.ORG_ZHIXING_CONFIG)
   : resolve(publicRoot, "org-zhixing.toml");
 const publicConfigSource = readFileSync(publicConfigPath, "utf8");
+const publicConfig = parse(publicConfigSource) as Record<string, unknown>;
+const contentRoot = configuredContentRoot(publicConfig);
+const attachmentLogicalRoot = configuredAttachmentRoot(publicConfig, contentRoot);
+const attachmentSourceRoot = externalContentRoot
+  ? resolve(externalContentRoot, relativeContentPath(attachmentLogicalRoot, contentRoot))
+  : resolve(publicRoot, attachmentLogicalRoot);
+const attachmentOutputRoot = publicMediaPath(attachmentLogicalRoot);
 const staticManifestPath = resolve(cacheRoot, "static-site.json");
 const staticGalleryPath = resolve(cacheRoot, "org-zhixing.gallery.json");
 const staticSourceShardRoot = resolve(cacheRoot, "org-zhixing.sources");
@@ -121,6 +128,9 @@ export default defineConfig({
             },
           ]
         : []),
+      ...(existsSync(attachmentSourceRoot)
+        ? [{ from: attachmentSourceRoot, to: attachmentOutputRoot }]
+        : []),
     ],
   },
   server: {
@@ -197,4 +207,42 @@ function normalizeBasePath(value: string): string {
     return "/";
   }
   return `/${trimmed.replace(/^\/+|\/+$/g, "")}`;
+}
+
+function configuredContentRoot(config: Record<string, unknown>): string {
+  const content = recordValue(config.content);
+  return normalizeLogicalPath(stringValue(content.content_dir) ?? "blog");
+}
+
+function configuredAttachmentRoot(config: Record<string, unknown>, contentRoot: string): string {
+  const attachments = recordValue(config.attachments);
+  const configured = normalizeLogicalPath(stringValue(attachments.attach_id_dir) ?? ".attach");
+  return configured.startsWith(`${contentRoot}/`) ? configured : `${contentRoot}/${configured}`;
+}
+
+function relativeContentPath(path: string, contentRoot: string): string {
+  return path === contentRoot ? "" : path.replace(new RegExp(`^${escapeRegExp(contentRoot)}/`), "");
+}
+
+function publicMediaPath(path: string): string {
+  const safePath = path
+    .split("/")
+    .map((segment) => segment.replace(/^\.+/u, ""))
+    .filter(Boolean)
+    .join("/");
+  return `org-zhixing.media/${safePath}`;
+}
+
+function normalizeLogicalPath(value: string): string {
+  return value.replace(/^\/+|\/+$/gu, "");
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }

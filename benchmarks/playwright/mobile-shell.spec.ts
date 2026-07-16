@@ -95,7 +95,10 @@ test("direct nested Blog article loads its shard and attachment images", async (
   const firstImage = page.locator(".blog-article img").first();
   await expect(firstImage).toBeVisible();
   await expect.poll(() => firstImage.evaluate((image) => image.naturalWidth)).toBeGreaterThan(0);
-  await expect(firstImage).toHaveAttribute("src", /\/org-zhixing-themes\/blog\/\.attach\/00\//);
+  await expect(firstImage).toHaveAttribute(
+    "src",
+    /\/org-zhixing-themes\/org-zhixing\.media\/blog\/attach\/00\//,
+  );
   expect(failedResponses).toEqual([]);
   expect(errors).toEqual([]);
 });
