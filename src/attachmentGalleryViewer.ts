@@ -16,7 +16,7 @@ export const bindAttachmentGalleryViewer = (dom: AppDomNodes, signal: AbortSigna
     pswpModule: () => import("photoswipe"),
     bgOpacity: 0.92,
     imageClickAction: "zoom",
-    showHideAnimationType: "fade",
+    showHideAnimationType: "none",
     wheelToZoom: true,
     paddingFn: attachmentLightboxPadding,
   });
@@ -27,7 +27,15 @@ export const bindAttachmentGalleryViewer = (dom: AppDomNodes, signal: AbortSigna
   dom.view.addEventListener("load", handleAttachmentImageLoad, { capture: true, signal });
   dom.view.addEventListener("click", handleAttachmentImageClick, { capture: true, signal });
   lightbox.init();
-  signal.addEventListener("abort", () => lightbox.destroy(), { once: true });
+  dom.view.dataset.attachmentViewerReady = "true";
+  signal.addEventListener(
+    "abort",
+    () => {
+      delete dom.view.dataset.attachmentViewerReady;
+      lightbox.destroy();
+    },
+    { once: true },
+  );
 };
 
 const attachmentLightboxPadding = (viewportSize: Point): Padding => {
@@ -61,7 +69,7 @@ const handleAttachmentImageClick = (event: MouseEvent): void => {
 
   event.preventDefault();
   event.stopImmediatePropagation();
-  void loadImageDimensions(image.currentSrc || image.src).then((dimensions) => {
+  void loadImageDimensions(opener.href).then((dimensions) => {
     setPhotoSwipeDimensions(opener, dimensions);
     opener.dispatchEvent(replayClick(event));
   });
@@ -80,12 +88,17 @@ const enrichSlideData = (itemData: SlideData, linkElement: HTMLAnchorElement): S
     itemData.h = dimensions.height;
   }
   itemData.alt = linkElement.dataset.attachmentTitle ?? itemData.alt ?? "";
+  itemData.msrc = itemData.src;
   itemData.thumbCropped = true;
   return itemData;
 };
 
 const updateOpenerDimensions = (opener: HTMLAnchorElement, image: HTMLImageElement): boolean => {
-  if (!image.naturalWidth || !image.naturalHeight) {
+  if (
+    (image.currentSrc || image.src) !== opener.href ||
+    !image.naturalWidth ||
+    !image.naturalHeight
+  ) {
     return false;
   }
   setPhotoSwipeDimensions(opener, { width: image.naturalWidth, height: image.naturalHeight });
