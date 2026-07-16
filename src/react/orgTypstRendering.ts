@@ -9,7 +9,10 @@ type PendingRender = {
 
 type TypstPreviewRecord = {
   block: HTMLElement;
+  frame: HTMLElement;
+  ownsFrame: boolean;
   preview: HTMLElement;
+  toggle: HTMLButtonElement;
 };
 
 let worker: Worker | null = null;
@@ -50,6 +53,11 @@ const renderTypst: TypstRenderer = (source) =>
 
 const typstLanguagePattern = /^(?:src-|language-)(?:typst|typ)$/i;
 
+export const sanitizeTypstSvg = (svg: string, foreground?: string): string => {
+  const xmlSafe = svg.replace(/&(?!(?:#\d+|#x[0-9a-f]+|amp|lt|gt|quot|apos);)/gi, "&amp;");
+  return foreground ? xmlSafe.replace(/\b(fill|stroke)="#000"/g, `$1="${foreground}"`) : xmlSafe;
+};
+
 export const findOrgTypstBlocks = (root: ParentNode): HTMLElement[] =>
   [...root.querySelectorAll<HTMLElement>("pre")].filter((block) =>
     [...block.classList, ...(block.querySelector("code")?.classList ?? [])].some((className) =>
@@ -57,18 +65,55 @@ export const findOrgTypstBlocks = (root: ParentNode): HTMLElement[] =>
     ),
   );
 
-const createTypstPreview = (block: HTMLElement): HTMLElement => {
-  const preview = document.createElement("figure");
+const createTypstPreview = (block: HTMLElement): TypstPreviewRecord => {
+  const existingFrame = block.parentElement?.classList.contains("org-code-highlight")
+    ? block.parentElement
+    : null;
+  const frame = existingFrame ?? document.createElement("figure");
+  const ownsFrame = existingFrame === null;
+  frame.classList.add("org-typst-block");
+  frame.dataset.orgTypstView = "preview";
+  if (ownsFrame) {
+    block.before(frame);
+    frame.append(block);
+  }
+
+  let label = frame.querySelector<HTMLElement>(":scope > figcaption");
+  if (!label) {
+    label = document.createElement("figcaption");
+    label.textContent = "Typst";
+    frame.prepend(label);
+  }
+
+  const toggle = document.createElement("button");
+  toggle.className = "org-typst-view-toggle";
+  toggle.type = "button";
+  toggle.textContent = "Source code";
+  toggle.setAttribute("aria-pressed", "false");
+  label.append(toggle);
+
+  const preview = document.createElement("div");
   preview.className = "org-typst-preview";
   preview.dataset.orgTypstState = "pending";
+  preview.dataset.orgTypstView = "preview";
   preview.setAttribute("aria-busy", "true");
-  const label = document.createElement("figcaption");
-  label.textContent = "Typst preview";
   const output = document.createElement("div");
   output.className = "org-typst-preview-output";
-  preview.append(label, output);
+  preview.append(output);
   block.before(preview);
-  return preview;
+  block.hidden = true;
+
+  toggle.addEventListener("click", () => {
+    const showSource = frame.dataset.orgTypstView !== "source";
+    frame.dataset.orgTypstView = showSource ? "source" : "preview";
+    preview.dataset.orgTypstView = showSource ? "source" : "preview";
+    preview.hidden = showSource;
+    block.hidden = !showSource;
+    toggle.textContent = showSource ? "Preview" : "Source code";
+    toggle.setAttribute("aria-pressed", String(showSource));
+  });
+
+  return { block, frame, ownsFrame, preview, toggle };
 };
 
 const renderPreview = async (
@@ -80,11 +125,28 @@ const renderPreview = async (
   const svg = await render(block.textContent ?? "");
   const output = preview.querySelector<HTMLElement>(".org-typst-preview-output");
   if (!output || !preview.isConnected) return () => undefined;
-  const objectUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+  const objectUrl = URL.createObjectURL(
+    new Blob([sanitizeTypstSvg(svg, getComputedStyle(preview).color)], {
+      type: "image/svg+xml;charset=utf-8",
+    }),
+  );
   const image = document.createElement("img");
   image.alt = "Rendered Typst document";
   image.decoding = "async";
   image.src = objectUrl;
+  try {
+    await image.decode?.();
+  } catch (error) {
+    URL.revokeObjectURL(objectUrl);
+    throw new Error("Rendered Typst SVG could not be decoded", { cause: error });
+  }
+  if (!preview.isConnected) {
+    URL.revokeObjectURL(objectUrl);
+    return () => undefined;
+  }
+  image.style.width = `${(image.naturalWidth * 4) / 3}px`;
+  image.style.maxWidth = "100%";
+  image.style.height = "auto";
   output.replaceChildren(image);
   preview.dataset.orgTypstState = "ready";
   preview.setAttribute("aria-busy", "false");
@@ -102,10 +164,19 @@ const beginTypstPreview = (
       if (isActive()) releaseUrls.push(release);
       else release();
     })
-    .catch(() => {
+    .catch((error: unknown) => {
       if (!isActive()) return;
-      record.preview.dataset.orgTypstState = "fallback";
+      const message = error instanceof Error ? error.message : String(error);
+      const output = record.preview.querySelector<HTMLElement>(".org-typst-preview-output");
+      const diagnostic = document.createElement("pre");
+      diagnostic.className = "org-typst-preview-error";
+      diagnostic.setAttribute("role", "alert");
+      diagnostic.textContent = message;
+      output?.replaceChildren(diagnostic);
+      record.preview.dataset.orgTypstState = "error";
+      record.preview.dataset.orgTypstError = message;
       record.preview.setAttribute("aria-busy", "false");
+      console.error("Typst preview failed", error);
     });
 };
 
@@ -137,10 +208,7 @@ export const installOrgTypstRendering = (
   root: ParentNode,
   render: TypstRenderer = renderTypst,
 ): (() => void) => {
-  const records = findOrgTypstBlocks(root).map((block) => ({
-    block,
-    preview: createTypstPreview(block),
-  }));
+  const records = findOrgTypstBlocks(root).map(createTypstPreview);
   if (records.length === 0) return () => undefined;
   let active = true;
   const releaseUrls: Array<() => void> = [];
@@ -151,5 +219,13 @@ export const installOrgTypstRendering = (
     active = false;
     observer?.disconnect();
     for (const release of releaseUrls) release();
+    for (const record of records) {
+      record.block.hidden = false;
+      record.toggle.remove();
+      record.preview.remove();
+      record.frame.classList.remove("org-typst-block");
+      delete record.frame.dataset.orgTypstView;
+      if (record.ownsFrame) record.frame.replaceWith(record.block);
+    }
   };
 };

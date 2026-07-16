@@ -2,6 +2,7 @@ import { $typst } from "@myriaddreamin/typst.ts";
 import compilerWasmUrl from "@myriaddreamin/typst-ts-web-compiler/wasm?url";
 import rendererWasmUrl from "@myriaddreamin/typst-ts-renderer/wasm?url";
 import type { TypstRenderRequest, TypstRenderResponse } from "./typstProtocol";
+import { prepareTypstPreviewSource } from "../core/typstSource";
 
 type WorkerScope = {
   addEventListener: (
@@ -22,17 +23,32 @@ $typst.setRendererInitOptions({
 
 let renderQueue = Promise.resolve();
 
+const formatTypstError = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+
+  try {
+    const serialized = JSON.stringify(error, null, 2);
+    if (serialized && serialized !== "{}") return serialized;
+  } catch {
+    // Fall through to String so unusual compiler diagnostics still surface.
+  }
+
+  const message = String(error);
+  return message && message !== "[object Object]" ? message : "Typst render failed";
+};
+
 workerScope.addEventListener("message", (event) => {
   const { id, source } = event.data;
   renderQueue = renderQueue
     .then(async () => {
-      const svg = await $typst.svg({ mainContent: source });
+      const svg = await $typst.svg({ mainContent: prepareTypstPreviewSource(source) });
       workerScope.postMessage({ id, ok: true, svg });
     })
     .catch((error: unknown) => {
       workerScope.postMessage({
         id,
-        message: error instanceof Error ? error.message : "Typst render failed",
+        message: formatTypstError(error),
         ok: false,
       });
     });

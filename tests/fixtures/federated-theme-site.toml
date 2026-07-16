@@ -1,0 +1,13 @@
+theme = "documents-pro"
+theme_variant = "mocha"
+
+[theme_remotes.documents-pro]
+remote = "documents_pro"
+entry = "http://127.0.0.1:65535/mf-manifest.json"
+expose = "./theme"
+package = "@downstream/documents-pro"
+default_variant = "mocha"
+variants = ["latte", "frappe", "macchiato", "mocha"]
+
+[site]
+title = "Federated Theme Contract Fixture"

@@ -22,7 +22,7 @@ import {
   type ThemeApi,
 } from "../src/library";
 import { record } from "./modelFixtures";
-import { generatedThemeCatalog, generatedThemeEntries } from "../src/generated/themeRegistry";
+import { isolatedThemeCatalog, isolatedThemeEntries } from "virtual:org-zhixing/theme-runtime";
 import minimalNotesTheme from "@org-zhixing/theme-minimal-notes";
 import documentsTheme from "@org-zhixing/theme-documents";
 
@@ -41,12 +41,12 @@ describe("Org Zhixing library theme contract", () => {
       variants: ["default"],
       renderModes: ["static"],
     });
-    expect(generatedThemeCatalog.map(({ id }) => id)).toEqual([
+    expect(isolatedThemeCatalog.map(({ id }) => id)).toEqual([
       "documents",
       "elegant-blog",
       "minimal-notes",
     ]);
-    expect(generatedThemeEntries.map(([id, theme]) => [id, theme.name])).toEqual([
+    expect(isolatedThemeEntries.map(([id, theme]) => [id, theme.name])).toEqual([
       ["elegant-blog", "elegant-blog"],
     ]);
     expect(

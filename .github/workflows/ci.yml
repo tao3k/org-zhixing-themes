@@ -64,6 +64,9 @@ jobs:
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
 
+      - name: Federated theme failure recovery scenario
+        run: npm run scenario:theme-federation
+
       - name: Build
         run: npm run build
 

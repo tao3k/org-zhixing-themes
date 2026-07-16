@@ -1,0 +1,116 @@
+.org-typst-block {
+  overflow: hidden;
+  margin: 26px 0;
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius-ui);
+  background: var(--surface-canvas);
+}
+
+.org-typst-block > figcaption {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--hairline-soft);
+  padding: 7px 12px;
+  color: var(--face-faded);
+  background: var(--surface-paper);
+  font: var(--weight-medium) var(--type-label-size) / var(--type-label-leading)
+    var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.org-typst-view-toggle {
+  appearance: none;
+  border: 1px solid var(--hairline-soft);
+  border-radius: var(--radius-label);
+  padding: 5px 9px;
+  color: var(--face-faded);
+  background: transparent;
+  font: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.org-typst-view-toggle:hover,
+.org-typst-view-toggle:focus-visible,
+.org-typst-view-toggle[aria-pressed="true"] {
+  border-color: var(--face-salient);
+  color: var(--face-salient);
+  outline: none;
+}
+
+.org-typst-preview {
+  min-height: 84px;
+  padding: clamp(18px, 3vw, 32px);
+  color: var(--face-normal);
+  background: var(--surface-canvas);
+}
+
+.org-typst-preview[aria-busy="true"] .org-typst-preview-output::before {
+  content: "Rendering Typst…";
+  color: var(--face-faded);
+  font: var(--type-label-size) / var(--type-label-leading) var(--font-mono);
+}
+
+.org-typst-preview-output {
+  display: grid;
+  min-height: 84px;
+  place-items: center;
+  overflow-x: auto;
+}
+
+.org-typst-preview-output img {
+  max-width: 100%;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+}
+
+.org-typst-preview-error {
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  border-left: 3px solid var(--face-critical);
+  padding: 12px;
+  color: var(--face-critical);
+  background: var(--surface-critical);
+  white-space: pre-wrap;
+}
+
+.org-typst-block > pre {
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+}
+
+.org-typst-block[data-org-typst-view="preview"]
+  > :is(pre, .org-code-highlight),
+.org-typst-block[data-org-typst-view="source"] > .org-typst-preview {
+  display: none !important;
+}
+
+.org-typst-block > .org-code-highlight {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.org-typst-block > .org-code-highlight > figcaption {
+  display: none;
+}
+
+.org-typst-block > .org-code-highlight > pre {
+  border: 0;
+  border-radius: 0;
+}
+
+.org-typst-block > [hidden] {
+  display: none !important;
+}

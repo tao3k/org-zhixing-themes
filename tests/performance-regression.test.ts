@@ -182,6 +182,8 @@ describe("Org Zhixing performance regression gates", () => {
       scripts: Record<string, string>;
     };
     const main = readFileSync("src/main.tsx", "utf8");
+    const mountApp = readFileSync("src/react/mountApp.tsx", "utf8");
+    const federatedMain = readFileSync("src/federated-main.ts", "utf8");
     const router = readFileSync("src/react/router.tsx", "utf8");
     const queryClient = readFileSync("src/react/queryClient.ts", "utf8");
     const contentServices = readFileSync("src/services/contentServices.ts", "utf8");
@@ -203,7 +205,11 @@ describe("Org Zhixing performance regression gates", () => {
     expect(packageJson.devDependencies["@tanstack/router-plugin"]).toBeUndefined();
     expect(packageJson.devDependencies["@rspack/core"]).toBeUndefined();
     expect(packageJson.devDependencies["@rspack/cli"]).toBeUndefined();
-    expect(main).toContain("<RouterProvider router={router} />");
+    expect(main).toContain("mountApp();");
+    expect(main).not.toContain('import("./react/mountApp")');
+    expect(mountApp).toContain("<RouterProvider router={router} />");
+    expect(federatedMain).toContain('import("./react/mountApp")');
+    expect(federatedMain).toContain("renderThemeStartupFailure");
     expect(router).toContain("createRouter");
     expect(router).toContain("basepath: orgZhixingBasePath()");
     expect(router).toContain('path: "/blogs"');

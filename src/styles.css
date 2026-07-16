@@ -12,5 +12,7 @@
 @import "./styles/agenda-program.css";
 @import "./styles/agenda-program-responsive.css";
 @import "./styles/rendered-org.css";
+@import "./styles/org-typst.css";
 @import "./styles/blog-rendered.css";
 @import "./styles/responsive.css";
+@import "./styles/theme-startup-failure.css";

@@ -129,6 +129,8 @@ async function collectBuildMetrics() {
     jsAssetCount: js.length,
     cssAssetCount: css.length,
     unselectedThemeMarkers,
+    federationArtifactCount: files.filter((file) => /\/mf-(?:manifest|stats)\.json$/u.test(file))
+      .length,
   };
 }
 
@@ -140,6 +142,7 @@ function limitsFor(metrics) {
     jsAssetCount: metrics.jsAssetCount,
     cssAssetCount: metrics.cssAssetCount,
     unselectedThemeMarkers: 0,
+    federationArtifactCount: 0,
   };
 }
 
