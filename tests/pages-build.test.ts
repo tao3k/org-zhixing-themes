@@ -1,8 +1,9 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  materializeStaticRouteShells,
   pagesBuildEnvironment,
   parsePagesBuildArgs,
   validatePagesBuildConfig,
@@ -69,5 +70,43 @@ describe("Pages build tooling", () => {
       ORG_ZHIXING_CONFIG: "/workspace/site.toml",
       ORG_ZHIXING_CONTENT_DIR: "/workspace/docs",
     });
+  });
+
+  it("materializes theme-local shells for every static content route", async () => {
+    const root = mkdtempSync(join(tmpdir(), "org-zhixing-route-shells-"));
+    roots.push(root);
+    writeFileSync(join(root, "index.html"), "<html>theme shell</html>");
+    writeFileSync(
+      join(root, "org-zhixing.static.json"),
+      JSON.stringify({
+        blog: {
+          articles: [
+            { sourceId: "90-operations-90-05-typst-performance" },
+            { sourceId: "10-architecture-10-03-router" },
+          ],
+        },
+      }),
+    );
+
+    await expect(materializeStaticRouteShells(root)).resolves.toBe(2);
+    expect(readFileSync(join(root, "90-operations-90-05-typst-performance.html"), "utf8")).toBe(
+      "<html>theme shell</html>",
+    );
+    expect(
+      readFileSync(join(root, "90-operations-90-05-typst-performance", "index.html"), "utf8"),
+    ).toBe("<html>theme shell</html>");
+    expect(existsSync(join(root, "index", "index.html"))).toBe(false);
+  });
+
+  it("rejects unsafe generated route identifiers", async () => {
+    const root = mkdtempSync(join(tmpdir(), "org-zhixing-route-shells-"));
+    roots.push(root);
+    writeFileSync(join(root, "index.html"), "<html>theme shell</html>");
+    writeFileSync(
+      join(root, "org-zhixing.static.json"),
+      JSON.stringify({ blog: { articles: [{ sourceId: "../outside" }] } }),
+    );
+
+    await expect(materializeStaticRouteShells(root)).rejects.toThrow("PAGES-E005");
   });
 });

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { cp, mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { copyFile, cp, mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, relative, resolve } from "node:path";
 import { parse } from "smol-toml";
@@ -83,15 +83,41 @@ export const runPagesBuild = async (options) => {
     );
     buildStarted = true;
     await runNpm(["run", "build"], validated.workspaceRoot, buildEnv);
+    const routeShells = await materializeStaticRouteShells(internalDist);
     if (validated.outputDir !== internalDist) {
       await rm(validated.outputDir, { force: true, recursive: true });
       await cp(internalDist, validated.outputDir, { recursive: true });
     }
-    console.log(`pages-build ok base=${validated.basePath} out=${validated.outputDir}`);
+    console.log(
+      `pages-build ok base=${validated.basePath} out=${validated.outputDir} routes=${routeShells}`,
+    );
   } finally {
     await rm(cacheRoot, { force: true, recursive: true });
     if (buildStarted) await restoreCanonicalRegistry(validated.workspaceRoot);
   }
+};
+
+export const materializeStaticRouteShells = async (distRoot) => {
+  const projection = JSON.parse(
+    await readFile(resolve(distRoot, "org-zhixing.static.json"), "utf8"),
+  );
+  const sourceIds = new Set(
+    (projection.blog?.articles ?? [])
+      .map((article) => article.sourceId)
+      .filter((sourceId) => typeof sourceId === "string" && sourceId.length > 0),
+  );
+
+  for (const sourceId of sourceIds) {
+    if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/u.test(sourceId)) {
+      throw new Error(`PAGES-E005 unsafe static route: ${sourceId}`);
+    }
+    await copyFile(resolve(distRoot, "index.html"), resolve(distRoot, `${sourceId}.html`));
+    const routeDirectory = resolve(distRoot, sourceId);
+    await mkdir(routeDirectory, { recursive: true });
+    await copyFile(resolve(distRoot, "index.html"), resolve(routeDirectory, "index.html"));
+  }
+
+  return sourceIds.size;
 };
 
 const runNpm = (args, cwd, env) =>

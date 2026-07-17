@@ -26,3 +26,5 @@ export const pagesBuildEnvironment: (
 ) => NodeJS.ProcessEnv;
 
 export const runPagesBuild: (options: PagesBuildOptions) => Promise<void>;
+
+export const materializeStaticRouteShells: (distRoot: string) => Promise<number>;
