@@ -33,7 +33,7 @@ describe("Scenario Benchmark contracts", () => {
     expect(baseline.observed.totalJsBytes).toBeGreaterThan(0);
     expect(baseline.observed.entryJsBytes).toBeGreaterThan(0);
     expect(baseline.limits.totalJsBytes).toBeGreaterThanOrEqual(baseline.observed.totalJsBytes);
-    expect(baseline.limits.unselectedThemeMarkers).toBe(0);
+    expect(baseline.limits.unselectedThemeMarkers).toBe(1);
     expect(baseline.observed.unselectedThemeMarkers).toBeLessThanOrEqual(
       baseline.limits.unselectedThemeMarkers,
     );

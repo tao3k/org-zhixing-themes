@@ -19,7 +19,7 @@ describe("theme preview tooling", () => {
     );
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toBe("documents\nelegant-blog\nminimal-notes\n");
+    expect(result.stdout).toBe("documents\nelegant-blog\nminimal-notes\ntheme-gallery\n");
     expect(result.stderr).toBe("");
   });
 

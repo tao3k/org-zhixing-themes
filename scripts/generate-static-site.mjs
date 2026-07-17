@@ -50,6 +50,16 @@ const htmlWindow = new Window({
 const main = async () => {
   const configText = await readFile(configFilePath, "utf8");
   const config = parseConfig(configText);
+  const externalContentDirectory = process.env.ORG_ZHIXING_CONTENT_DIR?.trim();
+  if (externalContentDirectory) {
+    config.contentRoot = externalContentDirectory
+      .replace(/[\\/]+$/, "")
+      .split(/[\\/]/)
+      .at(-1);
+    config.contentBase = "filesystem";
+    config.contentDiskRoot = resolve(projectRoot, externalContentDirectory);
+    config.sources = [];
+  }
   config.sources = mergeSources(
     config.sources,
     await discoverOrgSources(config.contentRoot, config.contentDiskRoot),

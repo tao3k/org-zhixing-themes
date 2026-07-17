@@ -280,8 +280,8 @@ describe("Org Zhixing performance regression gates", () => {
     const sourceTitles = new Map(
       manifest.sources.map((source) => [source.sourceFile, source.orgTitle ?? source.name]),
     );
-    const travelArticle = manifest.blog?.articles.find(
-      (article) => article.sourceFile === "blog/travel.org",
+    const wallpaperArticle = manifest.blog?.articles.find(
+      (article) => article.sourceFile === "blog/wallpaper-gallery.org",
     );
 
     expect(manifest.blog?.articleCount).toBe(manifest.sources.length);
@@ -289,9 +289,11 @@ describe("Org Zhixing performance regression gates", () => {
       expect(article.title).toBe(sourceTitles.get(article.sourceFile));
       expect(article.sourceName).toBe(article.title);
     }
-    expect(travelArticle?.title).toBe("游山玩水");
-    expect(travelArticle?.sourceName).toBe("游山玩水");
-    expect(manifest.blog?.articles.map((article) => article.title)).toContain("Org Syntax Atlas");
+    expect(wallpaperArticle?.title).toBe("Wallpaper Gallery");
+    expect(wallpaperArticle?.sourceName).toBe("Wallpaper Gallery");
+    expect(manifest.blog?.articles.map((article) => article.title)).toContain(
+      "Org Zhixing Theme Preview",
+    );
   }, 15_000);
 
   it("keeps Zen reader progress as a lazy reading affordance", () => {

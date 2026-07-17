@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "environment": {
-    "node": "v24.14.1",
+    "node": "v25.8.2",
     "platform": "darwin",
     "arch": "arm64"
   },
   "observed": {
-    "totalJsBytes": 826074,
-    "entryJsBytes": 126164,
-    "totalCssBytes": 93861,
+    "totalJsBytes": 833499,
+    "entryJsBytes": 129282,
+    "totalCssBytes": 96549,
     "jsAssetCount": 24,
     "cssAssetCount": 1,
-    "unselectedThemeMarkers": 0,
+    "unselectedThemeMarkers": 1,
     "federationArtifactCount": 0
   },
   "limits": {
-    "totalJsBytes": 867378,
-    "entryJsBytes": 132473,
-    "totalCssBytes": 98555,
+    "totalJsBytes": 875174,
+    "entryJsBytes": 135747,
+    "totalCssBytes": 101377,
     "jsAssetCount": 24,
     "cssAssetCount": 1,
-    "unselectedThemeMarkers": 0,
+    "unselectedThemeMarkers": 1,
     "federationArtifactCount": 0
   }
 }

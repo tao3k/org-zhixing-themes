@@ -11,6 +11,7 @@ const themeIsolation = await resolveThemeIsolation({
 export default defineConfig({
   plugins: [themeIsolationPlugin.vite(themeIsolation)],
   test: {
+    execArgv: ["--no-experimental-webstorage"],
     environment: "happy-dom",
     environmentOptions: {
       happyDOM: {

@@ -16,12 +16,25 @@ export const replaceThemeSelection = (source, theme, variant) => {
 export const replaceThemePreviewSelection = (source, theme) => {
   const selected = replaceThemeSelection(source, theme.id, theme.defaultVariant);
   if (theme.content?.routeMode !== "documents") return selected;
-  return replaceSectionAssignment(
+  const documentsSelection = replaceSectionAssignment(
     replaceSectionAssignment(selected, "content", "content_dir", theme.content.directory),
     "content",
     "content_base",
     theme.content.base,
   );
+  return documentsSelection
+    .replace(
+      /^content_dirs\s*=.*$/m,
+      `content_dirs = [${JSON.stringify(theme.content.directory.startsWith("/") ? "docs" : theme.content.directory)}]`,
+    )
+    .replace(
+      /^content_base\s*=.*$/m,
+      `content_base = ${JSON.stringify(theme.content.base === "public" ? "public" : "workspace")}`,
+    )
+    .replace(
+      /^content_dir\s*=.*$/m,
+      `content_dir = ${JSON.stringify(theme.content.directory.startsWith("/") ? "docs" : theme.content.directory)}`,
+    );
 };
 
 const replaceSectionAssignment = (source, section, key, value) => {
@@ -98,6 +111,19 @@ const main = async () => {
   }
   const externalContentDir = contentDir ? resolve(workspaceRoot, contentDir) : null;
   if (externalContentDir) await assertContentDirectory(externalContentDir);
+  if (externalContentDir) {
+    process.env.ORG_ZHIXING_CONTENT_DIR = externalContentDir;
+  }
+  const previewTheme = externalContentDir
+    ? {
+        ...selected,
+        content: {
+          ...selected.content,
+          base: "filesystem",
+          directory: externalContentDir,
+        },
+      }
+    : selected;
   const previewConfigName = themePreviewConfigName(selected.id, port);
   const trackedConfig = resolve(workspaceRoot, "public/org-zhixing.toml");
   const previewCacheRoot = resolve(workspaceRoot, ".cache/org-zhixing-preview", port);
@@ -106,7 +132,7 @@ const main = async () => {
   try {
     const source = await readFile(trackedConfig, "utf8");
     await mkdir(previewCacheRoot, { recursive: true });
-    await writeFile(previewConfig, replaceThemePreviewSelection(source, selected), "utf8");
+    await writeFile(previewConfig, replaceThemePreviewSelection(source, previewTheme), "utf8");
     const cleanup = () => rm(previewConfig, { force: true });
     console.log(`theme-preview theme=${selected.id} initial-variant=${selected.defaultVariant}`);
     if (externalContentDir) console.log(`content ${externalContentDir}`);
@@ -120,12 +146,7 @@ const main = async () => {
     try {
       const child = spawn("npm", ["run", "dev", "--", "--port", port], {
         cwd: workspaceRoot,
-        env: themePreviewEnvironment(
-          process.env,
-          previewConfig,
-          previewCacheRoot,
-          externalContentDir,
-        ),
+        env: themePreviewEnvironment(process.env, previewConfig, previewCacheRoot),
         stdio: "inherit",
       });
       const stop = (signal) => {

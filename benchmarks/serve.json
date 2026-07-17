@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/org-zhixing-themes/blogs/**",
+      "destination": "/org-zhixing-themes/404.html"
+    }
+  ]
+}

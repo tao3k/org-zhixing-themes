@@ -64,8 +64,11 @@ export const pagesBuildEnvironment = (environment, options, cacheRoot) => ({
 export const runPagesBuild = async (options) => {
   const validated = await validatePagesBuildConfig(options);
   const cacheRoot = await mkdtemp(join(tmpdir(), "org-zhixing-pages-"));
-  const buildEnv = pagesBuildEnvironment(process.env, validated, cacheRoot);
-  const internalDist = resolve(validated.workspaceRoot, "dist");
+  const internalDist = resolve(cacheRoot, "dist");
+  const buildEnv = {
+    ...pagesBuildEnvironment(process.env, validated, cacheRoot),
+    ORG_ZHIXING_DIST_ROOT: internalDist,
+  };
   let buildStarted = false;
   try {
     await runNpm(

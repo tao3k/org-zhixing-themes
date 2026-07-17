@@ -55,12 +55,35 @@ try {
 
 async function run(command, args, env) {
   await new Promise((resolveRun, rejectRun) => {
-    const child = spawn(command, args, { cwd: root, env, stdio: "ignore" });
+    const child = spawn(command, args, {
+      cwd: root,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
     child.once("error", rejectRun);
     child.once("exit", (code) =>
       code === 0
         ? resolveRun()
-        : rejectRun(new Error(`SCENARIO-E003 command failed: ${command} ${args.join(" ")}`)),
+        : rejectRun(
+            new Error(
+              [
+                `SCENARIO-E003 command failed: ${command} ${args.join(" ")}`,
+                stderr.trim() || stdout.trim(),
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            ),
+          ),
     );
   });
 }

@@ -85,7 +85,7 @@ export default defineConfig({
     assetPrefix,
     cleanDistPath: true,
     distPath: {
-      root: "dist",
+      root: process.env.ORG_ZHIXING_DIST_ROOT ?? "dist",
       js: "assets",
       jsAsync: "assets",
       css: "assets",
@@ -101,6 +101,14 @@ export default defineConfig({
       assets: "[name].[contenthash:8][ext]",
     },
     copy: [
+      ...(process.env.ORG_ZHIXING_CONFIG
+        ? [
+            {
+              from: resolve(process.env.ORG_ZHIXING_CONFIG),
+              to: "org-zhixing.toml",
+            },
+          ]
+        : []),
       ...(existsSync(staticManifestPath)
         ? [{ from: staticManifestPath, to: "org-zhixing.static.json" }]
         : []),

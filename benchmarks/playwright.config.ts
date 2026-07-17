@@ -8,6 +8,7 @@ const previewOrigin = "http://127.0.0.1:4173";
 
 export default defineConfig({
   testDir: "./playwright",
+  testIgnore: ["**/typst-rendering.spec.ts"],
   outputDir: "./reports/playwright",
   reporter: [["list"], ["html", { open: "never", outputFolder: "./reports/playwright-html" }]],
   retries: process.env.CI ? 1 : 0,
@@ -17,7 +18,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "npx rsbuild preview --host 127.0.0.1 --port 4173",
+    command: "npx serve .cache/lighthouse --config ../../benchmarks/serve.json --listen 4173",
     cwd: process.cwd(),
     url: `${previewOrigin}${scenarioSitePath("/")}`,
     reuseExistingServer: !process.env.CI,

@@ -45,6 +45,7 @@ describe("Org Zhixing library theme contract", () => {
       "documents",
       "elegant-blog",
       "minimal-notes",
+      "theme-gallery",
     ]);
     expect(isolatedThemeEntries.map(([id, theme]) => [id, theme.name])).toEqual([
       ["elegant-blog", "elegant-blog"],
