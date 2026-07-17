@@ -1,6 +1,9 @@
 #+title: 10.08 Theme Isolation and Federation
 #+filetags: :architecture:themes:module-federation:
 
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+
 * Status
 
 Accepted and implemented.

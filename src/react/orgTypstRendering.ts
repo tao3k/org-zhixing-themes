@@ -135,16 +135,20 @@ const renderPreview = async (
   image.decoding = "async";
   image.src = objectUrl;
   try {
-    await image.decode?.();
+    void image.decode?.().catch(() => {
+      preview.dataset.orgTypstDecode = "failed";
+    });
   } catch (error) {
     URL.revokeObjectURL(objectUrl);
-    throw new Error("Rendered Typst SVG could not be decoded", { cause: error });
+    throw new Error("Rendered Typst SVG could not be decoded", {
+      cause: error,
+    });
   }
   if (!preview.isConnected) {
     URL.revokeObjectURL(objectUrl);
     return () => undefined;
   }
-  image.style.width = `${(image.naturalWidth * 4) / 3}px`;
+  image.style.width = "100%";
   image.style.maxWidth = "100%";
   image.style.height = "auto";
   output.replaceChildren(image);
@@ -188,7 +192,10 @@ const scheduleTypstPreviews = (
     for (const record of records) start(record);
     return null;
   }
-  const recordByPreview = new Map(records.map((record) => [record.preview, record]));
+  const [firstRecord, ...deferredRecords] = records;
+  if (firstRecord) start(firstRecord);
+
+  const recordByPreview = new Map(deferredRecords.map((record) => [record.preview, record]));
   const observer = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
@@ -198,7 +205,7 @@ const scheduleTypstPreviews = (
         if (record) start(record);
       }
     },
-    { rootMargin: "320px 0px" },
+    { rootMargin: "1200px 0px" },
   );
   for (const { preview } of records) observer.observe(preview);
   return observer;

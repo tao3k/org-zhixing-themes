@@ -1,5 +1,5 @@
 {
-  "name": "@org-zhixing/theme-elegant-blog",
+  "name": "@org-zhixing/theme-gallery",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,8 +8,8 @@
   },
   "orgZhixing": {
     "schemaVersion": 1,
-    "id": "elegant-blog",
-    "displayName": "Elegant Blog",
+    "id": "theme-gallery",
+    "displayName": "Theme Gallery",
     "engine": ">=0.1 <0.2",
     "defaultVariant": "default",
     "variants": [
@@ -17,10 +17,7 @@
     ],
     "capabilities": [
       "blog",
-      "agenda",
-      "gallery",
-      "notes",
-      "travel"
+      "theme-preview"
     ],
     "content": {
       "base": "workspace",

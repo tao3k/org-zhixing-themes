@@ -1,3 +1,8 @@
+#+TITLE: 10.07 Org Zhixing Multi-Theme RFC and Design
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+#+FILETAGS: :org-zhixing:architecture:themes:
+
 * 10.07 Org Zhixing Multi-Theme RFC and Design
 
 This is the canonical RFC and specification for multiple Org Zhixing themes,

@@ -1,0 +1,32 @@
+#+TITLE: Org Zhixing Theme Preview
+#+DATE: 2026-07-17
+#+AUTHOR: Org Zhixing
+#+FILETAGS: :org-zhixing:themes:preview:
+
+* Theme preview corpus
+
+This is the independent preview corpus for blog-oriented themes. It is kept
+separate from the technical documentation under =docs/= so each scenario can
+evolve without leaking navigation, routes, or content assumptions into another
+theme.
+
+* What to inspect
+
+- responsive article navigation
+- typography and source-code rendering
+- attachment and gallery layout
+- light and dark appearance variants
+
+* Theme previews
+
+Each link enters a separately built application. The host theme does not import
+the previewed theme into its own runtime, so routes, assets, and configuration
+remain isolated exactly as they will for a downstream theme repository.
+
+- [[/org-zhixing-themes/themes/documents/][Documents]]
+- [[/org-zhixing-themes/themes/elegant-blog/][Elegant Blog]]
+- [[/org-zhixing-themes/themes/minimal-notes/][Minimal Notes]]
+
+* Gallery example
+
+See [[file:wallpaper-gallery.org][Wallpaper gallery]] for a visual article used to compare blog themes.

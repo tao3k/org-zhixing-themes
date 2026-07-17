@@ -1,0 +1,33 @@
+#+TITLE: Wallpaper Gallery
+#+DATE: 2026-07-17
+#+AUTHOR: Org Zhixing
+#+FILETAGS: :org-zhixing:themes:gallery:
+
+* A visual theme fixture
+
+This article is deliberately independent from the documentation corpus. It
+provides stable visual structure for comparing gallery spacing, responsive
+columns, captions, and reading rhythm across blog themes.
+
+** Dawn
+
+Soft gradients and a restrained palette keep the article readable while still
+exercising media-adjacent layout.
+
+#+begin_quote
+A theme preview should make layout differences visible without coupling the
+theme to production documentation.
+#+end_quote
+
+** Night
+
+The same semantic content should remain usable when the theme switches its
+appearance variant.
+
+#+begin_src typescript
+export const previewScenario = {
+  content: "blog",
+  route: "gallery",
+  isolated: true,
+};
+#+end_src

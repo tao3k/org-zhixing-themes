@@ -1,3 +1,8 @@
+#+TITLE: 90.01 Performance Notes
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+#+FILETAGS: :org-zhixing:operations:performance:
+
 * 90.01 Performance Notes
 
 The current browser architecture keeps Org parsing in Rust and uses TypeScript

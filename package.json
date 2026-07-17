@@ -9,7 +9,7 @@
   ],
   "type": "module",
   "scripts": {
-    "pretest": "npm run test:docs",
+    "pretest": "npm run test:docs && npm run test:contracts",
     "dev": "npm run generate:theme-assets && npm run generate:static && rsbuild dev",
     "generate:theme-assets": "node scripts/build-elegant-theme.mjs",
     "theme:check": "node packages/theme-tooling/src/theme-check.mjs",
@@ -17,12 +17,14 @@
     "theme:list": "node packages/theme-tooling/src/theme-list.mjs",
     "theme:preview": "node packages/theme-tooling/src/theme-preview.mjs",
     "pages:build": "node packages/theme-tooling/src/pages-build.mjs",
+    "pages:themes": "node packages/theme-tooling/src/pages-theme-gallery.mjs",
     "generate:static": "node --import tsx scripts/generate-static-site.mjs",
     "build": "npm run generate:theme-assets && npm run generate:static && tsc -b && rsbuild build && node --import tsx scripts/write-spa-fallback.mjs",
     "test": "vitest run tests",
     "ci": "npm run generate:theme-assets && npm run typecheck && npm run harness && npm test && npm run build && npm run scenario:check",
     "typecheck": "tsc -b --pretty false",
     "test:docs": "node --import tsx scripts/check-org-docs.mjs",
+    "test:contracts": "node --import tsx scripts/check-org-contracts.mjs",
     "test:typst": "node --import tsx scripts/check-org-typst.mjs",
     "harness": "typescript-project-harness .",
     "harness:json": "typescript-project-harness --json .",
@@ -37,7 +39,10 @@
     "scenario:documents": "env -u FORCE_COLOR -u NO_COLOR playwright test --config benchmarks/documents.playwright.config.ts",
     "scenario:theme-federation": "node packages/scenario-benchmark/src/theme-federation.mjs",
     "scenario:lighthouse": "node packages/scenario-benchmark/src/prepare-lighthouse.mjs && lhci collect --config benchmarks/lighthouserc.cjs && lhci assert --config benchmarks/lighthouserc.cjs && lhci upload --config benchmarks/lighthouserc.cjs",
-    "preview": "npm run generate:theme-assets && npm run generate:static && rsbuild preview"
+    "preview": "npm run generate:theme-assets && npm run generate:static && rsbuild preview",
+    "scenario:typst": "npm run scenario:typst:cache && npm run scenario:typst:browser",
+    "scenario:typst:cache": "vitest run tests/typst-performance-regression.test.ts",
+    "scenario:typst:browser": "env -u NO_COLOR playwright test --config benchmarks/typst.playwright.config.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",

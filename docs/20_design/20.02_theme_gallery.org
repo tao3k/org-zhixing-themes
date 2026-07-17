@@ -1,0 +1,46 @@
+#+TITLE: 20.02 Theme Gallery
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+#+FILETAGS: :org-zhixing:themes:gallery:
+
+* Theme Gallery
+
+GitHub Pages uses the =documents= theme and the =docs/= corpus as its default
+site. Each preview entry switches both the theme package and the content scenario
+declared by that package. The theme, content directory, routes, and static assets
+are isolated under a dedicated deployment path.
+
+Color variants are not separate themes. Open a preview and use its Appearance
+control to switch among the variants supported by that theme.
+
+** Documents
+
+- Scenario: technical documentation, Org-roam, backlinks, search, and knowledge graphs
+- Content directory: =docs/=
+- Default variant: =mocha=
+- [[https://tao3k.github.io/org-zhixing-themes/themes/documents/][Open Documents on GitHub Pages]]
+
+** Elegant Blog
+
+- Scenario: blogs, agenda, gallery, notes, and travel
+- Content directory: the independent blog corpus declared by the theme package
+- Default variant: =default=
+- [[https://tao3k.github.io/org-zhixing-themes/themes/elegant-blog/][Open Elegant Blog on GitHub Pages]]
+
+** Minimal Notes
+
+- Scenario: lightweight blogs, notes, and search
+- Content directory: the independent notes or blog corpus declared by the theme package
+- Default variant: =paper=
+- [[https://tao3k.github.io/org-zhixing-themes/themes/minimal-notes/][Open Minimal Notes on GitHub Pages]]
+
+* Generated deployment contract
+
+The Pages build discovers themes from the live package registry and generates
+=theme-manifest.json= together with =theme-configs/<theme-id>.toml=. Each manifest
+entry records the theme ID, variants, capabilities, content contract, preview URL,
+and generated configuration path.
+
+GitHub Actions reads this manifest to build one isolated static site per theme.
+Adding or removing a theme therefore updates the deployment matrix without leaving
+stale hand-written preview links or silently reusing the wrong content directory.

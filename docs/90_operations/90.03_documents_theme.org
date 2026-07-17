@@ -1,6 +1,9 @@
 #+title: Documents Theme
 #+author: Org Zhixing
 
+#+DATE: 2026-07-16
+#+FILETAGS: :org-zhixing:operations:documents:
+
 * Purpose
 
 =documents= is the documentation-oriented theme for Org Zhixing.  It keeps the

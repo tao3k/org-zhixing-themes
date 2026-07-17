@@ -5,7 +5,7 @@ import { themeIsolationPlugin } from "./src/theme-system/build/themeIsolationPlu
 
 const themeIsolation = await resolveThemeIsolation({
   workspaceRoot: import.meta.dirname,
-  configPath: resolve(import.meta.dirname, "public/org-zhixing.toml"),
+  configPath: resolve(import.meta.dirname, "tests/fixtures/elegant-blog-site.toml"),
 });
 
 export default defineConfig({

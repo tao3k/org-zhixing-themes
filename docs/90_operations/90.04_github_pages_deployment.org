@@ -1,6 +1,9 @@
 #+title: 90.04 GitHub Pages Deployment
 #+author: Org Zhixing
 
+#+DATE: 2026-07-16
+#+FILETAGS: :org-zhixing:operations:deployment:
+
 * Purpose
 
 Org Zhixing supports two GitHub Pages ownership modes:

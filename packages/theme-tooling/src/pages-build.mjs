@@ -73,6 +73,11 @@ export const runPagesBuild = async (options) => {
       validated.workspaceRoot,
       buildEnv,
     );
+    await runNpm(
+      ["run", "test:contracts", "--", validated.configPath],
+      options.workspaceRoot,
+      buildEnv,
+    );
     buildStarted = true;
     await runNpm(["run", "build"], validated.workspaceRoot, buildEnv);
     if (validated.outputDir !== internalDist) {
@@ -103,7 +108,7 @@ const restoreCanonicalRegistry = async (workspaceRoot) => {
   delete canonicalEnv.ORG_ZHIXING_CACHE_ROOT;
   delete canonicalEnv.ORG_ZHIXING_CONFIG;
   delete canonicalEnv.ORG_ZHIXING_CONTENT_DIR;
-  await runNpm(["run", "generate:themes"], workspaceRoot, canonicalEnv);
+  await runNpm(["run", "generate:theme-assets"], workspaceRoot, canonicalEnv);
 };
 
 const basePathFromConfig = (config) => {

@@ -3,6 +3,7 @@ import compilerWasmUrl from "@myriaddreamin/typst-ts-web-compiler/wasm?url";
 import rendererWasmUrl from "@myriaddreamin/typst-ts-renderer/wasm?url";
 import type { TypstRenderRequest, TypstRenderResponse } from "./typstProtocol";
 import { prepareTypstPreviewSource } from "../core/typstSource";
+import { BoundedLruCache } from "../core/boundedLruCache";
 
 type WorkerScope = {
   addEventListener: (
@@ -22,6 +23,7 @@ $typst.setRendererInitOptions({
 });
 
 let renderQueue = Promise.resolve();
+const renderedSvgCache = new BoundedLruCache<string, string>(64);
 
 const formatTypstError = (error: unknown): string => {
   if (error instanceof Error) return error.message;
@@ -42,7 +44,13 @@ workerScope.addEventListener("message", (event) => {
   const { id, source } = event.data;
   renderQueue = renderQueue
     .then(async () => {
-      const svg = await $typst.svg({ mainContent: prepareTypstPreviewSource(source) });
+      let svg = renderedSvgCache.get(source);
+      if (svg === undefined) {
+        svg = await $typst.svg({
+          mainContent: prepareTypstPreviewSource(source),
+        });
+        renderedSvgCache.set(source, svg);
+      }
       workerScope.postMessage({ id, ok: true, svg });
     })
     .catch((error: unknown) => {

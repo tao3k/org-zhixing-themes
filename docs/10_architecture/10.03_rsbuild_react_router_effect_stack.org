@@ -1,3 +1,8 @@
+#+TITLE: 10.03 Rsbuild React Router Effect Stack
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+#+FILETAGS: :org-zhixing:architecture:
+
 * 10.03 Rsbuild React Router Effect Stack
 
 Org Zhixing uses a static-first React architecture on top of Rsbuild and
