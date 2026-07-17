@@ -37,7 +37,7 @@
     "scenario:update-baseline": "npm run build && node packages/scenario-benchmark/src/runner.mjs update-baseline",
     "scenario:browser": "node --import tsx packages/scenario-benchmark/src/prepare-browser.mjs && env -u FORCE_COLOR -u NO_COLOR playwright test --config benchmarks/playwright.config.ts",
     "scenario:documents": "env -u FORCE_COLOR -u NO_COLOR playwright test --config benchmarks/documents.playwright.config.ts",
-    "scenario:theme-federation": "npm run generate:theme-assets && node packages/scenario-benchmark/src/theme-federation.mjs",
+    "scenario:theme-federation": "npm run generate:theme-assets && node packages/scenario-benchmark/src/run-theme-federation.mjs",
     "scenario:lighthouse": "node packages/scenario-benchmark/src/prepare-lighthouse.mjs && lhci collect --config benchmarks/lighthouserc.cjs && lhci assert --config benchmarks/lighthouserc.cjs && lhci upload --config benchmarks/lighthouserc.cjs",
     "preview": "npm run generate:theme-assets && npm run generate:static && rsbuild preview",
     "scenario:typst": "npm run scenario:typst:cache && npm run scenario:typst:browser",
