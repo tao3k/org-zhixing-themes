@@ -24,6 +24,46 @@ $typst.setRendererInitOptions({
 
 let renderQueue = Promise.resolve();
 const renderedSvgCache = new BoundedLruCache<string, string>(64);
+const persistentCacheName = "org-zhixing-typst-svg-v1";
+const persistentCacheLimit = 64;
+
+const persistentCacheKey = async (source: string): Promise<Request> => {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+  const hex = [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return new Request(new URL(`__org-zhixing-typst-cache__/${hex}`, location.origin));
+};
+
+const readPersistentSvg = async (source: string): Promise<string | undefined> => {
+  if (typeof caches === "undefined" || !crypto.subtle) return undefined;
+  try {
+    const cache = await caches.open(persistentCacheName);
+    const response = await cache.match(await persistentCacheKey(source));
+    return response?.text();
+  } catch {
+    return undefined;
+  }
+};
+
+const writePersistentSvg = async (source: string, svg: string): Promise<void> => {
+  if (typeof caches === "undefined" || !crypto.subtle) return;
+  try {
+    const cache = await caches.open(persistentCacheName);
+    await cache.put(
+      await persistentCacheKey(source),
+      new Response(svg, { headers: { "content-type": "image/svg+xml;charset=utf-8" } }),
+    );
+    const keys = await cache.keys();
+    await Promise.all(
+      keys
+        .slice(0, Math.max(0, keys.length - persistentCacheLimit))
+        .map((key) => cache.delete(key)),
+    );
+  } catch {
+    // Cache Storage can be disabled or quota-limited; the in-memory LRU remains authoritative.
+  }
+};
 
 const formatTypstError = (error: unknown): string => {
   if (error instanceof Error) return error.message;
@@ -45,12 +85,14 @@ workerScope.addEventListener("message", (event) => {
   renderQueue = renderQueue
     .then(async () => {
       let svg = renderedSvgCache.get(source);
+      if (svg === undefined) svg = await readPersistentSvg(source);
       if (svg === undefined) {
         svg = await $typst.svg({
           mainContent: prepareTypstPreviewSource(source),
         });
-        renderedSvgCache.set(source, svg);
+        await writePersistentSvg(source, svg);
       }
+      renderedSvgCache.set(source, svg);
       workerScope.postMessage({ id, ok: true, svg });
     })
     .catch((error: unknown) => {

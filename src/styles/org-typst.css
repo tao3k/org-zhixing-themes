@@ -1,6 +1,6 @@
 .org-typst-block {
   overflow: hidden;
-  margin: 26px 0;
+  margin: 18px 0;
   border: 1px solid var(--hairline-soft);
   border-radius: var(--radius-ui);
   background: var(--surface-canvas);
@@ -45,10 +45,14 @@
 }
 
 .org-typst-preview {
-  min-height: 84px;
-  padding: clamp(18px, 3vw, 32px);
+  padding: clamp(12px, 2vw, 18px);
   color: var(--face-normal);
   background: var(--surface-canvas);
+}
+
+.org-typst-preview[data-org-typst-state="loading"] .org-typst-preview-output,
+.org-typst-preview[data-org-typst-state="pending"] .org-typst-preview-output {
+  min-height: 64px;
 }
 
 .org-typst-preview[aria-busy="true"] .org-typst-preview-output::before {
@@ -59,12 +63,14 @@
 
 .org-typst-preview-output {
   display: grid;
-  min-height: 84px;
-  place-items: center;
-  overflow-x: auto;
+  min-height: 0;
+  place-items: start center;
+  overflow: auto;
 }
 
 .org-typst-preview-output img {
+  display: block;
+  width: auto;
   max-width: 100%;
   height: auto;
   margin: 0;

@@ -1,6 +1,7 @@
 import type { TypstRenderRequest, TypstRenderResponse } from "./typstProtocol";
+import { BoundedLruCache } from "../core/boundedLruCache";
 
-type TypstRenderer = (source: string) => Promise<string>;
+export type TypstRenderer = (source: string) => Promise<string>;
 
 type PendingRender = {
   reject: (error: Error) => void;
@@ -18,6 +19,27 @@ type TypstPreviewRecord = {
 let worker: Worker | null = null;
 let nextRequestId = 0;
 const pendingRenders = new Map<number, PendingRender>();
+
+export const createCachedTypstRenderer = (render: TypstRenderer, capacity = 64): TypstRenderer => {
+  const cache = new BoundedLruCache<string, string>(capacity);
+  const inFlight = new Map<string, Promise<string>>();
+  return (source) => {
+    const cached = cache.get(source);
+    if (cached !== undefined) return Promise.resolve(cached);
+    const pending = inFlight.get(source);
+    if (pending) return pending;
+    const request = render(source)
+      .then((svg) => {
+        cache.set(source, svg);
+        return svg;
+      })
+      .finally(() => {
+        if (inFlight.get(source) === request) inFlight.delete(source);
+      });
+    inFlight.set(source, request);
+    return request;
+  };
+};
 
 const getWorker = (): Worker => {
   if (worker) return worker;
@@ -43,13 +65,15 @@ const getWorker = (): Worker => {
   return worker;
 };
 
-const renderTypst: TypstRenderer = (source) =>
+const renderTypstUncached: TypstRenderer = (source) =>
   new Promise((resolve, reject) => {
     const id = ++nextRequestId;
     pendingRenders.set(id, { reject, resolve });
     const request: TypstRenderRequest = { id, source };
     getWorker().postMessage(request);
   });
+
+const renderTypst = createCachedTypstRenderer(renderTypstUncached);
 
 const typstLanguagePattern = /^(?:src-|language-)(?:typst|typ)$/i;
 
@@ -133,9 +157,10 @@ const renderPreview = async (
   const image = document.createElement("img");
   image.alt = "Rendered Typst document";
   image.decoding = "async";
+  image.loading = "eager";
   image.src = objectUrl;
   try {
-    void image.decode?.().catch(() => {
+    await image.decode?.().catch(() => {
       preview.dataset.orgTypstDecode = "failed";
     });
   } catch (error) {
@@ -148,7 +173,8 @@ const renderPreview = async (
     URL.revokeObjectURL(objectUrl);
     return () => undefined;
   }
-  image.style.width = "100%";
+  image.style.width =
+    image.naturalWidth > 0 ? `min(100%, ${Math.ceil(image.naturalWidth * 1.4)}px)` : "auto";
   image.style.maxWidth = "100%";
   image.style.height = "auto";
   output.replaceChildren(image);

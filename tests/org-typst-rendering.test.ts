@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { findOrgTypstBlocks, installOrgTypstRendering } from "../src/react/orgTypstRendering";
+import {
+  createCachedTypstRenderer,
+  findOrgTypstBlocks,
+  installOrgTypstRendering,
+} from "../src/react/orgTypstRendering";
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -35,6 +39,9 @@ describe("Org Typst rendering", () => {
     expect(document.querySelector(".org-typst-preview img")?.getAttribute("src")).toBe(
       "blob:typst-preview",
     );
+    expect(document.querySelector<HTMLImageElement>(".org-typst-preview img")?.style.width).toBe(
+      "auto",
+    );
     const source = document.querySelector<HTMLElement>("pre.src-typst");
     const toggle = document.querySelector<HTMLButtonElement>(".org-typst-view-toggle");
     expect(source?.hidden).toBe(true);
@@ -53,6 +60,27 @@ describe("Org Typst rendering", () => {
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:typst-preview");
     expect(source?.hidden).toBe(false);
     expect(document.querySelector(".org-typst-block")).toBeNull();
+  });
+
+  it("coalesces duplicate renders and keeps the resolved SVG warm", async () => {
+    let finish: ((svg: string) => void) | undefined;
+    const render = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const cachedRender = createCachedTypstRenderer(render, 2);
+
+    const first = cachedRender("$ x $");
+    const duplicate = cachedRender("$ x $");
+    expect(render).toHaveBeenCalledOnce();
+    expect(duplicate).toBe(first);
+
+    finish?.('<svg viewBox="0 0 10 10"></svg>');
+    await expect(first).resolves.toContain("<svg");
+    await expect(cachedRender("$ x $")).resolves.toContain("<svg");
+    expect(render).toHaveBeenCalledOnce();
   });
 
   it("surfaces an error when compilation fails", async () => {
