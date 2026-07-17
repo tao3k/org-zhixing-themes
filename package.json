@@ -19,7 +19,7 @@
     "pages:build": "node packages/theme-tooling/src/pages-build.mjs",
     "pages:themes": "node packages/theme-tooling/src/pages-theme-gallery.mjs",
     "generate:static": "node --import tsx scripts/generate-static-site.mjs",
-    "build": "npm run generate:theme-assets && npm run generate:static && tsc -b && rsbuild build && node --import tsx scripts/write-spa-fallback.mjs",
+    "build": "npm run generate:theme-assets && npm run generate:static && tsc -b && rsbuild build && node --import tsx scripts/write-spa-fallback.mjs && node packages/theme-tooling/src/normalize-spa-shells.mjs",
     "test": "vitest run tests",
     "ci": "npm run generate:theme-assets && npm run typecheck && npm run harness && npm test && npm run build && npm run scenario:check",
     "typecheck": "tsc -b --pretty false",
