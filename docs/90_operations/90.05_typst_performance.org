@@ -5,14 +5,16 @@
 
 * Scenario
 
-This page is the fixed browser fixture for cold and warm Typst rendering. The
-two blocks intentionally share the same source so the second preview exercises
-the worker-side rendered SVG cache.
+This page exercises a representative mathematical document while the scenario
+benchmark measures cold rendering and persistent-cache reload performance. The
+single preview combines integrals, infinite series, determinants, matrices, and
+vectors without duplicating reader-facing content.
 
 #+begin_src typst
-$ integral_0^1 x^2 dif x = 1/3 $
-#+end_src
-
-#+begin_src typst
-$ integral_0^1 x^2 dif x = 1/3 $
+$
+  integral_0^infinity e^(-alpha x^2) dif x
+    &= sqrt(pi) / (2 sqrt(alpha)), quad sum_(n=1)^infinity 1/n^2 = pi^2 / 6 \
+  det(mat(a, b; c, d))
+    &= a d - b c, quad mat(1, 2; 3, 4) vec(x, y) = vec(x + 2 y, 3 x + 4 y)
+$
 #+end_src
