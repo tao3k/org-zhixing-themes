@@ -64,6 +64,9 @@ jobs:
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
 
+      - name: Federated theme failure recovery scenario
+        run: npm run scenario:theme-federation
+
       - name: Build
         run: npm run build
 
@@ -105,7 +108,24 @@ jobs:
         uses: actions/configure-pages@v6
 
       - name: Build Pages artifact
-        run: npm run build
+        run: |
+          npm run pages:build -- \
+            --config public/org-zhixing.toml \
+            --content blog \
+            --out dist \
+            --base /org-zhixing-themes/
+          npm run pages:themes -- \
+            --config public/org-zhixing.toml \
+            --out dist \
+            --base /org-zhixing-themes/
+          jq -r '.themes[] | [.id, .content.directory] | @tsv' dist/theme-manifest.json | \
+          while IFS=$'\t' read -r theme content; do
+            npm run pages:build -- \
+              --config "dist/theme-configs/${theme}.toml" \
+              --content "${content}" \
+              --out "dist/themes/${theme}" \
+              --base "/org-zhixing-themes/themes/${theme}/"
+          done
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

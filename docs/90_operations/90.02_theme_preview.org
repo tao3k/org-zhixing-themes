@@ -1,5 +1,9 @@
 #+title: Theme Preview Workflow
 
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+#+FILETAGS: :org-zhixing:operations:themes:
+
 * List available themes
 
 #+begin_src sh

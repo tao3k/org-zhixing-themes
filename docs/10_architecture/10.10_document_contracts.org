@@ -1,0 +1,104 @@
+#+TITLE: ${title}
+#+DATE: ${date}
+#+AUTHOR: ${author}
+#+FILETAGS: ${filetags}
+
+* Documentation document
+:PROPERTIES:
+:CONTRACT_ID: org-zhixing.document
+:CONTRACT_SCOPE: document
+:END:
+
+This document defines the baseline contract applied to every Org document in
+=content_dirs=.  Keeping the contract in =docs/= makes the rules readable,
+versioned, and subject to their own validation.
+
+** A document has a title
+:PROPERTIES:
+:ASSERT_ID: document.has-title
+:ASSERT_SEVERITY: error
+:END:
+
+#+begin_src org-elements-selector
+(:org-element (:type keyword :name TITLE))
+#+end_src
+
+#+begin_src jinja2 :name message
+The Org document has no #+TITLE keyword.
+#+end_src
+
+#+begin_src jinja2 :name fix
+Add #+TITLE: ${title} at the top of the Org file.
+#+end_src
+
+** A document has a date
+:PROPERTIES:
+:ASSERT_ID: document.has-date
+:ASSERT_SEVERITY: error
+:END:
+
+#+begin_src org-elements-selector
+(:org-element (:type keyword :name DATE))
+#+end_src
+
+#+begin_src jinja2 :name message
+The Org document has no #+DATE keyword.
+#+end_src
+
+#+begin_src jinja2 :name fix
+Add #+DATE: ${date} at the top of the Org file.
+#+end_src
+
+** A document has an author
+:PROPERTIES:
+:ASSERT_ID: document.has-author
+:ASSERT_SEVERITY: error
+:END:
+
+#+begin_src org-elements-selector
+(:org-element (:type keyword :name AUTHOR))
+#+end_src
+
+#+begin_src jinja2 :name message
+The Org document has no #+AUTHOR keyword.
+#+end_src
+
+#+begin_src jinja2 :name fix
+Add #+AUTHOR: ${author} at the top of the Org file.
+#+end_src
+
+** A document has file tags
+:PROPERTIES:
+:ASSERT_ID: document.has-filetags
+:ASSERT_SEVERITY: error
+:END:
+
+#+begin_src org-elements-selector
+(:org-element (:type keyword :name FILETAGS))
+#+end_src
+
+#+begin_src jinja2 :name message
+The Org document has no #+FILETAGS keyword.
+#+end_src
+
+#+begin_src jinja2 :name fix
+Add #+FILETAGS: ${filetags} at the top of the Org file.
+#+end_src
+
+** A document has readable text
+:PROPERTIES:
+:ASSERT_ID: document.has-paragraph
+:ASSERT_SEVERITY: error
+:END:
+
+#+begin_src org-elements-selector
+(:org-element (:type paragraph))
+#+end_src
+
+#+begin_src jinja2 :name message
+The Org document has no paragraph content and cannot provide useful documentation.
+#+end_src
+
+#+begin_src jinja2 :name fix
+Add explanatory text below a headline so the document contains at least one paragraph.
+#+end_src

@@ -269,7 +269,7 @@ const parseConfig = (text) => {
   return {
     contentRoot,
     contentBase,
-    contentDiskRoot,
+    contentDiskRoot: resolve(projectRoot, contentRoot),
     sources,
     attachments: parseAttachments(asOptionalRecord(raw.attachments), contentRoot),
     agenda: agendaSettings(asOptionalRecord(raw.agenda)),

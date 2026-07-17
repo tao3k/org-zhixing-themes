@@ -81,6 +81,8 @@ describe("theme preview tooling", () => {
     const rsbuildConfig = await readFile("rsbuild.config.ts", "utf8");
     expect(rsbuildConfig).toContain("process.env.ORG_ZHIXING_CONFIG");
     expect(rsbuildConfig).toContain("__ORG_ZHIXING_CONFIG_SOURCE__");
+    expect(rsbuildConfig).toContain("resolveThemeIsolation");
+    expect(rsbuildConfig).toContain("themeIsolationPlugin.rsbuild(themeIsolation)");
     expect(rsbuildConfig).toContain("strictPort: true");
   });
 });

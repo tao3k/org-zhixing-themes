@@ -1,3 +1,8 @@
+#+TITLE: Performance Reports
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+#+FILETAGS: :org-zhixing:operations:performance:
+
 * Performance Reports
 
 This directory contains Git-tracked performance receipts for Org Zhixing.

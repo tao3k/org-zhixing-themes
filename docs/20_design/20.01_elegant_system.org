@@ -1,3 +1,8 @@
+#+TITLE: 20.01 Elegant System
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+#+FILETAGS: :org-zhixing:design:
+
 * 20.01 Elegant System
 
 Org Zhixing's visual system should feel like a modern Org buffer projected into

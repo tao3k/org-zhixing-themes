@@ -24,8 +24,10 @@ describe("style module boundaries", () => {
       '@import "./styles/agenda-program.css";',
       '@import "./styles/agenda-program-responsive.css";',
       '@import "./styles/rendered-org.css";',
+      '@import "./styles/org-typst.css";',
       '@import "./styles/blog-rendered.css";',
       '@import "./styles/responsive.css";',
+      '@import "./styles/theme-startup-failure.css";',
     ]);
   });
 
@@ -93,11 +95,16 @@ describe("style module boundaries", () => {
     expect(packageJson.devDependencies.effect).toBeTruthy();
     expect(packageJson.devDependencies.tailwindcss).toBeTruthy();
     expect(packageJson.devDependencies["@tailwindcss/cli"]).toBeTruthy();
-    expect(packageJson.scripts["generate:themes"]).toBe("node scripts/generate-theme-registry.mjs");
+    expect(packageJson.scripts["generate:themes"]).toBeUndefined();
+    expect(packageJson.devDependencies.unplugin).toBeTruthy();
+    expect(packageJson.devDependencies["@module-federation/rsbuild-plugin"]).toBeTruthy();
+    expect(packageJson.devDependencies["@org-zhixing/theme-contract"]).toBe(
+      "file:packages/theme-contract",
+    );
     expect(packageJson.scripts["generate:theme-assets"]).toBe(
       "node scripts/build-elegant-theme.mjs",
     );
-    expect(packageJson.scripts.build).toContain("npm run generate:themes");
+    expect(packageJson.scripts.build).not.toContain("npm run generate:themes");
     expect(packageJson.scripts.build).toContain("npm run generate:theme-assets");
     expect(tailwind).not.toContain("tailwindcss/theme.css");
     expect(tailwind).toContain(
@@ -172,6 +179,7 @@ describe("style module boundaries", () => {
 
   it("keeps rendered Org styled by semantic elements, not page-specific cards", () => {
     const renderedOrg = readFileSync("src/styles/rendered-org.css", "utf8");
+    const typst = readFileSync("src/styles/org-typst.css", "utf8");
     const tailwind = readFileSync("src/styles/tailwind.css", "utf8");
 
     expect(renderedOrg).toContain(".rendered-html h2::before");
@@ -188,5 +196,10 @@ describe("style module boundaries", () => {
     expect(renderedOrg).toContain(".rendered-html .todo");
     expect(renderedOrg).toContain(".rendered-html .done");
     expect(renderedOrg).toContain(".rendered-html .tag");
+    expect(typst).toContain('.org-typst-block[data-org-typst-view="preview"]');
+    expect(typst).toContain("> :is(pre, .org-code-highlight)");
+    expect(typst).toContain(".org-typst-view-toggle");
+    expect(typst).toContain("background: var(--surface-canvas);");
+    expect(typst).not.toContain("background: var(--surface-subtle);");
   });
 });

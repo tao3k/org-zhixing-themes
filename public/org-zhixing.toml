@@ -1,5 +1,6 @@
-theme = "elegant-blog"
+theme = "theme-gallery"
 theme_variant = "default"
+content_dirs = ["blog"]
 
 [theme_config]
 
@@ -59,3 +60,6 @@ start = "2026-05-15"
 days = 7
 limit = 32
 mode = "classic"
+
+[contracts]
+sources = ["docs/10_architecture/10.10_document_contracts.org"]

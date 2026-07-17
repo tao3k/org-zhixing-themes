@@ -1,0 +1,151 @@
+#+title: 10.08 Theme Isolation and Federation
+#+filetags: :architecture:themes:module-federation:
+
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+
+* Status
+
+Accepted and implemented.
+
+* Problem
+
+Theme selection must never depend on a shared generated source file.  A dev
+server, test process, or second preview may run concurrently and must not alter
+another compiler's selected theme.  Downstream themes must also be able to live
+in independent repositories and deploy independently from the Org Zhixing host.
+
+* Architecture
+
+The theme system has four explicit boundaries.
+
+1. =ThemeIsolationSnapshot= is immutable compiler input.  It owns the selected
+   theme, variant, catalog, transport, and watch set for one compiler instance.
+2. =unplugin= exposes that snapshot through
+   =virtual:org-zhixing/theme-runtime=.  Rsbuild, Rspack, Vite, and Vitest use the
+   same plugin contract without a shared generated file.
+3. =ThemeRuntimeProvider= owns the React render-tree instance.  Runtime consumers
+   fail when used outside the provider instead of falling back to global state.
+4. A transport selects how the theme module enters the compiler graph:
+   =workspace= imports an npm workspace package; =federated= imports an
+   independently deployed Module Federation remote.
+
+Module Federation is conditional.  A workspace-only site does not install a
+federation runtime into its output.  A site declaring at least one remote uses
+Module Federation v2 through =@module-federation/rsbuild-plugin=.  =react= and
+=react-dom= are singleton shared dependencies so a remote cannot create a second
+React runtime.
+
+* Host configuration
+
+A local workspace theme keeps the existing compact configuration.
+
+#+begin_src toml
+theme = "documents"
+theme_variant = "mocha"
+#+end_src
+
+An independently deployed theme adds a remote declaration.  The table key is
+the Org Zhixing theme id.  =remote= is a valid Module Federation scope, =entry=
+points to the remote =mf-manifest.json=, and =expose= is the provider's exposed
+module.
+
+#+begin_src toml
+theme = "documents-pro"
+theme_variant = "mocha"
+
+[theme_remotes.documents-pro]
+remote = "documents_pro"
+entry = "https://themes.example.com/mf-manifest.json"
+expose = "./theme"
+package = "@downstream/documents-pro"
+default_variant = "mocha"
+variants = ["latte", "frappe", "macchiato", "mocha"]
+#+end_src
+
+The host validates the id and variant before bundling.  After loading it also
+validates the module protocol, exported theme id, manifest, and selected
+variant.  Contract failures use =THEME-E032= or =THEME-E033= instead of silently
+falling back to another theme.
+
+* Independent theme repository
+
+The remote repository depends on the small, publishable
+=@org-zhixing/theme-contract= package.  It does not import files from the host
+repository.
+
+#+begin_src typescript
+import { defineFederatedThemeModule } from "@org-zhixing/theme-contract";
+import theme from "./theme";
+
+export default defineFederatedThemeModule(theme);
+#+end_src
+
+The remote Rsbuild configuration exposes that module and shares React with the
+host.
+
+#+begin_src typescript
+import { defineConfig } from "@rsbuild/core";
+import { pluginReact } from "@rsbuild/plugin-react";
+import { pluginModuleFederation } from "@module-federation/rsbuild-plugin";
+
+export default defineConfig({
+  plugins: [
+    pluginReact(),
+    pluginModuleFederation({
+      name: "documents_pro",
+      exposes: { "./theme": "./src/federated-theme.ts" },
+      shared: {
+        react: { singleton: true, requiredVersion: false },
+        "react-dom": { singleton: true, requiredVersion: false },
+      },
+    }),
+  ],
+});
+#+end_src
+
+The provider name must match the host's =remote= value.  The exposed path must
+match =expose=.  The remote deployment must permit the host origin through CORS
+and the host Content Security Policy must allow the remote script origin.
+
+* Isolation invariants
+
+- No selected-theme source file is written under =src/generated=.
+- Preview tooling never restores or rewrites a canonical registry.
+- Each compiler plugin instance closes over exactly one immutable snapshot.
+- Catalog metadata may mention multiple themes, but generated runtime code has
+  exactly one selected theme import.
+- Remote modules must implement =org-zhixing/theme-module/v1=.
+- A remote cannot replace the host's React singleton.
+- Unknown themes, variants, protocols, and mismatched ids fail before rendering.
+
+* Stability and performance gates
+
+The workspace and federated transports use different application entries.  A
+workspace theme keeps the synchronous entry and does not pay for an extra
+bootstrap request.  A federated theme uses an asynchronous bootstrap so a
+manifest, CORS, or network failure can be caught before React starts.  The
+failure surface reports =THEME-E034= and provides a retry action; it never loads
+an unrelated fallback theme.
+
+=npm run scenario:check= fixes these workspace invariants in the deterministic
+baseline:
+
+- no unselected theme package markers in production JavaScript;
+- no =mf-manifest.json= or =mf-stats.json= for a workspace-only build;
+- JavaScript, CSS, and asset counts remain within the checked-in limits.
+
+=npm run scenario:theme-federation= builds the fixed remote fixture, starts a
+real Rsbuild preview against an unavailable remote manifest, and verifies in
+Chromium that the recovery surface and retry action become available within ten
+seconds.  CI runs this scenario before rebuilding the normal site artifact.
+
+Only the selected federated transport is registered with Module Federation.
+Other remote catalog entries remain metadata and do not add remote definitions
+or runtime loading work.
+
+* Evolution
+
+Additional transports, such as a signed registry or an offline theme bundle,
+must implement the same snapshot boundary.  They must not add global mutable
+selection state or bypass the runtime contract checks.

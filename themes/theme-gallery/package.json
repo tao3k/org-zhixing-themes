@@ -1,0 +1,66 @@
+{
+  "name": "@org-zhixing/theme-gallery",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "orgZhixing": {
+    "schemaVersion": 1,
+    "id": "theme-gallery",
+    "displayName": "Theme Gallery",
+    "engine": ">=0.1 <0.2",
+    "defaultVariant": "default",
+    "variants": [
+      "default"
+    ],
+    "capabilities": [
+      "blog",
+      "theme-preview"
+    ],
+    "content": {
+      "base": "workspace",
+      "directory": "blog",
+      "routeMode": "blog"
+    },
+    "publicSlots": [
+      {
+        "id": "site-header",
+        "strategies": [
+          "wrap",
+          "replace"
+        ],
+        "runtime": "universal",
+        "stability": "stable"
+      },
+      {
+        "id": "site-hero",
+        "strategies": [
+          "wrap",
+          "replace"
+        ],
+        "runtime": "universal",
+        "stability": "stable"
+      },
+      {
+        "id": "runtime-state",
+        "strategies": [
+          "wrap",
+          "replace"
+        ],
+        "runtime": "client",
+        "stability": "stable"
+      }
+    ],
+    "renderers": {
+      "react-spa": {
+        "export": ".",
+        "serverComponents": false
+      }
+    },
+    "renderModes": [
+      "static"
+    ]
+  }
+}

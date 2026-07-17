@@ -1,0 +1,27 @@
+.theme-startup-failure {
+  box-sizing: border-box;
+  display: grid;
+  place-content: center;
+  min-block-size: 100dvh;
+  padding: clamp(1.5rem, 6vw, 5rem);
+  color: var(--text-primary, #cdd6f4);
+  background: var(--surface-canvas, #1e1e2e);
+  text-align: center;
+}
+
+.theme-startup-failure p {
+  max-inline-size: 68ch;
+  color: var(--text-secondary, #a6adc8);
+  overflow-wrap: anywhere;
+}
+
+.theme-startup-failure button {
+  justify-self: center;
+  min-block-size: 44px;
+  padding-inline: 1.25rem;
+  color: var(--surface-canvas, #1e1e2e);
+  background: var(--face-salient, #89b4fa);
+  border: 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}

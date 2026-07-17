@@ -24,6 +24,11 @@
       "notes",
       "search"
     ],
+    "content": {
+      "base": "workspace",
+      "directory": "blog",
+      "routeMode": "blog"
+    },
     "publicSlots": [
       {
         "id": "site-header",

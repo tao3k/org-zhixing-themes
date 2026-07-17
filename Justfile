@@ -36,6 +36,10 @@ documents-check content=poo-flow-docs:
 scenario-documents:
     npm run scenario:documents
 
+# Run the fixed Typst cache and browser rendering performance gates.
+scenario-typst:
+    npm run scenario:typst
+
 typecheck:
     npm run typecheck
 

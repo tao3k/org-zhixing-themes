@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { parse } from "smol-toml";
+import { resolveThemeIsolation } from "./src/theme-system/build/resolveThemeIsolation";
+import { createThemeFederationPlugin } from "./src/theme-system/build/themeFederationPlugin";
+import { themeIsolationPlugin } from "./src/theme-system/build/themeIsolationPlugin";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const orgizePackageRoot = resolve(projectRoot, "node_modules/orgize");
@@ -15,6 +18,16 @@ const cacheRoot = resolve(projectRoot, process.env.ORG_ZHIXING_CACHE_ROOT ?? ".c
 const publicConfigPath = process.env.ORG_ZHIXING_CONFIG
   ? resolve(projectRoot, process.env.ORG_ZHIXING_CONFIG)
   : resolve(publicRoot, "org-zhixing.toml");
+const themeIsolation = await resolveThemeIsolation({
+  workspaceRoot: projectRoot,
+  configPath: publicConfigPath,
+});
+const themeFederation = createThemeFederationPlugin(themeIsolation);
+const selectedThemeTransport = themeIsolation.catalog.find(
+  ({ id }) => id === themeIsolation.selectedThemeId,
+)?.transport;
+const applicationEntry =
+  selectedThemeTransport?.kind === "federated" ? "src/federated-main.ts" : "src/main.tsx";
 const publicConfigSource = readFileSync(publicConfigPath, "utf8");
 const publicConfig = parse(publicConfigSource) as Record<string, unknown>;
 const contentRoot = configuredContentRoot(publicConfig);
@@ -45,7 +58,11 @@ const deploymentBasePath = normalizeBasePath(
 const assetPrefix = deploymentBasePath === "/" ? "/" : `${deploymentBasePath}/`;
 
 export default defineConfig({
-  plugins: [pluginReact()],
+  plugins: [
+    pluginReact(),
+    ...(themeFederation ? [themeFederation] : []),
+    themeIsolationPlugin.rsbuild(themeIsolation),
+  ],
   resolve: {
     alias: {
       "@org-zhixing-cache": cacheRoot,
@@ -57,7 +74,7 @@ export default defineConfig({
       __ORG_ZHIXING_CONFIG_SOURCE__: JSON.stringify(publicConfigSource),
     },
     entry: {
-      app: resolve(projectRoot, "src/main.tsx"),
+      app: resolve(projectRoot, applicationEntry),
     },
   },
   html: {

@@ -11,7 +11,8 @@
     "totalCssBytes": 93861,
     "jsAssetCount": 24,
     "cssAssetCount": 1,
-    "unselectedThemeMarkers": 0
+    "unselectedThemeMarkers": 0,
+    "federationArtifactCount": 0
   },
   "limits": {
     "totalJsBytes": 867378,
@@ -19,6 +20,7 @@
     "totalCssBytes": 98555,
     "jsAssetCount": 24,
     "cssAssetCount": 1,
-    "unselectedThemeMarkers": 0
+    "unselectedThemeMarkers": 0,
+    "federationArtifactCount": 0
   }
 }

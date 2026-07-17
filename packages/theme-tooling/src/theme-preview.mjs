@@ -140,7 +140,6 @@ const main = async () => {
       });
     } finally {
       await cleanup();
-      await runCanonicalRegistryGeneration(workspaceRoot);
     }
     process.exitCode = interrupted ? 0 : typeof exitCode === "number" ? exitCode : 1;
   } finally {
@@ -189,20 +188,6 @@ const processIsAlive = (pid) => {
     return false;
   }
 };
-
-const runCanonicalRegistryGeneration = (workspaceRoot) =>
-  new Promise((resolveRun, reject) => {
-    const { ORG_ZHIXING_CONFIG: _previewConfig, ...canonicalEnv } = process.env;
-    const child = spawn("npm", ["run", "generate:themes"], {
-      cwd: workspaceRoot,
-      env: canonicalEnv,
-      stdio: "inherit",
-    });
-    child.once("error", reject);
-    child.once("exit", (code) =>
-      code === 0 ? resolveRun() : reject(new Error(`THEME-E023 registry restore failed: ${code}`)),
-    );
-  });
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   await main();

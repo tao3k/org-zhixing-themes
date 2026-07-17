@@ -1,3 +1,8 @@
+#+TITLE: 00.01 JDex
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+#+FILETAGS: :org-zhixing:index:
+
 * 00.01 JDex
 
 This is the coordinate map for durable Org Zhixing documentation.

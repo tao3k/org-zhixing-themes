@@ -1,0 +1,86 @@
+#+TITLE: 10.09 Org Contract Deployment Gate
+#+DESCRIPTION: Use orgize contracts through WASM to validate an org-zhixing content tree before deployment.
+
+#+DATE: 2026-07-16
+#+AUTHOR: Guangtao Tao
+#+FILETAGS: :org-zhixing:architecture:contracts:
+
+* Status
+
+The deployment gate is implemented by orgize WASM and consumed by the
+org-zhixing Node validation layer.  Contract evaluation is not reimplemented
+in TypeScript.
+
+* Site configuration
+
+Add a =contracts= table to =org-zhixing.toml=:
+
+#+begin_src toml
+content_dirs = ["docs"]
+
+[contracts]
+sources = ["docs/10_architecture/10.10_document_contracts.org"]
+#+end_src
+
+=registries= contains Org files parsed by orgize as contract registries.
+=defaults= contains document-scope contract IDs applied to every =.org= file
+under =content.content_dir=.  Paths are resolved from the workspace root, not
+from the directory containing the copied public configuration.
+
+When the =contracts= table is absent the contract gate is skipped.  This keeps
+existing sites compatible while making contract activation explicit.
+
+* Per-file contracts
+
+A file can add a contract without changing the site defaults.  Both standard
+Org forms below are accepted by the WASM deployment API.
+
+#+begin_src org
+#+CONTRACT_ORG: org-zhixing.release-note
+#+end_src
+
+or a document property drawer:
+
+#+begin_src org
+:PROPERTIES:
+:CONTRACT_ORG: org-zhixing.release-note
+:END:
+#+end_src
+
+The referenced ID must exist in one of the configured registries.  Duplicate
+IDs are evaluated once.  The deployment API currently requires these bindings
+to resolve to document-scope contracts; using a subtree contract here is an
+explicit error instead of a silent scope conversion.
+
+* Deployment behavior
+
+=npm run test:contracts= performs the contract-only gate.  =npm run test:docs=
+runs Mermaid, Typst, and contract validation together, so =npm test=,
+=npm run ci=, Pages builds, and downstream deployment fail before publishing
+invalid content.
+
+Every failed assertion is printed as a stable, agent-readable diagnostic:
+
+#+begin_example
+CONTRACT-E001 docs/release.org org-zhixing.release-note#title.exists severity=error expected="exists" actual=0 message="Add a title" fix="#+TITLE: ${title}"
+#+end_example
+
+Warning assertions are reported but do not fail deployment.  Error assertions
+set a non-zero exit code.  A missing registry, unknown contract ID, malformed
+request, or invalid contract scope also fails immediately with the source path
+and contract ID.
+
+* Ownership boundary
+
+- =orgize/wasm/src/dto_contracts.rs= owns registry parsing and evaluation.
+- =Org.contractEvaluationsJson(...)= is the thin WASM-to-JavaScript ABI.
+- =src/node/orgContractValidation.ts= owns TOML resolution, content discovery,
+  and diagnostic projection.
+- =scripts/check-org-contracts.mjs= owns only process initialization and exit
+  status.
+
+The WASM request carries registry source text, default IDs, and the target
+source path.  The response carries contract IDs, assertion IDs, severity,
+expectation, actual count, message, and fix template.  This keeps the browser
+and deployment runtime on the same orgize contract semantics while giving an
+agent enough structured evidence to repair the source Org file.
