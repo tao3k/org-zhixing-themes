@@ -34,7 +34,9 @@ test("shell has no horizontal overflow or browser errors", async ({ page }) => {
   }
 });
 
-test("direct Gallery uses the responsive static hybrid shell", async ({ page }) => {
+test("direct Gallery hydrates the isolated theme shell without layout overflow", async ({
+  page,
+}) => {
   const errors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -44,7 +46,8 @@ test("direct Gallery uses the responsive static hybrid shell", async ({ page }) 
   await page.goto(scenarioSitePath("/gallery/"));
   await expect(page.locator('#app[data-static-route="gallery"]')).toBeVisible();
   await expect(page.locator(".attachment-card img").first()).toBeVisible();
-  expect(await page.locator('script[type="module"]').count()).toBe(0);
+  await expect(page.locator('[data-attachment-viewer-ready="true"]')).toBeAttached();
+  expect(await page.locator('script[type="module"]').count()).toBeGreaterThan(0);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -52,11 +55,12 @@ test("direct Gallery uses the responsive static hybrid shell", async ({ page }) 
   ).toBeLessThanOrEqual(0);
 
   if ((page.viewportSize()?.width ?? 0) < 768) {
-    const menu = page.locator(".static-mobile-navigation summary");
-    const box = await menu.boundingBox();
+    const trigger = page.getByRole("button", { name: "Open navigation" });
+    await expect(trigger).toBeVisible();
+    const box = await trigger.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(44);
     expect(box?.height).toBeGreaterThanOrEqual(44);
-    await menu.click();
+    await trigger.click();
     await expect(
       page.getByRole("navigation", { name: "Mobile life archive navigation" }),
     ).toBeVisible();

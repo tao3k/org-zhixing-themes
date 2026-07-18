@@ -1,4 +1,7 @@
-export const writeRouteShells: (options: { distRoot: string }) => Promise<void>;
+export const writeRouteShells: (options: {
+  distRoot: string;
+  hydrate?: boolean;
+}) => Promise<void>;
 export const injectInitialAppShell: (html: string) => string;
 export const injectStaticRoutePage: (
   html: string,
@@ -6,6 +9,7 @@ export const injectStaticRoutePage: (
   options?: {
     activeView: string;
     baseHref?: string;
+    preserveApplicationScripts?: boolean;
     siteConfig?: unknown;
     staticData?: unknown;
   },

@@ -1,4 +1,29 @@
 import { expect, test } from "@playwright/test";
+import { scenarioSitePath } from "./sitePath";
+
+test("gallery deep links retain their deployment base and images after reload", async ({
+  page,
+}) => {
+  await page.goto(scenarioSitePath("/gallery"));
+  await expect(page).toHaveURL(/\/gallery\/?$/);
+  await expect(page.locator(".attachment-card img")).toHaveCount(4);
+
+  await page.reload();
+
+  await expect(page).toHaveURL(/\/gallery\/?$/);
+  const images = page.locator(".attachment-card img");
+  await expect(images).toHaveCount(4);
+  expect(
+    await images.evaluateAll((nodes: HTMLImageElement[]) =>
+      nodes.map((image) => ({ complete: image.complete, width: image.naturalWidth })),
+    ),
+  ).toEqual([
+    { complete: true, width: 704 },
+    { complete: true, width: 704 },
+    { complete: true, width: 704 },
+    { complete: true, width: 704 },
+  ]);
+});
 
 test("gallery viewer keeps original-image geometry stable while opening", async ({ page }) => {
   await page.goto("./");

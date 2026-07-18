@@ -8,5 +8,5 @@ await import("./prepare-lighthouse.mjs");
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const deploymentRoot = join(root, ".cache/lighthouse/org-zhixing-themes");
 
-await writeRouteShells({ distRoot: deploymentRoot });
+await writeRouteShells({ distRoot: deploymentRoot, hydrate: true });
 console.log(`browser-static-root deployment=${deploymentRoot}`);

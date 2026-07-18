@@ -4,6 +4,7 @@ import { copyFile, cp, mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { basename, join, relative, resolve } from "node:path";
 import { parse } from "smol-toml";
+import { writeRouteShells } from "../../../src/node/routeShellWriter.mjs";
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
@@ -83,7 +84,7 @@ export const runPagesBuild = async (options) => {
     );
     buildStarted = true;
     await runNpm(["run", "build"], validated.workspaceRoot, buildEnv);
-    const routeShells = await materializeStaticRouteShells(internalDist);
+    const routeShells = await materializePagesRouteShells(internalDist);
     if (validated.outputDir !== internalDist) {
       await rm(validated.outputDir, { force: true, recursive: true });
       await cp(internalDist, validated.outputDir, { recursive: true });
@@ -95,6 +96,11 @@ export const runPagesBuild = async (options) => {
     await rm(cacheRoot, { force: true, recursive: true });
     if (buildStarted) await restoreCanonicalRegistry(validated.workspaceRoot);
   }
+};
+
+export const materializePagesRouteShells = async (distRoot) => {
+  await writeRouteShells({ distRoot, hydrate: true });
+  return materializeStaticRouteShells(distRoot);
 };
 
 export const materializeStaticRouteShells = async (distRoot) => {

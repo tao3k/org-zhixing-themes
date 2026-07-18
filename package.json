@@ -16,7 +16,7 @@
     "theme:create": "node packages/theme-tooling/src/theme-create.mjs",
     "theme:list": "node packages/theme-tooling/src/theme-list.mjs",
     "theme:preview": "node packages/theme-tooling/src/theme-preview.mjs",
-    "pages:build": "node packages/theme-tooling/src/pages-build.mjs",
+    "pages:build": "node --import tsx packages/theme-tooling/src/pages-build.mjs",
     "pages:themes": "node packages/theme-tooling/src/pages-theme-gallery.mjs",
     "generate:static": "node --import tsx scripts/generate-static-site.mjs",
     "build": "npm run generate:theme-assets && npm run generate:static && tsc -b && rsbuild build && node --import tsx scripts/write-spa-fallback.mjs && node packages/theme-tooling/src/normalize-spa-shells.mjs",

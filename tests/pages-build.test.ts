@@ -3,11 +3,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  materializePagesRouteShells,
   materializeStaticRouteShells,
   pagesBuildEnvironment,
   parsePagesBuildArgs,
   validatePagesBuildConfig,
 } from "../packages/theme-tooling/src/pages-build.mjs";
+import {
+  normalizeSpaShells,
+  spaShellBasePath,
+} from "../packages/theme-tooling/src/normalize-spa-shells.mjs";
 
 const roots: string[] = [];
 
@@ -72,10 +77,40 @@ describe("Pages build tooling", () => {
     });
   });
 
+  it("normalizes every emitted shell to the isolated theme base path", async () => {
+    const root = mkdtempSync(join(tmpdir(), "org-zhixing-spa-shells-"));
+    roots.push(root);
+    writeFileSync(join(root, "index.html"), "<html><head></head><body>index</body></html>");
+    writeFileSync(
+      join(root, "404.html"),
+      '<html><head><base href="/stale/" /></head><body>fallback</body></html>',
+    );
+
+    expect(
+      spaShellBasePath({
+        ORG_ZHIXING_BASE_PATH: "/project/themes/elegant-blog",
+        PUBLIC_BASE_PATH: "/wrong/",
+      }),
+    ).toBe("/project/themes/elegant-blog/");
+    await normalizeSpaShells({
+      basePath: "/project/themes/elegant-blog",
+      distRoot: root,
+    });
+
+    for (const name of ["index.html", "404.html"]) {
+      expect(readFileSync(join(root, name), "utf8")).toContain(
+        '<base href="/project/themes/elegant-blog/" />',
+      );
+    }
+  });
+
   it("materializes theme-local shells for every static content route", async () => {
     const root = mkdtempSync(join(tmpdir(), "org-zhixing-route-shells-"));
     roots.push(root);
-    writeFileSync(join(root, "index.html"), "<html>theme shell</html>");
+    writeFileSync(
+      join(root, "index.html"),
+      '<html><head></head><body><div id="app"></div><script type="module" src="/project/assets/app.js"></script></body></html>',
+    );
     writeFileSync(
       join(root, "org-zhixing.static.json"),
       JSON.stringify({
@@ -88,14 +123,31 @@ describe("Pages build tooling", () => {
       }),
     );
 
-    await expect(materializeStaticRouteShells(root)).resolves.toBe(2);
-    expect(readFileSync(join(root, "90-operations-90-05-typst-performance.html"), "utf8")).toBe(
-      "<html>theme shell</html>",
-    );
+    await expect(materializePagesRouteShells(root)).resolves.toBe(2);
+    expect(
+      readFileSync(join(root, "90-operations-90-05-typst-performance.html"), "utf8"),
+    ).toContain("data-initial-app-shell");
     expect(
       readFileSync(join(root, "90-operations-90-05-typst-performance", "index.html"), "utf8"),
-    ).toBe("<html>theme shell</html>");
+    ).toContain("data-initial-app-shell");
     expect(existsSync(join(root, "index", "index.html"))).toBe(false);
+    for (const route of [
+      "blogs",
+      "gallery",
+      "notes",
+      "travel",
+      "memory",
+      "agenda",
+      "capture",
+      "diagnostics",
+    ]) {
+      expect(readFileSync(join(root, route, "index.html"), "utf8")).toContain(
+        "data-initial-app-shell",
+      );
+    }
+    expect(readFileSync(join(root, "gallery", "index.html"), "utf8")).toContain(
+      '<script type="module" src="/project/assets/app.js"></script>',
+    );
   });
 
   it("rejects unsafe generated route identifiers", async () => {

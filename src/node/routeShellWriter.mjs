@@ -6,7 +6,7 @@ import { renderTravel } from "../travelRender.ts";
 
 const thumbnailPathPattern = /^org-zhixing\.thumbnails\/[A-Za-z0-9._-]+\.webp$/;
 
-export const writeRouteShells = async ({ distRoot }) => {
+export const writeRouteShells = async ({ distRoot, hydrate = false }) => {
   const indexPath = resolve(distRoot, "index.html");
   const indexHtml = await readFile(indexPath, "utf8");
   const baseHref = deploymentBaseHref(indexHtml);
@@ -40,7 +40,13 @@ export const writeRouteShells = async ({ distRoot }) => {
         renderAttachmentGallery(galleryData, {
           publicAssetHref: (path) => `${baseHref}${String(path).replace(/^\/+/, "")}`,
         }),
-        { activeView: "gallery", baseHref, siteConfig, staticData },
+        {
+          activeView: "gallery",
+          baseHref,
+          preserveApplicationScripts: hydrate,
+          siteConfig,
+          staticData,
+        },
       )
     : galleryHtml;
   const galleryRoot = resolve(distRoot, "gallery");
@@ -60,6 +66,10 @@ export const writeRouteShells = async ({ distRoot }) => {
       }),
       "utf8",
     );
+  } else {
+    const travelRoot = resolve(distRoot, "travel");
+    await mkdir(travelRoot, { recursive: true });
+    await writeFile(resolve(travelRoot, "index.html"), initialShellHtml, "utf8");
   }
 };
 
@@ -72,7 +82,13 @@ export const injectInitialAppShell = (html) =>
 export const injectStaticRoutePage = (
   html,
   routeHtml,
-  { activeView, baseHref = "./", siteConfig = null, staticData = null } = {},
+  {
+    activeView,
+    baseHref = "./",
+    preserveApplicationScripts = false,
+    siteConfig = null,
+    staticData = null,
+  } = {},
 ) => {
   const title = siteConfig?.site?.title ?? "Org Zhixing";
   const source = staticData?.sources?.[0];
@@ -88,12 +104,11 @@ export const injectStaticRoutePage = (
     <section class="viewer-pane"><div id="view">${routeHtml}</div></section>
     <div class="runtime-state" aria-hidden="true"><strong id="active-source-title">${escapeHtmlAttribute(source?.name ?? "Org source")}</strong><small id="active-source-path">${escapeHtmlAttribute(source?.file ?? "")}</small></div>
   </main>`;
-  return stripApplicationScripts(
-    html.replace(
-      /<div\s+id="app"\s*>[\s\S]*?<\/div>(?=\s*<\/body>)/i,
-      `<div id="app" data-static-route="${escapeHtmlAttribute(activeView)}">${chrome}</div>`,
-    ),
+  const rendered = html.replace(
+    /<div\s+id="app"\s*>[\s\S]*?<\/div>(?=\s*<\/body>)/i,
+    `<div id="app" data-static-route="${escapeHtmlAttribute(activeView)}">${chrome}</div>`,
   );
+  return preserveApplicationScripts ? rendered : stripApplicationScripts(rendered);
 };
 
 export const injectFetchPreloads = (html, hrefs) =>
