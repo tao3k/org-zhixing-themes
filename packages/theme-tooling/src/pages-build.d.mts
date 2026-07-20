@@ -10,10 +10,7 @@ export type ValidatedPagesBuildOptions = Omit<PagesBuildOptions, "basePath"> & {
   basePath: string;
 };
 
-export const parsePagesBuildArgs: (
-  argv: string[],
-  workspaceRoot?: string,
-) => PagesBuildOptions;
+export const parsePagesBuildArgs: (argv: string[], workspaceRoot?: string) => PagesBuildOptions;
 
 export const validatePagesBuildConfig: (
   options: PagesBuildOptions,

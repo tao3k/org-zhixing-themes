@@ -1,122 +1,97 @@
-import ELK from "elkjs/lib/elk.bundled.js";
 import {
-  Background,
-  Controls,
-  MarkerType,
-  MiniMap,
-  Panel,
-  Position,
-  ReactFlow,
-  type Edge,
-  type Node,
+  applyNodeChanges,
+  type Connection,
+  type NodeChange,
+  type OnConnect,
+  type OnReconnect,
   type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
-  advancePooFlowCursor,
-  pooFlowExecutionState,
-  type PooFlowEdge,
-  type PooFlowEvent,
-  type PooFlowExecutionState,
-  type PooFlowRunResult,
-} from "./pooFlowModel";
+  createPooFlowDebuggerState,
+  transitionPooFlowDebugger,
+  validPooFlowBreakpointKeys,
+} from "../poo-flow/graphDebugger";
+import { createPooFlowGraphProjection } from "../poo-flow/graphContract";
+import {
+  hasPooFlowBreakpoint,
+  pooFlowGraphInteractionPolicy,
+  type PooFlowGraphMode,
+} from "../poo-flow/graphWorkbench";
+import {
+  executePooFlowTopologyMutation,
+  POO_FLOW_TOPOLOGY_INTENT_SCHEMA,
+  type PooFlowTopologyMutationAdapter,
+  type PooFlowTopologyMutationResult,
+  type PooFlowTopologyOperation,
+  type PooFlowTopologyReceipt,
+} from "../poo-flow/topologyMutation";
+import "./PooFlowGraph.css";
+import { type PooFlowGraphEdge, type PooFlowGraphNode } from "./PooFlowGraphRenderers";
+import { PooFlowGraphView } from "./PooFlowGraphView";
+import { layout, responsiveLayoutDirection, toEdges, toNodes } from "./pooFlowGraphLayout";
+import { advancePooFlowCursor, pooFlowExecutionState, type PooFlowRunResult } from "./pooFlowModel";
+import {
+  createPooFlowSelectionFocus,
+  pooFlowEdgeFocusClass,
+  pooFlowNodeFocusClass,
+} from "./pooFlowSelectionFocus";
+import { hiddenPooFlowNodeIds } from "./pooFlowVisibility";
 
-const elk = new ELK();
-const nodeWidth = 240;
-const nodeHeight = 76;
+export interface PooFlowGraphTopologyMutationControl {
+  readonly adapter: PooFlowTopologyMutationAdapter;
+  readonly revision: string;
+  readonly onResult?: (result: PooFlowTopologyMutationResult) => void;
+}
 
-function eventLabel(
-  event: PooFlowEvent,
-  state: PooFlowExecutionState,
-  index: number,
-  eventCount: number,
-) {
-  return (
-    <span className="poo-flow-node__content">
-      <span className="poo-flow-node__heading">
-        <strong>{event.label}</strong>
-        <small className="poo-flow-node__step">
-          {index + 1}/{eventCount}
-        </small>
-      </span>
-      {event.kind ? <small>{event.kind}</small> : null}
-      {event.detail ? <small>{event.detail}</small> : null}
-      <small className="poo-flow-node__state">{state}</small>
-    </span>
+export interface PooFlowGraphProps {
+  readonly result: PooFlowRunResult;
+  readonly workflowId?: string;
+  readonly topologyMutation?: PooFlowGraphTopologyMutationControl;
+}
+
+function InteractivePooFlowGraph({ result, workflowId, topologyMutation }: PooFlowGraphProps) {
+  const projection = useMemo(
+    () =>
+      createPooFlowGraphProjection(
+        workflowId ?? result.rootId ?? result.events[0]?.id ?? "unknown-workflow",
+        result,
+      ),
+    [result, workflowId],
   );
-}
-
-function toNodes(events: readonly PooFlowEvent[]): Node[] {
-  return events.map((event, index) => ({
-    id: event.id,
-    position: { x: 0, y: 0 },
-    sourcePosition: Position.Bottom,
-    targetPosition: Position.Top,
-    className: "poo-flow-node poo-flow-node--pending",
-    style: { width: nodeWidth, height: nodeHeight },
-    data: { label: eventLabel(event, "pending", index, events.length) },
-  }));
-}
-
-function inferredEdges(events: readonly PooFlowEvent[]): PooFlowEdge[] {
-  return events.slice(1).map((event, index) => ({
-    source: events[index].id,
-    target: event.id,
-  }));
-}
-
-function toEdges(result: PooFlowRunResult): Edge[] {
-  const edges = result.edges ?? inferredEdges(result.events);
-  return edges.map((edge, index) => ({
-    id: edge.id ?? `${edge.source}-${edge.target}-${index}`,
-    source: edge.source,
-    target: edge.target,
-    label: edge.label,
-    markerEnd: { type: MarkerType.ArrowClosed },
-    animated: true,
-  }));
-}
-
-async function layout(nodes: Node[], edges: Edge[]): Promise<Node[]> {
-  const graph = await elk.layout({
-    id: "poo-flow",
-    layoutOptions: {
-      "elk.algorithm": "layered",
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "72",
-      "elk.spacing.nodeNode": "36",
-    },
-    children: nodes.map((node) => ({ id: node.id, width: nodeWidth, height: nodeHeight })),
-    edges: edges.map((edge) => ({
-      id: edge.id,
-      sources: [edge.source],
-      targets: [edge.target],
-    })),
-  });
-
-  const positions = new Map(graph.children?.map((node) => [node.id, node]) ?? []);
-  return nodes.map((node) => {
-    const position = positions.get(node.id);
-    return {
-      ...node,
-      position: { x: position?.x ?? 0, y: position?.y ?? 0 },
-    };
-  });
-}
-
-function InteractivePooFlowGraph({ result }: { result: PooFlowRunResult }) {
-  const baseEdges = useMemo(() => toEdges(result), [result]);
-  const initialNodes = useMemo(() => toNodes(result.events), [result]);
+  const baseEdges = useMemo(() => toEdges(projection), [projection]);
+  const initialNodes = useMemo(() => toNodes(projection.nodes), [projection]);
   const [layoutedNodes, setLayoutedNodes] = useState(initialNodes);
-  const [cursor, setCursor] = useState(-1);
-  const [playing, setPlaying] = useState(false);
+  const canonicalLayoutNodes = useRef(initialNodes);
+  const [layoutGeneration, setLayoutGeneration] = useState(0);
+  const [interactionMode, setInteractionMode] = useState<PooFlowGraphMode>("run");
+  const [topologyPending, setTopologyPending] = useState(false);
+  const [topologyReceipt, setTopologyReceipt] = useState<PooFlowTopologyReceipt>();
+  const topologyIntentSequence = useRef(0);
+  const debuggerWorkflowId =
+    workflowId ?? result.rootId ?? result.events[0]?.id ?? "unknown-workflow";
+  const [debuggerState, dispatchDebugger] = useReducer(
+    transitionPooFlowDebugger,
+    debuggerWorkflowId,
+    createPooFlowDebuggerState,
+  );
+  const { cursor, playing, breakpoints } = debuggerState;
+  const interactionPolicy = pooFlowGraphInteractionPolicy(interactionMode, {
+    typedTopologyMutations: topologyMutation !== undefined,
+  });
+
   const [stepDelay, setStepDelay] = useState(900);
   const [selectedId, setSelectedId] = useState<string>();
-  const flow = useRef<ReactFlowInstance<Node, Edge> | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string>();
+  const [collapsedNodeIds, setCollapsedNodeIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [layoutReady, setLayoutReady] = useState(false);
+  const [layoutDurationMs, setLayoutDurationMs] = useState<number>();
+  const flow = useRef<ReactFlowInstance<PooFlowGraphNode, PooFlowGraphEdge> | null>(null);
   const graphElement = useRef<HTMLDivElement | null>(null);
+  const selectionTrigger = useRef<HTMLElement | SVGElement | null>(null);
   const fitFrame = useRef<number | undefined>(undefined);
+  const layoutSettled = useRef(false);
 
   const scheduleFit = useCallback(() => {
     if (fitFrame.current !== undefined) cancelAnimationFrame(fitFrame.current);
@@ -124,64 +99,156 @@ function InteractivePooFlowGraph({ result }: { result: PooFlowRunResult }) {
       fitFrame.current = undefined;
       const bounds = graphElement.current?.getBoundingClientRect();
       if (bounds && bounds.width > 0 && bounds.height > 0) {
-        void flow.current?.fitView({ padding: 0.38, duration: 240 });
+        void flow.current?.fitView({ padding: 0.12, duration: 240 });
       }
     });
   }, []);
 
-  const eventIndex = useMemo(
-    () => new Map(result.events.map((event, index) => [event.id, index])),
-    [result.events],
+  const inspectEdge = useCallback((edgeId: string) => {
+    setSelectedId(undefined);
+    setSelectedEdgeId(edgeId);
+  }, []);
+
+  const selectionFocus = useMemo(
+    () => createPooFlowSelectionFocus(layoutedNodes, baseEdges, selectedId, selectedEdgeId),
+    [baseEdges, layoutedNodes, selectedEdgeId, selectedId],
   );
-  const nodes = useMemo<Node[]>(
+
+  const hiddenNodeIds = useMemo(
+    () => hiddenPooFlowNodeIds(projection.nodes, collapsedNodeIds),
+    [collapsedNodeIds, projection.nodes],
+  );
+
+  const eventIndex = useMemo(
+    () => new Map(projection.nodes.map((event, index) => [event.id, index])),
+    [projection.nodes],
+  );
+  const childCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const event of projection.nodes) {
+      if (event.parentId) {
+        counts.set(event.parentId, (counts.get(event.parentId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [projection.nodes]);
+  const nodes = useMemo<PooFlowGraphNode[]>(
     () =>
-      layoutedNodes.map((node, index) => {
-        const state = pooFlowExecutionState(index, cursor, result.events.length);
+      layoutedNodes.map((node) => {
+        const index = eventIndex.get(node.id) ?? -1;
+        const event = projection.nodes[index] ?? node.data.event;
+        const state = pooFlowExecutionState(index, cursor, projection.nodes.length);
         return {
           ...node,
+          hidden: hiddenNodeIds.has(node.id),
           selected: node.id === selectedId,
-          className: `poo-flow-node poo-flow-node--${state}`,
-          data: { label: eventLabel(result.events[index], state, index, result.events.length) },
+          className: `poo-flow-node poo-flow-node--${event.kind} poo-flow-node--${state} ${pooFlowNodeFocusClass(selectionFocus, node.id) ?? ""}`,
+          data: {
+            event,
+            state,
+            index,
+            eventCount: projection.nodes.length,
+            childCount: childCounts.get(node.id) ?? 0,
+            collapsed: collapsedNodeIds.has(node.id),
+            breakpoint: hasPooFlowBreakpoint(breakpoints, { kind: "node", id: node.id }),
+            mode: interactionMode,
+            onToggleBreakpoint: (nodeId: string) => {
+              dispatchDebugger({
+                type: "toggle-breakpoint",
+                target: { kind: "node", id: nodeId },
+              });
+            },
+            onRunTo: (nodeId: string) => {
+              setInteractionMode("run");
+              dispatchDebugger({ type: "run-to", nodeId });
+            },
+            onToggleCollapse: (nodeId: string) => {
+              setCollapsedNodeIds((current) => {
+                const next = new Set(current);
+                if (next.has(nodeId)) next.delete(nodeId);
+                else next.add(nodeId);
+                return next;
+              });
+              window.requestAnimationFrame(scheduleFit);
+            },
+          },
         };
       }),
-    [cursor, layoutedNodes, result.events, selectedId],
+    [
+      cursor,
+      breakpoints,
+      childCounts,
+      collapsedNodeIds,
+      eventIndex,
+      hiddenNodeIds,
+      interactionMode,
+      layoutedNodes,
+      projection.nodes,
+      scheduleFit,
+      selectedId,
+      selectionFocus,
+    ],
   );
-  const edges = useMemo<Edge[]>(
+  const edges = useMemo<PooFlowGraphEdge[]>(
     () =>
       baseEdges.map((edge) => {
         const targetIndex = eventIndex.get(edge.target) ?? Number.POSITIVE_INFINITY;
         const active = targetIndex === cursor;
-        const completed = cursor >= result.events.length || targetIndex < cursor;
+        const completed = cursor >= projection.nodes.length || targetIndex < cursor;
         return {
           ...edge,
+          hidden: hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target),
+          data: {
+            ...edge.data,
+            onInspect: inspectEdge,
+            selected: selectedEdgeId === edge.id,
+            breakpoint: hasPooFlowBreakpoint(breakpoints, { kind: "edge", id: edge.id }),
+            onToggleBreakpoint: (edgeId: string) => {
+              dispatchDebugger({
+                type: "toggle-breakpoint",
+                target: { kind: "edge", id: edgeId },
+              });
+            },
+          },
           animated: active,
-          className: active
-            ? "poo-flow-edge--running"
-            : completed
-              ? "poo-flow-edge--completed"
-              : "poo-flow-edge--pending",
+          className: `${
+            active
+              ? "poo-flow-edge--running"
+              : completed
+                ? "poo-flow-edge--completed"
+                : "poo-flow-edge--pending"
+          } ${pooFlowEdgeFocusClass(selectionFocus, edge.id) ?? ""}`,
         };
       }),
-    [baseEdges, cursor, eventIndex, result.events.length],
+    [
+      baseEdges,
+      cursor,
+      eventIndex,
+      hiddenNodeIds,
+      breakpoints,
+      inspectEdge,
+      projection.nodes.length,
+      selectedEdgeId,
+      selectionFocus,
+    ],
   );
-  const selectedEvent = selectedId ? result.events[eventIndex.get(selectedId) ?? -1] : undefined;
+  const selectedEvent = selectedId ? projection.nodes[eventIndex.get(selectedId) ?? -1] : undefined;
+  const selectedNode = selectedId ? nodes.find((node) => node.id === selectedId) : undefined;
+  const selectedEdge = selectedEdgeId
+    ? edges.find((edge) => edge.id === selectedEdgeId)
+    : undefined;
 
   useEffect(() => {
-    const element = graphElement.current;
-    let observer: ResizeObserver | undefined;
-    if (typeof ResizeObserver !== "undefined" && element) {
-      observer = new ResizeObserver(scheduleFit);
-      observer.observe(element);
-    }
     const fitWhenVisible = () => {
       if (!document.hidden) scheduleFit();
     };
+    window.addEventListener("resize", scheduleFit, { passive: true });
     window.addEventListener("pageshow", scheduleFit);
     window.addEventListener("org-zhixing:poo-flow-reveal", scheduleFit);
     document.addEventListener("visibilitychange", fitWhenVisible);
     scheduleFit();
     return () => {
-      observer?.disconnect();
+      window.removeEventListener("resize", scheduleFit);
       window.removeEventListener("pageshow", scheduleFit);
       window.removeEventListener("org-zhixing:poo-flow-reveal", scheduleFit);
       document.removeEventListener("visibilitychange", fitWhenVisible);
@@ -189,138 +256,212 @@ function InteractivePooFlowGraph({ result }: { result: PooFlowRunResult }) {
     };
   }, [scheduleFit]);
 
+  const advanceDebugger = useCallback(
+    (nextCursor: number, source: "timer" | "step") => {
+      const activeNode = projection.nodes[nextCursor];
+      dispatchDebugger({
+        type: "cursor-advanced",
+        cursor: nextCursor,
+        activeNodeId: activeNode?.id,
+        incomingEdgeIds: activeNode
+          ? baseEdges.filter((edge) => edge.target === activeNode.id).map((edge) => edge.id)
+          : [],
+        stepCount: projection.nodes.length,
+        source,
+      });
+    },
+    [baseEdges, projection.nodes],
+  );
+
   useEffect(() => {
     if (!playing) return;
     const timer = window.setTimeout(() => {
-      setCursor((current) => {
-        const next = current < 0 ? 0 : current + 1;
-        if (next >= result.events.length) {
-          setPlaying(false);
-          return result.events.length;
-        }
-        return next;
-      });
+      if (result.execution) {
+        const snapshot = result.execution.step();
+        advanceDebugger(snapshot.completedSteps, "timer");
+        return;
+      }
+      advanceDebugger(cursor < 0 ? 0 : cursor + 1, "timer");
     }, stepDelay);
     return () => window.clearTimeout(timer);
-  }, [cursor, playing, result.events.length, stepDelay]);
+  }, [advanceDebugger, cursor, playing, result.execution, stepDelay]);
 
   const run = useCallback(() => {
-    setCursor((current) => (current < 0 || current >= result.events.length ? 0 : current));
-    setPlaying(true);
-  }, [result.events.length]);
+    let nextCursor = cursor < 0 || cursor >= projection.nodes.length ? 0 : cursor;
+    if (result.execution) {
+      let snapshot = result.execution.position();
+      if (snapshot.completedSteps >= snapshot.stepCount) snapshot = result.execution.reset();
+      nextCursor = snapshot.completedSteps;
+    }
+    dispatchDebugger({
+      type: "run",
+      cursor: nextCursor,
+      stepCount: projection.nodes.length,
+    });
+  }, [cursor, projection.nodes.length, result.execution, scheduleFit]);
 
-  const pause = useCallback(() => setPlaying(false), []);
+  const pause = useCallback(() => {
+    dispatchDebugger({ type: "pause" });
+  }, [scheduleFit]);
+
   const step = useCallback(() => {
-    setPlaying(false);
-    setCursor((current) => advancePooFlowCursor(current, result.events.length));
-  }, [result.events.length]);
+    const nextCursor = result.execution
+      ? result.execution.step().completedSteps
+      : advancePooFlowCursor(cursor, projection.nodes.length);
+    advanceDebugger(nextCursor, "step");
+  }, [advanceDebugger, cursor, projection.nodes.length, result.execution, scheduleFit]);
+
   const reset = useCallback(() => {
-    setPlaying(false);
-    setCursor(-1);
+    result.execution?.reset();
+    dispatchDebugger({ type: "reset", preserveBreakpoints: true });
     setSelectedId(undefined);
-  }, []);
+    setSelectedEdgeId(undefined);
+    setCollapsedNodeIds(new Set());
+    setLayoutedNodes(canonicalLayoutNodes.current);
+    setLayoutGeneration((generation) => generation + 1);
+  }, [result.execution]);
 
   useEffect(() => {
     let active = true;
+    layoutSettled.current = false;
+    setLayoutReady(false);
+    setLayoutDurationMs(undefined);
     setLayoutedNodes(initialNodes);
-    setCursor(-1);
-    setPlaying(false);
-    void layout(initialNodes, baseEdges).then((nextNodes) => {
+    dispatchDebugger({
+      type: "workflow-replaced",
+      workflowId: debuggerWorkflowId,
+      validBreakpointKeys: validPooFlowBreakpointKeys(
+        initialNodes.map((node) => node.id),
+        baseEdges.map((edge) => edge.id),
+      ),
+    });
+    const layoutStartedAt = performance.now();
+    void layout(initialNodes, baseEdges, responsiveLayoutDirection()).then((nextNodes) => {
       if (active) {
         setLayoutedNodes(nextNodes);
-        scheduleFit();
+        canonicalLayoutNodes.current = nextNodes;
+        layoutSettled.current = true;
+        setLayoutDurationMs(performance.now() - layoutStartedAt);
+        setLayoutReady(true);
+        setLayoutGeneration((generation) => generation + 1);
       }
     });
     return () => {
       active = false;
     };
-  }, [baseEdges, initialNodes, scheduleFit]);
+  }, [baseEdges, debuggerWorkflowId, initialNodes, scheduleFit]);
+
+  useEffect(() => {
+    if (!layoutSettled.current) return;
+    const frame = requestAnimationFrame(scheduleFit);
+    return () => cancelAnimationFrame(frame);
+  }, [layoutGeneration, scheduleFit]);
+
+  const handleNodesChange = useCallback((changes: NodeChange<PooFlowGraphNode>[]) => {
+    setLayoutedNodes((current) => applyNodeChanges(changes, current));
+  }, []);
+
+  const submitTopologyOperation = useCallback(
+    async (operation: PooFlowTopologyOperation) => {
+      if (!topologyMutation || topologyPending) return;
+      topologyIntentSequence.current += 1;
+      setTopologyPending(true);
+      try {
+        const mutationResult = await executePooFlowTopologyMutation(topologyMutation.adapter, {
+          schema: POO_FLOW_TOPOLOGY_INTENT_SCHEMA,
+          intentId: `${debuggerWorkflowId}:${operation.kind}:${topologyIntentSequence.current}`,
+          workflowId: debuggerWorkflowId,
+          expectedRevision: topologyMutation.revision,
+          operation,
+        });
+        setTopologyReceipt(mutationResult.receipt);
+        topologyMutation.onResult?.(mutationResult);
+      } finally {
+        setTopologyPending(false);
+      }
+    },
+    [debuggerWorkflowId, topologyMutation, topologyPending],
+  );
+
+  const handleConnect = useCallback<OnConnect>(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return;
+      void submitTopologyOperation({
+        kind: "connect",
+        edgeId: `${connection.source}:${connection.sourceHandle ?? "out"}->${connection.target}:${connection.targetHandle ?? "in"}`,
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle,
+        targetHandle: connection.targetHandle,
+      });
+    },
+    [submitTopologyOperation],
+  );
+
+  const handleReconnect = useCallback<OnReconnect>(
+    (edge, connection) => {
+      if (!connection.source || !connection.target) return;
+      void submitTopologyOperation({
+        kind: "reconnect",
+        edgeId: edge.id,
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle,
+        targetHandle: connection.targetHandle,
+      });
+    },
+    [submitTopologyOperation],
+  );
+
+  const closeInspector = useCallback(() => {
+    setSelectedId(undefined);
+    setSelectedEdgeId(undefined);
+    const trigger = selectionTrigger.current;
+    requestAnimationFrame(() => trigger?.focus());
+  }, []);
 
   return (
-    <div
-      ref={graphElement}
-      className="poo-flow-graph"
-      role="img"
-      aria-label="Poo Flow workflow execution graph"
-    >
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        minZoom={0.2}
-        fitView
-        onInit={(instance) => {
-          flow.current = instance;
-          scheduleFit();
-        }}
-        onNodeClick={(_event, node) => setSelectedId(node.id)}
-      >
-        <Background gap={20} size={1} />
-        <MiniMap pannable zoomable />
-        <Controls showInteractive={false} />
-        {selectedEvent ? (
-          <Panel position="top-right" className="poo-flow-inspector nodrag nopan">
-            <button
-              type="button"
-              aria-label="Close step details"
-              onClick={() => setSelectedId(undefined)}
-            >
-              ×
-            </button>
-            <small>Selected Scheme step</small>
-            <strong>{selectedEvent.label}</strong>
-            {selectedEvent.kind ? <code>{selectedEvent.kind}</code> : null}
-            {selectedEvent.detail ? <p>{selectedEvent.detail}</p> : null}
-          </Panel>
-        ) : null}
-        <Panel
-          position="bottom-center"
-          className="poo-flow-runner nodrag nopan"
-          role="toolbar"
-          aria-label="Workflow execution controls"
-        >
-          <span className="poo-flow-runner__status" aria-live="polite">
-            {cursor < 0
-              ? "Ready"
-              : cursor >= result.events.length
-                ? "Complete"
-                : `${playing ? "Running" : "Paused"} · step ${cursor + 1}/${result.events.length}`}
-          </span>
-          <button
-            type="button"
-            className="poo-flow-runner__primary"
-            onClick={run}
-            disabled={playing}
-          >
-            {cursor >= 0 && cursor < result.events.length ? "Resume" : "Run"}
-          </button>
-          <button type="button" onClick={pause} disabled={!playing}>
-            Pause
-          </button>
-          <button type="button" onClick={step} disabled={playing || cursor >= result.events.length}>
-            Step
-          </button>
-          <button type="button" onClick={reset}>
-            Reset
-          </button>
-          <label>
-            Speed
-            <select
-              value={stepDelay}
-              onChange={(event) => setStepDelay(Number(event.target.value))}
-            >
-              <option value={1500}>0.5×</option>
-              <option value={900}>1×</option>
-              <option value={450}>2×</option>
-            </select>
-          </label>
-        </Panel>
-      </ReactFlow>
-    </div>
+    <PooFlowGraphView
+      graphElement={graphElement}
+      layoutReady={layoutReady}
+      layoutDurationMs={layoutDurationMs}
+      interactionMode={interactionMode}
+      interactionPolicy={interactionPolicy}
+      topologyPending={topologyPending}
+      topologyReceipt={topologyReceipt}
+      selectedId={selectedId}
+      selectedEdgeId={selectedEdgeId}
+      closeInspector={closeInspector}
+      nodes={nodes}
+      edges={edges}
+      projection={projection}
+      flow={flow}
+      scheduleFit={scheduleFit}
+      selectionTrigger={selectionTrigger}
+      setSelectedId={setSelectedId}
+      setSelectedEdgeId={setSelectedEdgeId}
+      handleNodesChange={handleNodesChange}
+      handleConnect={handleConnect}
+      handleReconnect={handleReconnect}
+      selectedEvent={selectedEvent}
+      selectedNode={selectedNode}
+      selectedEdge={selectedEdge}
+      dispatchDebugger={dispatchDebugger}
+      topologyMutable={Boolean(topologyMutation)}
+      submitTopologyOperation={submitTopologyOperation}
+      setInteractionMode={setInteractionMode}
+      cursor={cursor}
+      playing={playing}
+      run={run}
+      pause={pause}
+      step={step}
+      reset={reset}
+      stepDelay={stepDelay}
+      setStepDelay={setStepDelay}
+    />
   );
 }
 
-export function PooFlowGraph(props: { result: PooFlowRunResult }) {
+export function PooFlowGraph(props: PooFlowGraphProps) {
   return <InteractivePooFlowGraph {...props} />;
 }

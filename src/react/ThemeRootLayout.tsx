@@ -15,6 +15,7 @@ export function ThemeRootLayout({
 }): ReactNode {
   const location = useLocation();
   const routeZen = location.pathname.startsWith("/blogs/");
+  const showSiteHero = location.pathname === "/" || location.pathname === "/blogs";
   const [immersiveZen, setImmersiveZen] = useState(false);
   const readerMode = routeZen || immersiveZen ? "zen" : "library";
   const view = viewForPath(location.pathname);
@@ -43,6 +44,7 @@ export function ThemeRootLayout({
       onEnterZen={() => setImmersiveZen(true)}
       onExitZen={immersiveZen ? () => setImmersiveZen(false) : undefined}
       readerMode={readerMode}
+      showSiteHero={showSiteHero}
       shell={shell}
       theme={selectedTheme}
     >

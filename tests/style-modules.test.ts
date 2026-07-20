@@ -102,7 +102,7 @@ describe("style module boundaries", () => {
       "file:packages/theme-contract",
     );
     expect(packageJson.scripts["generate:theme-assets"]).toBe(
-      "node scripts/build-elegant-theme.mjs",
+      "node scripts/build-elegant-theme.mjs && oxfmt src/styles/theme.css",
     );
     expect(packageJson.scripts.build).not.toContain("npm run generate:themes");
     expect(packageJson.scripts.build).toContain("npm run generate:theme-assets");

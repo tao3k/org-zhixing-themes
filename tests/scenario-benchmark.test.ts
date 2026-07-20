@@ -14,6 +14,8 @@ describe("Scenario Benchmark contracts", () => {
       "article-zen.json",
       "blog-index.json",
       "gallery-heavy.json",
+      "poo-flow-runtime.json",
+      "poo-flow-subflows.json",
       "theme-minimal-mobile.json",
       "travel-heavy.json",
     ]);
@@ -30,10 +32,15 @@ describe("Scenario Benchmark contracts", () => {
     const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
 
     expect(baseline.schemaVersion).toBe(1);
-    expect(baseline.observed.totalJsBytes).toBeGreaterThan(0);
+    expect(baseline.observed.artifactJsBytes).toBeGreaterThan(0);
+    expect(baseline.observed.initialJsBytes).toBeGreaterThan(0);
     expect(baseline.observed.entryJsBytes).toBeGreaterThan(0);
-    expect(baseline.limits.totalJsBytes).toBeGreaterThanOrEqual(baseline.observed.totalJsBytes);
-    expect(baseline.limits.unselectedThemeMarkers).toBe(1);
+    expect(baseline.observed.initialJsBytes).toBeLessThan(baseline.observed.artifactJsBytes);
+    expect(baseline.limits.artifactJsBytes).toBeGreaterThanOrEqual(
+      baseline.observed.artifactJsBytes,
+    );
+    expect(baseline.limits.initialJsBytes).toBeGreaterThanOrEqual(baseline.observed.initialJsBytes);
+    expect(baseline.limits.unselectedThemeMarkers).toBe(0);
     expect(baseline.observed.unselectedThemeMarkers).toBeLessThanOrEqual(
       baseline.limits.unselectedThemeMarkers,
     );

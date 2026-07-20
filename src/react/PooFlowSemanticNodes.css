@@ -1,0 +1,169 @@
+.poo-flow-graph {
+  box-sizing: border-box;
+  display: grid;
+  height: max-content;
+  align-self: start;
+  grid-template-rows: minmax(28rem, 58vh) auto;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.theme-surface--documents .poo-flow-graph {
+  height: max-content;
+}
+
+.poo-flow-graph > .react-flow {
+  height: 100% !important;
+  min-height: 0;
+}
+
+.poo-flow-graph > .poo-flow-runner {
+  position: static;
+  inset: auto;
+  transform: none;
+  justify-self: center;
+  margin: 0;
+}
+
+.poo-flow-node .poo-flow-shape {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  color: var(--poo-flow-text, #d9e0ff);
+  background: var(--poo-flow-surface, #202337);
+  border: 1px solid var(--poo-flow-border, #515873);
+  box-shadow: 0 12px 28px rgb(6 8 18 / 24%);
+}
+
+.poo-flow-node .poo-flow-shape--container {
+  border-style: solid;
+}
+
+.poo-flow-node--composition .poo-flow-shape {
+  border-radius: 16px 16px 16px 5px;
+  background: linear-gradient(135deg, #283451 0%, #20283f 100%);
+  box-shadow:
+    -7px 7px 0 -3px #161b2c,
+    -12px 12px 0 -6px #3e4e72,
+    0 16px 34px rgb(4 7 16 / 28%);
+}
+
+.poo-flow-node--composition .poo-flow-shape__kind::before {
+  content: none;
+}
+
+.poo-flow-node--case .poo-flow-shape {
+  border: 0;
+  border-radius: 5px 16px 16px 5px;
+  background:
+    linear-gradient(90deg, #b69df8 0 5px, transparent 5px),
+    linear-gradient(135deg, #2a253d 0%, #211f33 100%);
+  box-shadow:
+    inset 0 0 0 1px #665a86,
+    0 12px 28px rgb(6 8 18 / 24%);
+}
+
+.poo-flow-node--profile-instance .poo-flow-shape {
+  display: block;
+  padding: 0.75rem 0.82rem 0.68rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1e3432 0%, #1c292e 100%);
+  border-color: #47776e;
+}
+
+.poo-flow-node--profile-instance .poo-flow-shape__header {
+  grid-row: auto;
+  align-self: auto;
+}
+
+.poo-flow-node--profile-instance .poo-flow-shape__kind {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  place-items: initial;
+  overflow: visible;
+  color: var(--poo-flow-node-accent);
+  border: 0;
+  border-radius: 0;
+}
+
+.poo-flow-node--profile-instance .poo-flow-shape__kind::before {
+  content: none;
+}
+
+.poo-flow-node--profile-instance .poo-flow-shape__ordinal,
+.poo-flow-node--profile-instance .poo-flow-shape__container-meta,
+.poo-flow-node--profile-instance .poo-flow-shape__footer {
+  display: none;
+}
+
+.poo-flow-node--evidence .poo-flow-shape {
+  padding-right: 1.45rem;
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
+  border-radius: 8px 0 8px 8px;
+  background:
+    linear-gradient(225deg, #111522 0 15px, transparent 16px),
+    linear-gradient(135deg, #242a3d 0%, #1d2232 100%);
+}
+
+.poo-flow-node--boundary .poo-flow-shape {
+  display: grid;
+  place-content: center;
+  aspect-ratio: 1;
+  padding: 0.8rem;
+  text-align: center;
+  border: 2px solid #7cb7e8;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #293a50, #1c2636 72%);
+}
+
+.poo-flow-node--boundary .poo-flow-shape__header,
+.poo-flow-node--boundary .poo-flow-shape__identity,
+.poo-flow-node--boundary .poo-flow-shape__footer {
+  display: none;
+}
+
+.poo-flow-node--step .poo-flow-shape {
+  display: grid;
+  align-content: center;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  background: #222738;
+  border-color: #58617d;
+}
+
+.poo-flow-node--step .poo-flow-shape__header,
+.poo-flow-node--step .poo-flow-shape__identity,
+.poo-flow-node--step .poo-flow-shape__footer {
+  display: none;
+}
+
+.poo-flow-node--running .poo-flow-shape {
+  outline: 2px solid #78a9ff;
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 7px rgb(120 169 255 / 12%),
+    0 16px 34px rgb(4 7 16 / 30%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .poo-flow-node .poo-flow-shape {
+    transition:
+      outline-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@media (max-width: 46rem) {
+  .poo-flow-graph {
+    grid-template-rows: minmax(30rem, 64vh) auto;
+    gap: 0.625rem;
+    padding: 0.625rem;
+  }
+
+  .poo-flow-graph > .react-flow {
+    height: 100% !important;
+  }
+}

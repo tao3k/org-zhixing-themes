@@ -1,8 +1,14 @@
+import type { LanguageInput } from "@shikijs/types";
+
 type Highlighter = {
   getLoadedLanguages: () => string[];
-  loadLanguage: (...languages: string[]) => Promise<void>;
+  loadLanguage: (...languages: LanguageInput[]) => Promise<void>;
   codeToHtml: (code: string, options: { lang: string; theme: string }) => string;
 };
+
+type LanguageModule = { default: LanguageInput };
+
+export type OrgCodeLanguageLoader = () => Promise<LanguageModule>;
 
 type CodeBlockRecord = {
   code: string;
@@ -25,6 +31,32 @@ const languageAliases: Record<string, string> = {
 };
 
 const codeTheme = "tokyo-night";
+
+const builtinLanguageLoaders: Readonly<Record<string, OrgCodeLanguageLoader>> = {
+  bash: () => import("@shikijs/langs/bash"),
+  json: () => import("@shikijs/langs/json"),
+  latex: () => import("@shikijs/langs/latex"),
+  scheme: () => import("@shikijs/langs/scheme"),
+  toml: () => import("@shikijs/langs/toml"),
+  typescript: () => import("@shikijs/langs/typescript"),
+  typst: () => import("@shikijs/langs/typst"),
+  yaml: () => import("@shikijs/langs/yaml"),
+};
+
+const languageLoaders = new Map(Object.entries(builtinLanguageLoaders));
+
+export const configureOrgCodeLanguage = (
+  language: string,
+  loader: OrgCodeLanguageLoader,
+): (() => void) => {
+  const canonicalLanguage = languageAliases[language.toLowerCase()] ?? language.toLowerCase();
+  const previous = languageLoaders.get(canonicalLanguage);
+  languageLoaders.set(canonicalLanguage, loader);
+  return () => {
+    if (previous) languageLoaders.set(canonicalLanguage, previous);
+    else languageLoaders.delete(canonicalLanguage);
+  };
+};
 
 const languageFromBlock = (block: HTMLElement): string | null => {
   const classes = [...block.classList, ...(block.querySelector("code")?.classList ?? [])];
@@ -66,11 +98,16 @@ export const prepareOrgCodeBlocks = (root: ParentNode): HTMLElement[] =>
   });
 
 const loadHighlighter = (): Promise<Highlighter> => {
-  highlighterPromise ??= import("shiki").then(
-    ({ createHighlighter }) =>
-      createHighlighter({
-        themes: [codeTheme],
+  highlighterPromise ??= Promise.all([
+    import("shiki/core"),
+    import("shiki/engine/javascript"),
+    import("@shikijs/themes/tokyo-night"),
+  ]).then(
+    ([{ createHighlighterCore }, { createJavaScriptRegexEngine }, { default: theme }]) =>
+      createHighlighterCore({
+        themes: [theme],
         langs: [],
+        engine: createJavaScriptRegexEngine(),
       }) as Promise<Highlighter>,
   );
   return highlighterPromise;
@@ -84,7 +121,14 @@ const renderCodeBlock = async (
   if (!record) return;
   const highlighter = await load();
   if (!highlighter.getLoadedLanguages().includes(record.language)) {
-    await highlighter.loadLanguage(record.language);
+    const languageLoader = languageLoaders.get(record.language);
+    if (!languageLoader) {
+      figure.dataset.orgCodeHighlight = "unsupported";
+      figure.setAttribute("aria-busy", "false");
+      return;
+    }
+    const { default: language } = await languageLoader();
+    await highlighter.loadLanguage(language);
   }
   const markup = highlighter.codeToHtml(record.code, {
     lang: record.language,

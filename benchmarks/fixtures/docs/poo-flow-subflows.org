@@ -1,0 +1,27 @@
+#+TITLE: POO Flow Compound Scenarios
+#+DATE: 2026-07-20
+#+AUTHOR: TAO3K
+#+FILETAGS: :poo-flow:react-flow:subflow:benchmark:
+
+This fixture exercises generated Scheme workflows through the runtime-wasm registry.
+The browser renderer receives only the workflow ID; it does not synthesize graph nodes.
+
+* Subagent Workflow
+
+#+ATTR_HTML: :data-poo-flow subagent-workflow
+#+begin_src scheme :poo-flow subagent-workflow
+(use-composition subagent-research
+  (delegate coordinator evidence-discovery researcher)
+  (qualify evidence-reviewer))
+#+end_src
+
+* Funflow
+
+#+ATTR_HTML: :data-poo-flow funflow
+#+begin_src scheme :poo-flow funflow
+(use-composition quality-pipeline
+  (flow normalize-input qualification-guard)
+  (map parallel-map)
+  (reduce evidence-reduce)
+  (publish result))
+#+end_src

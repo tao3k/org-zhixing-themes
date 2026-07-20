@@ -3,10 +3,11 @@ import { createRoot, type Root } from "react-dom/client";
 
 import type { PooFlowRunResult, PooFlowRunner } from "./pooFlowModel";
 
-type GraphComponent = ComponentType<{ result: PooFlowRunResult }>;
+type GraphComponent = ComponentType<{ result: PooFlowRunResult; workflowId?: string }>;
 export type PooFlowGraphLoader = () => Promise<{ PooFlowGraph: GraphComponent }>;
 
 let configuredRunner: PooFlowRunner | undefined;
+const configuredWorkflowRunners = new Map<string, PooFlowRunner>();
 const projectionType = "application/vnd.poo-flow.projection+json";
 const previewRegistryKey = "__orgZhixingPooFlowPreviews__";
 type PreviewRegistryGlobal = typeof globalThis & {
@@ -20,6 +21,16 @@ export function configureOrgPooFlowRunner(runner: PooFlowRunner | undefined): ()
   configuredRunner = runner;
   return () => {
     if (configuredRunner === runner) configuredRunner = previous;
+  };
+}
+
+export function configureOrgPooFlowWorkflow(workflowId: string, runner: PooFlowRunner): () => void {
+  const previous = configuredWorkflowRunners.get(workflowId);
+  configuredWorkflowRunners.set(workflowId, runner);
+  return () => {
+    if (configuredWorkflowRunners.get(workflowId) !== runner) return;
+    if (previous) configuredWorkflowRunners.set(workflowId, previous);
+    else configuredWorkflowRunners.delete(workflowId);
   };
 }
 
@@ -103,11 +114,15 @@ function createPreview(
 ) {
   previewRegistry.get(block)?.();
   const controller = new AbortController();
+  const workflowId = block.dataset.pooFlow;
   const embeddedProjection = readPooFlowProjection(block);
+  const runtimeRunner =
+    (workflowId ? configuredWorkflowRunners.get(workflowId) : undefined) ?? runner;
   const activeRunner =
-    runner ?? (embeddedProjection ? projectionRunner(embeddedProjection) : undefined);
+    runtimeRunner ?? (embeddedProjection ? projectionRunner(embeddedProjection) : undefined);
+  let execution: PooFlowRunResult["execution"];
   const figure = document.createElement("figure");
-  figure.className = "org-poo-flow";
+  figure.className = "org-poo-flow org-poo-flow--source-collapsed";
   figure.dataset.state = activeRunner ? "ready" : "unavailable";
 
   const toolbar = document.createElement("figcaption");
@@ -116,21 +131,22 @@ function createPreview(
   title.textContent = "Poo Flow · Scheme";
   const status = document.createElement("span");
   status.className = "org-poo-flow__status";
-  status.textContent = runner
-    ? "Runtime ready"
+  status.textContent = runtimeRunner
+    ? "Runtime ready · loading graph"
     : embeddedProjection
-      ? "Projection ready"
+      ? "Projection ready · loading graph"
       : "Runtime adapter not connected";
-  const runButton = document.createElement("button");
-  runButton.type = "button";
-  runButton.className = "org-poo-flow__run";
-  runButton.textContent = runner
-    ? "Run workflow"
-    : embeddedProjection
-      ? "Open graph"
-      : "Run workflow";
-  runButton.disabled = !activeRunner;
-  toolbar.append(title, status, runButton);
+  const sourceButton = document.createElement("button");
+  sourceButton.type = "button";
+  sourceButton.className = "org-poo-flow__source-toggle";
+  sourceButton.textContent = "Source code";
+  sourceButton.setAttribute("aria-expanded", "false");
+  const retryButton = document.createElement("button");
+  retryButton.type = "button";
+  retryButton.className = "org-poo-flow__retry";
+  retryButton.textContent = "Retry graph";
+  retryButton.hidden = true;
+  toolbar.append(title, status, sourceButton, retryButton);
 
   const graphHost = document.createElement("div");
   graphHost.className = "org-poo-flow__graph-host";
@@ -139,43 +155,77 @@ function createPreview(
   figure.append(toolbar, graphHost, block);
 
   let reactRoot: Root | undefined;
+  let observer: IntersectionObserver | undefined;
   const run = async () => {
     if (!activeRunner || controller.signal.aborted) return;
     figure.dataset.state = "running";
-    status.textContent = "Running";
-    runButton.disabled = true;
+    status.textContent = "Loading interactive graph";
+    retryButton.hidden = true;
     try {
-      const [result, module] = await Promise.all([
-        activeRunner.run(sourceText(block), { signal: controller.signal }),
-        loadGraph(),
-      ]);
+      execution?.release();
+      execution = undefined;
+      const graphModule = loadGraph();
+      const result = await activeRunner.run(sourceText(block), {
+        signal: controller.signal,
+        workflowId,
+      });
+      execution = result.execution;
+      let module: Awaited<ReturnType<PooFlowGraphLoader>>;
+      try {
+        module = await graphModule;
+      } catch (error) {
+        execution?.release();
+        execution = undefined;
+        throw error;
+      }
       if (controller.signal.aborted) return;
       graphHost.hidden = false;
       reactRoot ??= createRoot(graphHost);
-      reactRoot.render(createElement(module.PooFlowGraph, { result }));
+      reactRoot.render(createElement(module.PooFlowGraph, { result, workflowId }));
       requestAnimationFrame(() => window.dispatchEvent(new Event("org-zhixing:poo-flow-reveal")));
-      graphHost.scrollIntoView?.({ block: "center", behavior: "smooth" });
       figure.dataset.state = "complete";
-      status.textContent =
-        embeddedProjection && !runner
-          ? "Projection loaded"
-          : `${result.events.length} events completed`;
+      status.textContent = `${result.events.length}-node composition ready`;
     } catch (error) {
       if (controller.signal.aborted) return;
       figure.dataset.state = "error";
       status.textContent = error instanceof Error ? error.message : "Workflow failed";
-    } finally {
-      if (!controller.signal.aborted) runButton.disabled = false;
+      retryButton.hidden = false;
     }
   };
-  runButton.addEventListener("click", run);
+  const toggleSource = () => {
+    const collapsed = figure.classList.toggle("org-poo-flow--source-collapsed");
+    sourceButton.setAttribute("aria-expanded", String(!collapsed));
+  };
+  const retry = () => void run();
+  sourceButton.addEventListener("click", toggleSource);
+  retryButton.addEventListener("click", retry);
+  if (activeRunner) {
+    if (typeof IntersectionObserver === "undefined" || figure.getBoundingClientRect().width === 0) {
+      queueMicrotask(() => void run());
+    } else {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          observer?.disconnect();
+          observer = undefined;
+          void run();
+        },
+        { rootMargin: "320px 0px" },
+      );
+      observer.observe(figure);
+    }
+  }
 
   let disposed = false;
   const dispose = () => {
     if (disposed) return;
     disposed = true;
+    observer?.disconnect();
     controller.abort();
-    runButton.removeEventListener("click", run);
+    execution?.release();
+    execution = undefined;
+    sourceButton.removeEventListener("click", toggleSource);
+    retryButton.removeEventListener("click", retry);
     reactRoot?.unmount();
     figure.before(block);
     figure.remove();

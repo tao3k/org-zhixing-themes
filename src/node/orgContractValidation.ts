@@ -70,7 +70,10 @@ const orgFiles = async (directory: string): Promise<string[]> => {
   return files.flat().sort();
 };
 
-export const validateOrgContracts = async ({
+export const validateOrgContracts = (options: ValidateOrgContractsOptions) =>
+  validateOrgContractsImplementation(options);
+
+const validateOrgContractsImplementation = async ({
   configPath,
   cwd = process.cwd(),
   evaluate,

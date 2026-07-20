@@ -13,6 +13,7 @@ export default defineConfig({
   test: {
     execArgv: ["--no-experimental-webstorage"],
     environment: "happy-dom",
+    setupFiles: ["./tests/vitest.setup.ts"],
     environmentOptions: {
       happyDOM: {
         settings: {

@@ -2,8 +2,11 @@
   "name": "@org-zhixing/theme-contract",
   "version": "0.1.0",
   "description": "Stable cross-repository contract for Org Zhixing federated themes",
-  "type": "module",
   "license": "MIT",
+  "files": [
+    "src"
+  ],
+  "type": "module",
   "sideEffects": false,
   "exports": {
     ".": {
@@ -11,9 +14,6 @@
       "default": "./src/index.ts"
     }
   },
-  "files": [
-    "src"
-  ],
   "orgZhixingContract": {
     "schemaVersion": 1,
     "protocol": "org-zhixing/theme-module/v1"

@@ -1,26 +1,34 @@
 {
   "schemaVersion": 1,
   "environment": {
-    "node": "v25.8.2",
+    "node": "v24.14.1",
     "platform": "darwin",
     "arch": "arm64"
   },
   "observed": {
-    "totalJsBytes": 833499,
-    "entryJsBytes": 129282,
-    "totalCssBytes": 96549,
-    "jsAssetCount": 24,
-    "cssAssetCount": 1,
-    "unselectedThemeMarkers": 1,
+    "artifactJsBytes": 6843413,
+    "artifactCssBytes": 147511,
+    "artifactJsAssetCount": 113,
+    "artifactCssAssetCount": 2,
+    "initialJsBytes": 583018,
+    "entryJsBytes": 157163,
+    "initialCssBytes": 97592,
+    "initialJsAssetCount": 3,
+    "initialCssAssetCount": 1,
+    "unselectedThemeMarkers": 0,
     "federationArtifactCount": 0
   },
   "limits": {
-    "totalJsBytes": 875174,
-    "entryJsBytes": 135747,
-    "totalCssBytes": 101377,
-    "jsAssetCount": 24,
-    "cssAssetCount": 1,
-    "unselectedThemeMarkers": 1,
+    "artifactJsBytes": 7185584,
+    "artifactCssBytes": 154887,
+    "artifactJsAssetCount": 113,
+    "artifactCssAssetCount": 2,
+    "initialJsBytes": 612169,
+    "entryJsBytes": 165022,
+    "initialCssBytes": 102472,
+    "initialJsAssetCount": 3,
+    "initialCssAssetCount": 1,
+    "unselectedThemeMarkers": 0,
     "federationArtifactCount": 0
   }
 }

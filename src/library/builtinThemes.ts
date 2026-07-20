@@ -1,7 +1,7 @@
-import { isolatedSelectedTheme, isolatedThemes } from "virtual:org-zhixing/theme-runtime";
+import { getIsolatedSelectedTheme } from "virtual:org-zhixing/theme-runtime";
 import { createThemeRegistry } from "./themeRegistry";
 
-export const selectedBuiltinTheme = isolatedSelectedTheme;
-export const elegantBlogTheme = isolatedSelectedTheme;
+export const selectedBuiltinTheme = getIsolatedSelectedTheme();
+export const elegantBlogTheme = selectedBuiltinTheme;
 
-export const createDefaultThemeRegistry = () => createThemeRegistry(isolatedThemes);
+export const createDefaultThemeRegistry = () => createThemeRegistry([selectedBuiltinTheme]);

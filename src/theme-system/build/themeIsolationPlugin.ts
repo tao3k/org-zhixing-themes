@@ -8,9 +8,6 @@ import {
 
 export const themeIsolationPlugin = createUnplugin<ThemeIsolationSnapshot>((snapshot) => ({
   name: "org-zhixing-theme-isolation",
-  buildStart() {
-    for (const path of snapshot.watchFiles) this.addWatchFile(path);
-  },
   resolveId: {
     filter: { id: new RegExp(`^${escapeRegExp(themeRuntimeModuleId)}$`) },
     handler(id) {

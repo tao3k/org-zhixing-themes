@@ -16,9 +16,7 @@
   --radius-label: 6px;
 }
 
-:root[data-theme="documents"]
-  .documents-document-body
-  :is(h1, h2, h3, h4, h5, h6)[id] {
+:root[data-theme="documents"] .documents-document-body :is(h1, h2, h3, h4, h5, h6)[id] {
   scroll-margin-top: calc(var(--docs-header-height) + 18px);
 }
 
@@ -296,9 +294,7 @@
   background: var(--docs-blue);
 }
 
-:root[data-theme="documents"]
-  .documents-control-variants
-  button[aria-pressed="true"] {
+:root[data-theme="documents"] .documents-control-variants button[aria-pressed="true"] {
   border-color: var(--docs-blue);
   color: var(--face-normal);
   background: color-mix(in srgb, var(--docs-blue) 10%, transparent);
@@ -494,9 +490,7 @@
 }
 
 :root[data-theme="documents"]
-  .theme-surface--documents:not(.shell--zen):has(
-    .documents-linked-workspace[data-expanded="true"]
-  )
+  .theme-surface--documents:not(.shell--zen):has(.documents-linked-workspace[data-expanded="true"])
   > .viewer-pane {
   padding-right: var(--docs-linked-width);
 }
@@ -698,9 +692,7 @@
   background: var(--docs-crust);
   font: 0.88em var(--font-mono);
 }
-:root[data-theme="documents"]
-  .documents-document-body
-  :is(strong, b) {
+:root[data-theme="documents"] .documents-document-body :is(strong, b) {
   color: #a7adb8;
   font-weight: 700;
 }
@@ -752,10 +744,7 @@
 }
 
 :root[data-theme="documents"] .org-code-highlight pre,
-:root[data-theme="documents"]
-  .documents-linked-note-body
-  .org-code-highlight
-  pre {
+:root[data-theme="documents"] .documents-linked-note-body .org-code-highlight pre {
   width: 100%;
   margin: 0;
   border: 0;
@@ -956,8 +945,7 @@
     background-color 160ms ease;
 }
 
-:root[data-theme="documents"]
-  .documents-linked-workspace[data-expanded="false"] {
+:root[data-theme="documents"] .documents-linked-workspace[data-expanded="false"] {
   top: calc(var(--docs-header-height) + 76px);
   bottom: auto;
   width: 44px;
@@ -966,8 +954,7 @@
   border-right: 0;
   border-radius: 9px 0 0 9px;
   background: color-mix(in srgb, var(--surface-canvas) 96%, transparent);
-  box-shadow: -10px 8px 30px
-    color-mix(in srgb, var(--docs-crust) 34%, transparent);
+  box-shadow: -10px 8px 30px color-mix(in srgb, var(--docs-crust) 34%, transparent);
   backdrop-filter: blur(22px);
 }
 
@@ -1080,9 +1067,7 @@
   padding: 5px 7px 5px 12px;
 }
 
-:root[data-theme="documents"]
-  .documents-linked-note[data-collapsed="true"]
-  > header {
+:root[data-theme="documents"] .documents-linked-note[data-collapsed="true"] > header {
   border-bottom: 0;
 }
 
@@ -1162,40 +1147,30 @@
   display: block;
 }
 
-:root[data-theme="documents"]
-  .theme-surface--documents.shell--zen
-  > .viewer-pane {
+:root[data-theme="documents"] .theme-surface--documents.shell--zen > .viewer-pane {
   width: 100%;
   padding-right: 0;
 }
 
-:root[data-theme="documents"]
-  .theme-surface--documents.shell--zen
-  .documents-document-page {
+:root[data-theme="documents"] .theme-surface--documents.shell--zen .documents-document-page {
   width: 100%;
   min-height: 100vh;
 }
 
-:root[data-theme="documents"]
-  .theme-surface--documents.shell--zen
-  .documents-reader {
+:root[data-theme="documents"] .theme-surface--documents.shell--zen .documents-reader {
   grid-template-columns: minmax(0, 1fr);
   width: min(72ch, calc(100% - 48px));
   margin-inline: auto;
   padding: clamp(56px, 8vh, 96px) 0 120px;
 }
 
-:root[data-theme="documents"]
-  .theme-surface--documents.shell--zen
-  .documents-reader-main {
+:root[data-theme="documents"] .theme-surface--documents.shell--zen .documents-reader-main {
   width: 100%;
   max-width: 72ch;
   margin: 0 auto;
 }
 
-:root[data-theme="documents"]
-  .theme-surface--documents.shell--zen
-  .documents-document-header {
+:root[data-theme="documents"] .theme-surface--documents.shell--zen .documents-document-header {
   margin-top: 0;
 }
 
@@ -1371,8 +1346,7 @@
   :root[data-theme="documents"] .documents-page-next {
     text-align: left;
   }
-  :root[data-theme="documents"]
-    .documents-linked-workspace[data-expanded="true"] {
+  :root[data-theme="documents"] .documents-linked-workspace[data-expanded="true"] {
     top: auto;
     right: 0;
     bottom: 0;
@@ -1383,8 +1357,7 @@
     border-left: 0;
   }
 
-  :root[data-theme="documents"]
-    .documents-linked-workspace[data-expanded="false"] {
+  :root[data-theme="documents"] .documents-linked-workspace[data-expanded="false"] {
     top: auto;
     right: 0;
     bottom: 18px;

@@ -64,7 +64,7 @@ describe("Org Zhixing performance regression gates", () => {
 
     expect(router).not.toMatch(/import\s+\{?\s*bindBlogVirtualList/);
     expect(router).toContain('import("../blogVirtualList")');
-    expect(router).toContain('html.includes("data-blog-virtual-list")');
+    expect(router).toContain('surfaceHtml.includes("data-blog-virtual-list")');
     expect(blogRender).toContain("export const blogVirtualListThreshold = 120;");
     expect(blogRender).toContain("articles.length >= blogVirtualListThreshold");
     expect(perfScript).toContain("eagerBlogVirtualList: false");
@@ -127,9 +127,16 @@ describe("Org Zhixing performance regression gates", () => {
     );
     expect(generator).toContain('const sourceAgendaShardPublicDir = "org-zhixing.agenda";');
     expect(generator).toContain("sourceProjectionShard(source)");
-    expect(generator).toContain(
-      "const { agendaRange, agendaView, attachmentInventory, memory, sectionIndex, ...projection } =",
-    );
+    for (const field of [
+      "agendaRange",
+      "agendaView",
+      "attachmentInventory",
+      "memory",
+      "sectionIndex",
+    ]) {
+      expect(generator).toContain(`${field}: _${field}`);
+    }
+    expect(generator).toContain("...projection");
     expect(generator).toContain("agendaShardPath: sourceAgendaShardPublicPath(source)");
     expect(generator).toContain("attachmentShardPath: sourceAttachmentShardPublicPath(source)");
     expect(generator).toContain("memoryShardPath: sourceMemoryShardPublicPath(source)");
@@ -270,7 +277,11 @@ describe("Org Zhixing performance regression gates", () => {
     let manifest: StaticSiteData;
     try {
       execFileSync("node", ["--import", "tsx", "scripts/generate-static-site.mjs"], {
-        env: { ...process.env, ORG_ZHIXING_CACHE_ROOT: cacheRoot },
+        env: {
+          ...process.env,
+          ORG_ZHIXING_CACHE_ROOT: cacheRoot,
+          ORG_ZHIXING_CONTENT_DIR: join(process.cwd(), "blog"),
+        },
         stdio: "pipe",
       });
       manifest = JSON.parse(readFileSync(join(cacheRoot, "static-site.json"), "utf8"));

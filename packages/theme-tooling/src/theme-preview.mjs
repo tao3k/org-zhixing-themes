@@ -144,21 +144,70 @@ const main = async () => {
     let exitCode = 1;
     let interrupted = false;
     try {
-      const child = spawn("npm", ["run", "dev", "--", "--port", port], {
-        cwd: workspaceRoot,
-        env: themePreviewEnvironment(process.env, previewConfig, previewCacheRoot),
-        stdio: "inherit",
-      });
+      const previewEnvironment = themePreviewEnvironment(
+        process.env,
+        previewConfig,
+        previewCacheRoot,
+      );
+      for (const arguments_ of [
+        ["scripts/build-elegant-theme.mjs"],
+        ["--import", "tsx", "scripts/generate-static-site.mjs"],
+      ]) {
+        const preparation = spawn(process.execPath, arguments_, {
+          cwd: workspaceRoot,
+          env: previewEnvironment,
+          stdio: "inherit",
+        });
+        const preparationExitCode = await new Promise((resolveExit, reject) => {
+          preparation.once("error", reject);
+          preparation.once("exit", resolveExit);
+        });
+        if (preparationExitCode !== 0) {
+          throw new Error(
+            `THEME-E026 preview preparation failed with exit code ${preparationExitCode}`,
+          );
+        }
+      }
+      const child = spawn(
+        resolve(workspaceRoot, "node_modules/.bin/rsbuild"),
+        ["dev", "--port", port],
+        {
+          cwd: workspaceRoot,
+          env: previewEnvironment,
+          stdio: "inherit",
+        },
+      );
+      let forceStopTimer;
+      const signalChildTree = (signal) => {
+        if (child.pid === undefined || child.exitCode !== null || child.signalCode !== null) return;
+        try {
+          child.kill(signal);
+        } catch (error) {
+          if (error?.code !== "ESRCH") throw error;
+        }
+      };
       const stop = (signal) => {
         interrupted = true;
-        child.kill(signal);
+        signalChildTree(signal);
+        if (forceStopTimer === undefined) {
+          forceStopTimer = setTimeout(() => signalChildTree("SIGKILL"), 2_000);
+          forceStopTimer.unref();
+        }
       };
-      process.once("SIGINT", () => stop("SIGINT"));
-      process.once("SIGTERM", () => stop("SIGTERM"));
-      exitCode = await new Promise((resolveExit, reject) => {
-        child.once("error", reject);
-        child.once("exit", resolveExit);
-      });
+      const stopOnInterrupt = () => stop("SIGINT");
+      const stopOnTerminate = () => stop("SIGTERM");
+      process.once("SIGINT", stopOnInterrupt);
+      process.once("SIGTERM", stopOnTerminate);
+      try {
+        exitCode = await new Promise((resolveExit, reject) => {
+          child.once("error", reject);
+          child.once("exit", resolveExit);
+        });
+      } finally {
+        process.removeListener("SIGINT", stopOnInterrupt);
+        process.removeListener("SIGTERM", stopOnTerminate);
+        if (forceStopTimer !== undefined) clearTimeout(forceStopTimer);
+      }
     } finally {
       await cleanup();
     }

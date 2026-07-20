@@ -30,20 +30,8 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Harness
-        run: npm run harness
-
-      - name: Test
-        run: npm test
-
-      - name: Build
-        run: npm run build
-
-      - name: Deterministic scenario baseline
-        run: npm run scenario:check
+      - name: CI
+        run: npm run ci
 
   scenario-mobile:
     runs-on: ubuntu-latest

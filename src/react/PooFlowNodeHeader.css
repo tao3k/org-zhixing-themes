@@ -1,0 +1,47 @@
+.poo-flow-node .poo-flow-shape__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 29px;
+}
+
+.poo-flow-node .poo-flow-shape__kind {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  flex: 0 0 auto;
+  margin: 0;
+  transform: translateY(-50%);
+}
+
+.poo-flow-node .poo-flow-shape__kind-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.poo-flow-node .poo-flow-shape__ordinal {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  margin-inline-start: 0;
+  transform: translateY(-50%);
+}
+
+.poo-flow-node .poo-flow-semantic-icon__glyph {
+  width: 29px;
+  height: 29px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  filter: drop-shadow(0 -1px 0 color-mix(in srgb, white 24%, transparent))
+    drop-shadow(0 1px 0 color-mix(in srgb, black 58%, transparent))
+    drop-shadow(0 4px 7px color-mix(in srgb, var(--poo-flow-node-accent) 26%, transparent));
+}

@@ -1,4 +1,5 @@
 import { $typst } from "@myriaddreamin/typst.ts";
+import type { WebAssemblyModuleRef } from "@myriaddreamin/typst.ts/wasm";
 import compilerWasmUrl from "@myriaddreamin/typst-ts-web-compiler/wasm?url";
 import rendererWasmUrl from "@myriaddreamin/typst-ts-renderer/wasm?url";
 import type { TypstRenderRequest, TypstRenderResponse } from "./typstProtocol";
@@ -15,11 +16,37 @@ type WorkerScope = {
 
 const workerScope = globalThis as unknown as WorkerScope;
 
+type AsyncWasmModuleRef = WebAssemblyModuleRef | Promise<WebAssemblyModuleRef>;
+
+const loadCompilerWrapper = async () => {
+  const wrapper = await import("@myriaddreamin/typst-ts-web-compiler");
+  return {
+    ...wrapper,
+    default: (moduleOrPath?: AsyncWasmModuleRef) =>
+      moduleOrPath === undefined
+        ? wrapper.default()
+        : wrapper.default({ module_or_path: moduleOrPath }),
+  };
+};
+
+const loadRendererWrapper = async () => {
+  const wrapper = await import("@myriaddreamin/typst-ts-renderer");
+  return {
+    ...wrapper,
+    default: (moduleOrPath?: AsyncWasmModuleRef) =>
+      moduleOrPath === undefined
+        ? wrapper.default()
+        : wrapper.default({ module_or_path: moduleOrPath }),
+  };
+};
+
 $typst.setCompilerInitOptions({
   getModule: () => compilerWasmUrl,
+  getWrapper: loadCompilerWrapper,
 });
 $typst.setRendererInitOptions({
   getModule: () => rendererWasmUrl,
+  getWrapper: loadRendererWrapper,
 });
 
 let renderQueue = Promise.resolve();

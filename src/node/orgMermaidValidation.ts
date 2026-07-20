@@ -23,6 +23,7 @@ export type MermaidParser = (source: string) => Promise<unknown>;
 
 const beginPattern = /^\s*#\+begin_src\s+mermaid(?:\s+.*)?$/iu;
 const endPattern = /^\s*#\+end_src\s*$/iu;
+const ansiSgrPattern = new RegExp(String.raw`\u001B\[[0-9;]*m`, "gu");
 
 export const extractOrgMermaidBlocks = (source: string, file: string): OrgMermaidBlock[] => {
   const lines = source.split(/\r?\n/u);
@@ -49,10 +50,7 @@ export const extractOrgMermaidBlocks = (source: string, file: string): OrgMermai
 
 const errorMessage = (cause: unknown): string => {
   const raw = cause instanceof Error ? cause.message : String(cause);
-  return raw
-    .replace(/\u001B\[[0-9;]*m/gu, "")
-    .replace(/\s+/gu, " ")
-    .trim();
+  return raw.replace(ansiSgrPattern, "").replace(/\s+/gu, " ").trim();
 };
 
 const diagnosticLine = (block: OrgMermaidBlock, message: string): number => {

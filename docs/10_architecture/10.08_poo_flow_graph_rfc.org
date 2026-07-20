@@ -1,0 +1,680 @@
+#+TITLE: POO Flow Graph RFC
+#+AUTHOR: TAO3K
+#+DATE: 2026-07-19
+#+FILETAGS: :org-zhixing:architecture:poo-flow:graph:ifc:
+#+ID: org-zhixing-poo-flow-graph-ifc
+
+* Purpose
+
+POO Flow Graph is a first-class product capability.  It is not a React Flow
+example, a serialization viewer, or a diagram attached to an Org source block.
+It is the interactive projection through which a person understands, qualifies,
+runs, inspects, and explains a POO Flow composition.
+
+This RFC defines the stable boundary between:
+
+- the Scheme-owned composition semantics;
+- a renderer-neutral graph projection;
+- layout and edge-routing adapters;
+- execution playback and evidence receipts;
+- desktop and mobile interaction surfaces;
+- visual renderers such as the current React Flow implementation.
+
+React Flow and ELK are replaceable adapters.  Neither library may define the
+POO Flow domain model.
+
+* Product thesis
+
+A POO Flow graph must answer five questions without requiring the reader to
+open source code:
+
+1. What is the complete user composition?
+2. Which Cases establish its modular structure?
+3. Which Profile definitions are instantiated in each Case?
+4. How does control or evidence move between those instances?
+5. What happened during this execution, and why is that result admissible?
+
+The canvas is therefore both a structural diagram and an execution instrument.
+Static topology, runtime state, evidence, and inspection must remain distinct
+layers even when they are rendered together.
+
+* Non-goals
+
+- Reimplementing the Scheme composition language in TypeScript.
+- Treating JSON as a second workflow authoring format.
+- Exposing React Flow =Node= or =Edge= types as public contracts.
+- Encoding a specific ELK or TALA layout result into persisted content.
+- Adding decorative animation that competes with execution meaning.
+- Flattening nested Cases into anonymous sequential steps.
+
+* Semantic ownership
+
+** Scheme composition
+
+=use-composition=, =use-module=, =profile=, =compose=, and =stage= remain the
+authoritative language.  The graph consumes a typed projection emitted from
+that language.  It does not infer domain semantics from CSS classes, node
+positions, labels, or renderer events.
+
+** Graph projection
+
+The renderer-neutral projection MUST contain:
+
+- =schemaVersion= and a typed =workflowId=;
+- one or more root composition identities;
+- stable definition identities and contextual instance identities;
+- explicit parent-child containment;
+- typed relations and ports;
+- deterministic source order independent from layout order;
+- evidence references without renderer-specific markup;
+- an optional execution timeline attached by identity, not array position.
+
+The minimum node kinds are:
+
+| Kind             | Meaning                                      | Visual role             |
+|------------------+----------------------------------------------+-------------------------|
+| composition      | Complete user composition instance           | Root system container   |
+| case             | Reusable modular scenario instance            | Nested semantic region  |
+| profile-instance | Contextual use of a Profile definition        | Executable capability   |
+| evidence         | Produced or required admissibility evidence   | Inspectable artifact    |
+| boundary         | External runtime, human, service, or handoff   | Interface terminal      |
+
+A repeated Profile definition MUST produce distinct instance identities while
+retaining the same =sourceId=.  This is a semantic requirement, not a visual
+convention.
+
+** Layout adapter
+
+A layout adapter receives semantic nodes, containment, ports, and relations.
+It returns geometry and routed connection segments.  It MUST NOT rewrite node
+identity, execution order, relation type, or containment.
+
+The adapter contract MUST support:
+
+- nested containers;
+- orthogonal routing;
+- per-container direction;
+- stable ordering hints;
+- deterministic geometry for identical input;
+- desktop and mobile layout profiles;
+- incremental relayout without discarding viewport intent.
+
+ELK is the initial open adapter.  TALA may be evaluated separately, but its
+proprietary layout result cannot become a build or runtime requirement.
+
+** Renderer adapter
+
+A renderer consumes semantic projection, layout geometry, execution snapshot,
+selection, and viewport state.  It emits user intents through typed callbacks.
+It does not mutate the semantic graph.
+
+The current renderer uses React Flow custom node and edge types.  Default React
+Flow shapes, labels, MiniMap, attribution, and library-specific class names are
+not part of the product contract.
+
+* Spatial grammar
+
+The spatial language follows the useful properties of D2 and Terrastruct rather
+than copying their appearance.
+
+** Containers are first class
+
+- The composition is the root boundary.
+- A Case is a visible semantic container, not merely a purple card.
+- Nested Cases remain nested at every zoom level where their children are
+  visible.
+- Profiles live inside the Case instance that contextualizes them.
+- Cross-container connections terminate at meaningful ports and cross a
+  boundary deliberately.
+
+** Routing is structural
+
+- Default connections are orthogonal.
+- Lines prefer short paths, few bends, symmetry, and low crossing count.
+- Relation labels sit on stable segments and never use a white SVG default.
+- Direction, handoff, proof, and evidence relations have distinct but restrained
+  encodings.
+- Animation is reserved for the currently executing connection.
+
+** Levels of detail
+
+The canvas supports semantic zoom:
+
+| Zoom level | Required information                                      |
+|------------+-----------------------------------------------------------|
+| overview   | composition, Case boundaries, primary path, current state |
+| structure  | Profile instances, relations, source identity             |
+| inspect    | capability, evidence, receipt, timing, failure reason      |
+
+Text MUST not become unreadably small merely because =fitView= can technically
+fit every node.  Large graphs progressively disclose detail instead.
+
+* Visual system
+** Human-readable execution map
+
+The graph is an executable evidence map, not a decorated collection of
+cards.  A first-time reader MUST be able to identify the entry, current
+execution position, branch structure, completion state, and produced evidence
+without consulting a legend.
+
+Every visible mark MUST correspond to one of three owned meanings:
+
+- topology: what is connected and in which direction;
+- execution: what is pending, running, completed, skipped, or failed;
+- evidence: what result or receipt was produced by the execution.
+
+Marks without a projection-owned meaning MUST NOT be rendered.  In
+particular, the renderer MUST NOT invent stacked outlines for compositions,
+letter badges for profiles, decorative rails, or always-visible relation
+labels.
+
+Node geometry follows conventional semantics where those conventions exist:
+
+| Projection object | Default visual form | Primary visible information |
+|-
+| composition | compact entry card | name and instance state |
+| case | compact execution card | name, ordinal, and execution state |
+| profile instance | text-led identity tag | explicit profile identity and state |
+| boundary or event | circle | start, end, wait, or interrupt meaning |
+| decision or qualification predicate | diamond | condition and selected branch |
+| evidence | receipt or document form | evidence kind and verification state |
+| atomic step | compact operation chip | operation name and execution state |
+
+When no established shape exists, explicit text is preferred over an invented
+icon.  Type and state MUST remain independent: geometry and type microcopy
+describe what an object is, while outline, route, and state markers describe
+what happened to it.
+
+** Stateful object anatomy
+
+A workflow node is a projection of a domain object, not only an execution
+step.  Profile, Case, Composition, Evidence, Boundary, and operation nodes MAY
+carry different state machines, guards, capabilities, and properties.  The
+renderer MUST preserve these distinctions instead of flattening every object
+to =pending=, =running=, or =completed=.
+
+Four state/property layers are kept separate:
+
+| Layer | Ownership | Examples |
+|-
+| definition | Scheme object definition | kind, subtype, declared capabilities, parameters |
+| instance | composition projection | instance identity, bound role, inherited properties |
+| execution | runtime cursor and receipt | pending, eligible, blocked, running, completed, failed, skipped |
+| assurance | contract or evidence projection | qualified, verified, rejected, proof or evidence references |
+
+Conditions are first-class graph information.  A node MAY expose entry guards,
+exit conditions, branch predicates, preconditions, and blockers.  The normal
+node view shows the active or blocking condition; the inspector exposes the
+complete condition expression and its evaluated operands.  The graph MUST NOT
+claim that a condition passed unless the runtime or assurance projection owns
+that result.
+
+Properties use an explicit projection allow-list.  High-value properties such
+as role, capability, policy, strategy, evidence count, retry state, and runtime
+binding MAY appear as compact property facets.  Arbitrary property maps and
+large values remain in the inspector.  Definition properties, inherited
+properties, and instance overrides MUST remain distinguishable.
+
+** Semantic icon registry
+
+Icons are projection-driven semantic instruments, not decorative badges.  The
+registry resolves an icon from object kind, object subtype, and selected
+high-value properties.  A Profile MAY therefore distinguish human, agent,
+runtime, service, and research roles; a Case MAY distinguish qualification,
+research, policy, strategy, or orchestration behavior; Evidence and Boundary
+objects use their own conventional families.
+
+The default icon treatment SHOULD support two visual layers so object identity
+and subtype/state can be read together.  Missing mappings fall back to an
+explicit textual kind label, never an arbitrary initial such as =P= or =C=.
+Icons MUST have accessible names and MUST NOT be the only carrier of state.
+
+** Fluid execution routes
+
+The active edge is rendered as a temporal execution channel with four layers:
+
+- a static low-contrast route bed preserves topology;
+- a flowing stream travels from source to target;
+- a leading pulse marks causal progress along the route;
+- a completed residual trace remains available for inspection.
+
+The runtime timeline and presentation timeline are distinct.  Runtime receipts
+remain authoritative even when execution completes faster than a human can
+perceive.  The presentation timeline MAY serialize receipt playback so causal
+movement remains understandable, but it MUST NOT alter, delay, or fabricate
+runtime results.  Playback speed controls presentation only.
+
+The target node changes to its active execution state when the leading pulse
+arrives, not when the entire route is painted at once.  Only active routes
+animate.  Motion is interruptible by Pause and Reset and is disabled under
+reduced-motion preferences.
+
+** Information density and semantic zoom
+
+Node dimensions MUST be driven by visible content and the projection-specific
+presentation contract.  Fixed empty regions used only to make different node
+kinds look alike are forbidden.
+
+The renderer exposes three information levels:
+
+- overview shows identity, kind, and execution state;
+- normal view adds provenance and exceptional relations;
+- selection delegates complete inputs, outputs, receipts, and diagnostics to
+  the existing inspector.
+
+Default step relations remain unlabeled.  Exceptional relations such as
+=compose= and =handoff= appear only when selected, hovered, or shown at a
+detail zoom level.  Ports remain latent until selection or connection
+interaction requires them.
+
+** Execution route language
+
+Edges are execution routes rather than decorative connectors:
+
+- pending routes are neutral and visually subordinate;
+- completed routes are stable, solid, and higher contrast;
+- the running route MAY use one interruptible moving segment, never a flashing
+  whole-edge animation;
+- failed routes identify the precise interruption point;
+- skipped and inactive branches remain readable but recede;
+- the current or selected path is elevated while unrelated routes are dimmed.
+
+Relation labels MUST NOT use permanent opaque pills.  Motion MUST explain a
+state transition, respect reduced-motion preferences, and stop immediately
+when execution pauses or the user resets the graph.
+
+** Camera and responsive projection
+
+Initial load and Reset MAY fit and center the topology.  Run, Pause, and Step
+MUST preserve the user's camera and MUST NOT disable panning or zooming.
+
+Desktop defaults to a horizontal topology.  Mobile defaults to a vertical
+topology so readable nodes are not reduced to a fit-all thumbnail.  Layout
+bounds plus explicit safe padding determine the canvas extent; arbitrary
+fixed whitespace is not part of the visual system.
+
+
+The graph uses the active theme tokens but owns a stable semantic palette.
+Color reinforces kind and state; it never substitutes for labels.
+
+- Composition: confident root boundary and double-layer emphasis.
+- Case: quieter container surface with a visible title rail.
+- Profile instance: compact capability card linked to its definition.
+- Evidence: artifact treatment distinct from executable Profiles.
+- External boundary: terminal treatment with clear ingress or egress.
+
+Surfaces are opaque enough to preserve contrast.  Transparency may communicate
+depth in floating controls, but never reduce content legibility or cover graph
+content without an explicit user action.
+
+Typography has three levels only:
+
+1. semantic title;
+2. type or definition identity;
+3. state and relation metadata.
+
+* Interaction state machine
+
+The feature states are:
+
+#+begin_example
+unavailable -> loading -> ready -> running -> paused -> completed
+                         |          |          |
+                         +----------+----------+-> failed
+#+end_example
+
+Execution and viewport are separate state machines.  Resetting execution MUST
+not produce an arbitrary viewport.  Run, Pause, Step, Reset, resize, theme
+change, and route restoration all preserve or intentionally restore a stable
+centered view.
+
+Required actions:
+
+- Run or Resume;
+- Pause;
+- Step forward;
+- Reset execution;
+- fit to composition;
+- focus selection;
+- open and close inspection;
+- pin inspection when space permits;
+- reveal source without replacing the graph;
+- copy stable identity or evidence reference.
+
+Keyboard support:
+
+- =Space= toggles Run and Pause while the canvas owns focus;
+- =Right= advances one step while paused;
+- =R= resets execution;
+- =F= fits the composition;
+- =Escape= closes transient inspection;
+- Tab order reaches controls and visible semantic nodes.
+
+* Motion
+
+Motion follows the design-engineering principles documented by Emil Kowalski:
+
+- transitions are interruptible;
+- functional feedback normally completes within 300 ms;
+- enter and viewport restoration use a strong ease-out curve;
+- movement between visible states uses ease-in-out;
+- buttons provide immediate press feedback;
+- completed nodes do not pulse indefinitely;
+- =prefers-reduced-motion= removes spatial movement while retaining state color
+  and opacity feedback.
+
+The graph MUST remain understandable in a static screenshot.
+
+* Inspection and evidence
+
+Selecting a node opens an inspector that is anchored but not destructive.  It
+MUST display renderer-neutral information:
+
+- instance and definition identity;
+- owning Case and composition path;
+- capabilities and declared scope;
+- incoming and outgoing typed relations;
+- execution position and timing;
+- evidence produced, consumed, or required;
+- exact failure or blocker receipt when present.
+
+The inspector becomes a bottom sheet on narrow mobile layouts.  It MUST not
+cover the primary execution control and selected node simultaneously.
+
+* Interaction and inspection model
+
+The topology surface is not the property editor. A node MUST keep only its semantic type, name, execution state, and at most one active blocking condition. Definition, inherited, and instance properties; capabilities; full condition expressions; evidence references; and state history belong to an Inspector that is opened by selection.
+
+Node and connection selection are equally first-class:
+
+- selecting a node opens the top-right Scheme Object Inspector;
+- selecting a connection opens the same surface as a Checkpoint Inspector and reports source, target, relation, and runtime state;
+- selecting either object MUST preserve free graph dragging and MUST NOT recenter the viewport;
+- clicking Reset or loading the graph MAY fit and center the topology;
+- unrelated paths MAY be visually reduced while the selected object's immediate provenance and execution neighborhood remain emphasized.
+
+Semantic zoom MUST preserve information hierarchy rather than merely scaling pixels. The overview level presents topology, object kind, and runtime state. The reading level presents names and checkpoint relations. Detailed properties remain in the Inspector at every zoom level.
+
+Reusable Cases SHOULD support projection-level expand and collapse while retaining the complete canonical graph in memory. Expansion MUST NOT reintroduce nested decorative rectangles. A collapsed Case is a semantic module node; expanding it reveals its projected members and recalculates layout.
+
+The default projection MUST NOT render a MiniMap. Navigation is provided by pan, zoom, Fit View, selection focus, and the Inspector. Runtime connections use a route bed, a continuous fluid stream for the active transition, a leading pulse, and a residual completed trace.
+
+** Selection neighborhood and checkpoint controls
+
+Selection is a semantic query over the projected Scheme graph, not a layout
+operation.  Selecting a node keeps the selected object, its direct graph
+neighbors, its parent Case, and its immediate children at full visual priority.
+The remaining graph stays readable with reduced saturation; it is never hidden
+or made translucent enough to lose context.
+
+Selecting a connection treats the relation as a first-class checkpoint.  The
+source and target remain visible and the Inspector reports the relation,
+execution state, and stable edge identity.  Every rendered relation label is a
+keyboard-accessible checkpoint control with a widened React Flow interaction
+path.  Clicking the canvas clears selection without fitting or moving the
+viewport.
+
+Selection, checkpoint inspection, and execution must not call =fitView=.  Run,
+Pause, and Step preserve the user's pan and zoom.  Initial load and Reset are
+the only automatic centering boundaries.
+
+** Graph intelligence layers
+
+The graph grows through semantic layers rather than decorative containers:
+
+- semantic zoom changes information density while preserving node identity;
+- Case expansion and collapse reveal projected children without inventing a
+  second hierarchy outside Scheme;
+- execution focus exposes the live route, leading pulse, residual trace, and
+  checkpoint state;
+- provenance focus follows Definition, inherited Profile, Case instance, and
+  runtime state as separate Inspector layers;
+- comparison focus can pin two Scheme objects or checkpoints and show their
+  property and state differences without duplicating nodes;
+- evidence overlays attach validation, qualification, and failure receipts to
+  the owning object or checkpoint;
+- large projections may virtualize or hide collapsed descendants, but selection
+  and execution state must remain stable across those visibility changes.
+
+These layers must reuse React Flow selection, edge interaction, viewport, and
+visibility primitives.  They must not introduce a parallel workflow model or
+hard-coded UI metadata that diverges from the Scheme projection.
+
+* Mobile contract
+
+- Minimum interactive target: 44 CSS pixels.
+- One-finger pan and two-finger zoom remain available.
+- The execution transport is a compact bottom control, safe-area aware.
+- Detail labels progressively collapse before node titles do.
+- Case containers may switch direction for narrow layouts.
+- Source code opens as a separate sheet instead of expanding under the graph.
+- No horizontal document overflow is permitted.
+
+* Performance contract
+
+The renderer remains lazy and enters the viewport before loading heavy graph
+code.  Budgets for the fixed eight-node composition fixture are:
+
+| Receipt                           | Budget       |
+|-----------------------------------+--------------|
+| Org projection to graph-ready     | < 2,000 ms   |
+| WASM runtime load                 | < 1,500 ms   |
+| Step intent to committed DOM      | < 100 ms     |
+| Viewport restoration animation    | < 300 ms     |
+| Unexpected document overflow      | 0 px         |
+| Console or page errors            | 0            |
+
+Large scenarios MUST add fixtures for 50, 250, and 1,000 semantic nodes before
+claiming scale.  Each fixture records layout time, route time, first meaningful
+paint, interaction latency, memory, and layout stability.
+
+* Accessibility contract
+
+- Every semantic node has a meaningful accessible name and kind.
+- State is exposed through text, not color alone.
+- Connections have accessible relation descriptions.
+- Focus indicators meet theme contrast requirements.
+- Canvas controls remain operable at 200 percent zoom.
+- Reduced motion and high-contrast modes are tested.
+
+* Architecture seams
+
+The implementation is divided into the following owners:
+
+| Owner                  | Responsibility                                  |
+|------------------------+--------------------------------------------------|
+| graph contract         | renderer-neutral projection and validation      |
+| execution timeline     | cursor, snapshots, receipts, release             |
+| layout port            | adapter interface and deterministic geometry     |
+| ELK adapter            | compound layout and orthogonal routing           |
+| React renderer         | custom nodes, edges, canvas, and interaction      |
+| Org mount              | lazy discovery, lifecycle, and source projection |
+| scenario benchmark     | semantic, visual, runtime, and performance gates  |
+
+No owner may import a downstream adapter merely to define its public types.
+
+* Acceptance scenarios
+
+** Recursive composition
+
+- Render the composition root, nested Cases, and Profile instances.
+- Show a reused Profile as distinct instances with shared provenance.
+- Preserve containment during fit, resize, theme change, and execution.
+
+** Execution playback
+
+- Run, Pause, Step, and Reset expose deterministic state.
+- Only the active connection uses motion.
+- Reset restores the centered composition after an arbitrary pan and zoom.
+
+** Failure and evidence
+
+- A failed Profile exposes the exact blocker.
+- The owning Case and dependent path remain visible.
+- Evidence links remain inspectable without opening Scheme source.
+
+** Responsive interaction
+
+- Desktop, tablet, and mobile fixtures preserve controls and selected context.
+- No floating Region obscures semantic content.
+- No framework branding or debugging overlays are visible.
+
+** Renderer independence
+
+- Contract tests construct and validate a projection without React.
+- Layout tests run without the DOM.
+- React tests consume the public graph contract rather than raw runtime arrays.
+
+* Approved flat topology board
+
+The graph is a flat semantic topology.  Composition, Case, Profile, Evidence,
+Boundary, and Step objects are independent nodes on one canvas.  A parent or
+membership relation is layout metadata and provenance; it MUST NOT be rendered
+as a stack of enclosing rectangles.
+
+The default reading direction is left to right.  Type bands MAY be indicated by
+alignment, whitespace, and quiet headings, but MUST NOT become closed swimlane
+containers.  Orthogonal routing, stable ports, semantic zoom, and collision
+avoidance provide the D2/TALA spatial grammar without importing container-heavy
+presentation.
+
+* Independent interaction state
+
+Topology, execution, camera, and inspection are independent state machines.
+
+| Action | Topology | Execution | Camera | Inspection |
+|-
+| Initial load | project | ready | fit and center | clear |
+| Run | unchanged | advance | unchanged | unchanged |
+| Pause | unchanged | pause | unchanged | unchanged |
+| Step | unchanged | advance once | unchanged | unchanged |
+| Pan or zoom | unchanged | unchanged | user controlled | unchanged |
+| Select node | unchanged | unchanged | unchanged | select |
+| Reset | unchanged | reset | fit and center | clear |
+
+Run, Pause, and Step MUST NOT call =fitView= directly or indirectly.  Canvas pan
+and zoom remain available during execution.  Resize, visibility, and page-show
+events preserve the user's world-space focal point after initial layout.  If the
+active step is outside the viewport, the renderer MAY offer an explicit
+=Locate active step= action; it MUST NOT move the camera automatically.
+
+The transport bar occupies reserved layout space outside the canvas.  It MUST
+NOT cover graph content or intercept canvas gestures.
+
+* Projection-driven node language
+
+The Scheme/runtime projection owns semantic identity.  It MUST expose typed
+node category and object form rather than asking a React renderer to infer
+meaning from labels, free-form detail, regular expressions, or CSS class names.
+
+Required semantic categories are:
+
+- =composition=
+- =case=
+- =profile=
+- =evidence=
+- =boundary=
+- =step=
+
+The projection also distinguishes object form where the runtime knows it, such
+as =definition=, =instance=, =reference=, and =runtime=.  Stable source,
+definition, instance, and evidence references remain optional typed fields.
+Theme-specific shape names, colors, SVG paths, and React component names do not
+belong in the renderer-neutral graph contract.
+
+The React adapter registers one custom node component per semantic category.
+Each category has a materially different visual grammar:
+
+| Category | Default visual grammar | Meaning |
+|-
+| Composition | layered portal or stacked spine | reusable composition root |
+| Case | process card with a directional rail | executable scenario or case |
+| Profile | compact identity capsule | reusable role definition or instance |
+| Evidence | document shape with an evidence edge | proof, receipt, or artifact |
+| Boundary | event circle or terminal capsule | entry, exit, guard, or boundary |
+| Step | compact operation chip | atomic executable transition |
+
+Shape is semantic, not decorative.  A diamond is reserved for a projected
+decision or qualification predicate; it MUST NOT be assigned merely because a
+node branches.  Execution state, selection state, and semantic category remain
+independent visual channels and MUST NOT rely on color alone.
+
+The React adapter uses the official =@xyflow/react= Custom Nodes, Handles,
+NodeToolbar, selection, and viewport APIs.  The =nodeTypes= registry is static
+and renderer-owned.  ELK remains a replaceable layout adapter and does not own
+node semantics or React components.  React Flow Pro example source is not a
+runtime dependency and MUST NOT be copied without an applicable license.
+
+* Flat semantic containment and disclosure
+
+=parentId= is a renderer-neutral provenance and membership relation.  The React
+projection keeps every object at the top level of the canvas; it MUST NOT pass
+=parentId=, =extent=, or compound container bounds to React Flow merely to show
+membership.
+
+A Composition or Case with semantic children exposes an explicit disclosure
+control.  Collapse hides every transitive descendant and every incident hidden
+edge while preserving stable object IDs, layout coordinates, runtime state,
+selection state, and the user's viewport.  Expand restores the same objects.
+Reset expands the graph, clears node and checkpoint inspection, resets runtime
+execution, and fits the full graph.  Run, Pause, and Step never fit or recenter
+the viewport; nodes remain draggable while execution advances.
+
+* Semantic zoom
+
+Viewport zoom is a disclosure channel, not a reason to recompute Scheme or ELK
+topology.  The renderer updates one graph-level zoom tier without subscribing
+every node to viewport state:
+
+| Zoom | Visible node facets |
+|-
+| =>= 0.92= | condition, state, property, capability |
+| =0.78 .. 0.92= | condition, state, property |
+| =0.62 .. 0.78= | condition, state |
+| =0.52 .. 0.62= | condition |
+| =< 0.52= | identity, category, title, execution state only |
+
+The Inspector remains the complete source for subtype, scope, capabilities,
+conditions, layered properties, and definition, instance, source, and evidence
+references at every zoom level.
+
+* Generated Scheme semantics
+
+The TypeScript workflow module is generated from the User Composition; it is
+not a second handwritten interpretation.  Profile bindings resolve through the
+Composition module alias to the canonical Profile object.  Generated Profile
+instances carry =objectSubtype=, =scope=, and =capabilities= in addition to
+stable source and parent identities.  The graph contract preserves these
+fields and the Inspector exposes them.  Missing aliases and Profile slots are
+generation errors rather than renderer fallbacks.
+
+* Fixed scale scenarios
+
+Performance acceptance fixes four deterministic topology sizes in Git:
+
+| Scenario | Purpose |
+|-
+| 8 nodes | interactive composition fixture and browser visual acceptance |
+| 50 nodes | ordinary documentation workflow |
+| 200 nodes | dense project workflow |
+| 1000 nodes | large topology projection and disclosure ceiling |
+
+Every scenario validates projection identity, containment, and transitive
+collapse.  Median warm projection plus collapse budgets are checked in the
+unit gate.  Browser acceptance separately fixes label clearance, mobile port
+direction, live execution state, Reset behavior, collapse, semantic zoom, and
+the absence of renderer branding.  A performance change is incomplete unless
+these receipts stay green.
+
+* References
+
+- [[https://reactflow.dev/api-reference/hooks/use-on-selection-change][React Flow useOnSelectionChange]]
+- [[https://reactflow.dev/api-reference/components/edge-toolbar][React Flow EdgeToolbar]]
+- [[https://reactflow.dev/examples/layout/expand-collapse][React Flow Expand and Collapse]]
+- [[https://reactflow.dev/learn/advanced-use/performance][React Flow Performance]]
+
+- [[https://terrastruct.com/tala/][Terrastruct TALA layout principles]]
+- [[https://d2lang.com/tour/containers/][D2 containers]]
+- [[https://reactflow.dev/learn/layouting/sub-flows][React Flow sub flows]]
+- [[https://reactflow.dev/learn/layouting/layouting][React Flow layout adapters]]
+- [[https://github.com/emilkowalski/skill/tree/main/skills/emil-design-eng][Emil Kowalski design-engineering skill]]

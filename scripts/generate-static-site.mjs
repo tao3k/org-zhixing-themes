@@ -218,8 +218,14 @@ const sourceAgendaShardPublicPath = (source) =>
   joinPath(sourceAgendaShardPublicDir, `${safeShardId(source.id)}.json`);
 
 const sourceProjectionShard = (source) => {
-  const { agendaRange, agendaView, attachmentInventory, memory, sectionIndex, ...projection } =
-    source;
+  const {
+    agendaRange: _agendaRange,
+    agendaView: _agendaView,
+    attachmentInventory: _attachmentInventory,
+    memory: _memory,
+    sectionIndex: _sectionIndex,
+    ...projection
+  } = source;
   return {
     ...projection,
     agendaShardPath: sourceAgendaShardPublicPath(source),
@@ -279,7 +285,7 @@ const parseConfig = (text) => {
   return {
     contentRoot,
     contentBase,
-    contentDiskRoot: resolve(projectRoot, contentRoot),
+    contentDiskRoot,
     sources,
     attachments: parseAttachments(asOptionalRecord(raw.attachments), contentRoot),
     agenda: agendaSettings(asOptionalRecord(raw.agenda)),

@@ -1,0 +1,27 @@
+.poo-flow-node .poo-flow-shape__container-meta {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: space-between;
+}
+
+.poo-flow-shape__collapse {
+  appearance: none;
+  background: color-mix(in srgb, var(--org-accent, #7aa2f7) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--org-accent, #7aa2f7) 48%, transparent);
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1;
+  padding: 0.38rem 0.58rem;
+}
+
+.poo-flow-shape__collapse:hover,
+.poo-flow-shape__collapse:focus-visible {
+  background: color-mix(in srgb, var(--org-accent, #7aa2f7) 22%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--org-accent, #7aa2f7) 62%, transparent);
+  outline-offset: 2px;
+}

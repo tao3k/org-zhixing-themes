@@ -149,7 +149,7 @@ checkout when the Rust WASM package needs rebuilding.
 `npm run build` runs `npm run generate:static` before Rsbuild. That generator
 uses the Rust/WASM package to precompute `viewIndex`, `sectionIndex`, rendered
 HTML, attachment inventory, memory, agenda, and lint for every discovered Org
-source.  The build ships a compact `org-zhixing.static.json` entry manifest plus
+source. The build ships a compact `org-zhixing.static.json` entry manifest plus
 per-source JSON shards under `org-zhixing.sources/`, lazy agenda shards under
 `org-zhixing.agenda/`, lazy attachment shards under `org-zhixing.attachments/`,
 lazy Agent memory shards under `org-zhixing.memory/`, and lazy semantic section

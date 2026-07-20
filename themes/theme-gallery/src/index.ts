@@ -1,10 +1,27 @@
-import elegantBlog from "../../elegant-blog/src/index";
+import { defineThemePackage } from "../../../src/library/themePackage";
+import {
+  elegantBlogLayouts,
+  elegantBlogManifestFoundation,
+  elegantBlogRendererBindings,
+  elegantBlogVariants,
+} from "../../elegant-blog/src/foundation";
 
-const themeGallery = {
-  ...elegantBlog,
-  name: "theme-gallery",
+export default defineThemePackage({
+  manifest: {
+    ...elegantBlogManifestFoundation,
+    id: "theme-gallery",
+    package: "@org-zhixing/theme-gallery",
+    displayName: "Theme Gallery",
+    capabilities: ["blog", "theme-preview"],
+    content: {
+      base: "workspace",
+      directory: "blog",
+      routeMode: "blog",
+    },
+  },
+  variants: elegantBlogVariants,
   rendererBindings: {
-    ...elegantBlog.rendererBindings,
+    ...elegantBlogRendererBindings,
     navigation: [
       {
         name: "Documents",
@@ -23,18 +40,5 @@ const themeGallery = {
       },
     ],
   },
-  manifest: {
-    ...elegantBlog.manifest,
-    id: "theme-gallery",
-    package: "@org-zhixing/theme-gallery",
-    displayName: "Theme Gallery",
-    capabilities: ["blog", "theme-preview"],
-    content: {
-      base: "workspace",
-      directory: "blog",
-      routeMode: "blog",
-    },
-  },
-};
-
-export default themeGallery;
+  layouts: elegantBlogLayouts,
+});

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "poo-flow-runtime",
+  "route": "/poo-flow-runtime",
+  "theme": "documents",
+  "variant": "mocha",
+  "fixture": "benchmarks/fixtures/docs/poo-flow-runtime.org",
+  "projects": ["compact-phone", "modern-phone", "tablet", "desktop"],
+  "actions": [
+    { "type": "goto" },
+    { "type": "click", "target": ".org-poo-flow__run" },
+    { "type": "screenshot", "value": "poo-flow-runtime" }
+  ],
+  "gates": {
+    "maxHorizontalOverflowPx": 0,
+    "maxConsoleErrors": 0,
+    "maxPageErrors": 0,
+    "minTapTargetPx": 44
+  }
+}

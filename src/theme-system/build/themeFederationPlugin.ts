@@ -11,12 +11,25 @@ export const createThemeFederationPlugin = (
   return pluginModuleFederation({
     name: federationHostName(snapshot.instanceId),
     remotes: remoteDefinitions,
+    dts: { consumeTypes: false },
     shareStrategy: "loaded-first",
     shared: {
-      react: { singleton: true, requiredVersion: false },
-      "react/": { singleton: true, requiredVersion: false },
-      "react-dom": { singleton: true, requiredVersion: false },
-      "react-dom/": { singleton: true, requiredVersion: false },
+      react: {
+        singleton: true,
+        requiredVersion: false,
+      },
+      "react/": {
+        singleton: true,
+        requiredVersion: false,
+      },
+      "react-dom": {
+        singleton: true,
+        requiredVersion: false,
+      },
+      "react-dom/": {
+        singleton: true,
+        requiredVersion: false,
+      },
     },
   });
 };

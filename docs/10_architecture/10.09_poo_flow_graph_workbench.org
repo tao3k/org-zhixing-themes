@@ -1,0 +1,96 @@
+#+TITLE: POO Flow Graph Workbench
+#+DATE: 2026-07-20
+#+AUTHOR: TAO3K
+#+FILETAGS: :org-zhixing:architecture:poo-flow:react-flow:
+#+OPTIONS: toc:2 num:nil
+
+* DONE Decision
+
+The POO Flow graph is a semantic workbench projected from Scheme and the POO
+Flow runtime.  React Flow owns viewport interaction and presentation.  It does
+not become a second workflow runtime or a second topology source of truth.
+
+The workbench provides three explicit modes:
+
+- ~Explore~ permits navigation, selection, semantic zoom, local node movement,
+  focus, collapse, and inspection.  It cannot mutate Scheme topology.
+- ~Run~ permits the Explore interactions plus execution, breakpoint control,
+  run-to-here, stepping, and runtime history.  Running never recenters the
+  viewport.  Reset restores the canonical layout and viewport.
+- ~Compose~ emits typed topology intents.  Connections, reconnections, and
+  deletion remain fail-closed until a Scheme mutation adapter validates and
+  accepts the intent.
+
+Default React Flow deletion and connection shortcuts MUST be disabled whenever
+the corresponding typed mutation path is unavailable.
+
+* DONE Scenario-driven compound subflows
+
+~parentId~ is a semantic capability, not a global visual style.
+
+Ordinary Case and Profile composition remains flat by default.  A compound
+subflow is rendered only when the Scheme projection declares a real execution
+scope, including:
+
+- Subagent Workflow supervision and worker scopes;
+- Funflow function, continuation, and recovery scopes;
+- parallel agent teams;
+- transaction, supervision, or isolation domains.
+
+The renderer MUST NOT infer a compound scope from labels.  The projection must
+provide structured scenario or scope metadata.  A compound boundary supports
+collapse, isolate, enter, exit, and breadcrumb navigation.  Cross-scope edges
+remain visible and express handoff.  Native React Flow child coordinates are
+used only after the ELK compound layout returns a matching parent-relative
+projection.
+
+* DONE Semantic navigation
+
+The semantic MiniMap is opt-in for compact graphs and automatically available
+for large graphs.  It distinguishes Case, Profile, evidence, execution state,
+the active route, breakpoints, and collapsed scopes.  It supports viewport
+panning and zooming without covering the execution runner.
+
+Semantic zoom exposes progressively richer facets.  Low zoom favors topology,
+scope, state, and the active path.  High zoom reveals identity, conditions,
+properties, capabilities, and evidence.
+
+* DONE Context actions and inspection
+
+A selected node may expose a small unscaled Node Toolbar with contextual
+actions such as focus, collapse, run-to-here, breakpoint, and source.  A
+selected edge may expose an Edge Toolbar for checkpoint inspection and an edge
+breakpoint.
+
+The toolbar contains only quick actions.  Conditions, properties, capabilities,
+runtime receipts, and checkpoint details remain in the upper-right inspector.
+
+* DONE Runtime debugger
+
+Breakpoints are workbench state and do not mutate Scheme source unless the user
+explicitly persists them.  A breakpoint may target a node or an edge.  Running
+pauses before crossing the selected checkpoint and preserves the current
+viewport.  Manual Step may advance through a breakpoint.  Run-to-here stops
+before the target node.
+
+Later runtime history extends the same contract with Step Into, Step Over, Step
+Out, watched Scheme expressions, execution snapshots, and run comparison.
+
+* DONE Performance and accessibility contract
+
+Browser benchmarks cover 8, 50, 200, and 1000 node scenarios.  The 200 and
+1000 node scenarios include React Flow rendering and ELK layout rather than
+projection-only timing.  Visible-element rendering, simplified low-zoom edges,
+and worker layout are enabled only from measured thresholds.
+
+Nodes and edges remain keyboard focusable and receive semantic accessible
+names.  Explore and Run disable destructive keyboard behavior.  The global
+~Ctrl+Z~ Zen Mode contract is preserved and is not reused for graph undo.
+
+* TODO Acceptance slices
+
+1. Three-mode safety policy and regression tests.
+2. Semantic MiniMap and contextual Node and Edge toolbars.
+3. Node and edge breakpoints with run-to-here.
+4. Structured Subagent Workflow and Funflow compound fixtures.
+5. Browser render and layout benchmarks at 50, 200, and 1000 nodes.
