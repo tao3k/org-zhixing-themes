@@ -48,12 +48,12 @@ describe("theme isolation framework", () => {
     expect(documents).toContain('from "@org-zhixing/theme-documents"');
     expect(documents).toContain('"preview-5199"');
     expect(documents.match(/^import .+$/gmu)).toEqual([
-      'import isolatedSelectedTheme from "@org-zhixing/theme-documents";',
+      'import isolatedWorkspaceTheme from "@org-zhixing/theme-documents";',
     ]);
     expect(blog).toContain('from "@org-zhixing/theme-elegant-blog"');
     expect(blog).toContain('"preview-5200"');
     expect(blog.match(/^import .+$/gmu)).toEqual([
-      'import isolatedSelectedTheme from "@org-zhixing/theme-elegant-blog";',
+      'import isolatedWorkspaceTheme from "@org-zhixing/theme-elegant-blog";',
     ]);
   });
 
@@ -105,7 +105,10 @@ describe("theme isolation framework", () => {
       ],
     });
 
-    expect(renderThemeRuntimeModule(remote)).toContain('from "documents_pro/theme"');
+    expect(renderThemeRuntimeModule(remote)).toContain(
+      'from "@module-federation/enhanced/runtime"',
+    );
+    expect(renderThemeRuntimeModule(remote)).toContain('loadRemote("documents_pro/theme")');
     expect(renderThemeRuntimeModule(remote)).toContain("org-zhixing/theme-module/v1");
     expect(createThemeFederationPlugin(remote)?.name).toBe("rsbuild:module-federation-enhanced");
     expect(selectedThemeFederationRemotes(remote)).toEqual({

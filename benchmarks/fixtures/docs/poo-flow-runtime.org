@@ -1,0 +1,34 @@
+* POO Flow Profile Composition Scenario
+This fixed fixture qualifies recursive Case composition, reusable Profile provenance, the package-managed WASM cursor, and the React Flow interaction lifecycle.
+
+#+name: browser-profile-composition
+#+attr_html: :data-poo-flow browser-profile-composition
+#+begin_src scheme
+(use-composition browser-profile-composition
+  (use-module agentic-research as research
+    (profile researcher
+      :kind agent
+      :scope research
+      :capabilities (discover synthesize))
+    (profile evidence-curator
+      :kind agent
+      :scope evidence
+      :capabilities (qualify trace))
+    (profile runtime
+      :kind runtime
+      :scope execution
+      :capabilities (schedule observe)))
+  (compose
+    (profiles research researcher evidence-curator runtime))
+  (stage research-case
+    (step researcher)
+    (step evidence-curator)
+    (edges (researcher evidence-curator)))
+  (stage qualification-case
+    (step evidence-curator)
+    (prove admissible-evidence))
+  (stage real-scenario
+    (step research-case)
+    (step qualification-case)
+    (handoff runtime)))
+#+end_src

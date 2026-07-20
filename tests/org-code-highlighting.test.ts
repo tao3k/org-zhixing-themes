@@ -58,7 +58,9 @@ describe("Org Babel syntax highlighting", () => {
       expect(document.querySelector("figure")?.dataset.orgCodeHighlight).toBe("ready"),
     );
 
-    expect(loadLanguage).toHaveBeenCalledWith("typescript");
+    expect(loadLanguage).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ name: "typescript" })]),
+    );
     expect(codeToHtml).toHaveBeenCalledWith(
       "const answer = 42",
       expect.objectContaining({

@@ -7,10 +7,12 @@
     "height": 900
   },
   "budgets": {
-    "firstReadyMedianMs": 1350,
-    "firstReadyP95Ms": 2200,
-    "preparedToReadyMedianMs": 675,
-    "preparedToReadyP95Ms": 1200,
+    "coldFirstReadyMs": 3000,
+    "coldPreparedToReadyMs": 1800,
+    "warmFirstReadyMedianMs": 1350,
+    "warmFirstReadyP95Ms": 2200,
+    "warmPreparedToReadyMedianMs": 675,
+    "warmPreparedToReadyP95Ms": 1200,
     "deferredReadyP95Ms": 950,
     "themeReadyP95Ms": 900,
     "headingFontPxMax": 44,
@@ -18,10 +20,12 @@
   },
   "reference": {
     "environment": "local Chromium dev preview",
-    "firstReadyMedianMs": 469,
-    "firstReadyP95Ms": 1684,
-    "preparedToReadyMedianMs": 238,
-    "preparedToReadyP95Ms": 1058,
+    "coldFirstReadyMs": 2582,
+    "coldPreparedToReadyMs": 1389,
+    "warmFirstReadyMedianMs": 469,
+    "warmFirstReadyP95Ms": 1684,
+    "warmPreparedToReadyMedianMs": 238,
+    "warmPreparedToReadyP95Ms": 1058,
     "deferredReadyP95Ms": 797,
     "themeReadyP95Ms": 57,
     "headingFontPx": 41.6

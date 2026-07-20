@@ -16,6 +16,9 @@ dist-ssr
 .run
 .lighthouseci
 
+# Module Federation generated types
+/@mf-types/
+
 # Devenv
 .devenv*
 devenv.local.nix

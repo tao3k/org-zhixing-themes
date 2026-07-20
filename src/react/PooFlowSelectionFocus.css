@@ -1,0 +1,101 @@
+.react-flow__node.poo-flow-node--focus,
+.react-flow__node.poo-flow-node--related,
+.react-flow__node.poo-flow-node--dimmed {
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease;
+}
+
+.react-flow__node.poo-flow-node--focus {
+  filter: saturate(1.08) brightness(1.04);
+  opacity: 1;
+  z-index: 8 !important;
+}
+
+.react-flow__node.poo-flow-node--focus .poo-flow-shape {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--zx-accent, #82aaff) 78%, transparent),
+    0 16px 44px color-mix(in srgb, var(--zx-accent, #82aaff) 18%, transparent);
+}
+
+.react-flow__node.poo-flow-node--related {
+  filter: saturate(0.96) brightness(1);
+  opacity: 0.96;
+  z-index: 6 !important;
+}
+
+.react-flow__node.poo-flow-node--dimmed {
+  filter: saturate(0.68) brightness(0.84);
+  opacity: 0.66;
+  z-index: 1 !important;
+}
+
+.react-flow__edge.poo-flow-edge--focus,
+.react-flow__edge.poo-flow-edge--related,
+.react-flow__edge.poo-flow-edge--dimmed {
+  transition: opacity 180ms ease;
+}
+
+.react-flow__edge.poo-flow-edge--focus,
+.react-flow__edge.poo-flow-edge--related {
+  opacity: 1;
+}
+
+.react-flow__edge.poo-flow-edge--focus .react-flow__edge-path {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--zx-accent, #82aaff) 72%, transparent));
+  stroke-width: 2.8;
+}
+
+.react-flow__edge.poo-flow-edge--related .react-flow__edge-path {
+  stroke-width: 2.2;
+}
+
+.react-flow__edge.poo-flow-edge--dimmed {
+  opacity: 0.36;
+}
+
+button.poo-flow-connection-label {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--zx-accent, #82aaff) 38%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--zx-surface, #1f2335) 92%, transparent);
+  color: var(--zx-text, #c8d3f5);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+  padding: 0.28rem 0.48rem;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.react-flow__edgelabel-renderer {
+  pointer-events: none;
+  z-index: 10;
+}
+
+.react-flow__edgelabel-renderer button.poo-flow-connection-label {
+  pointer-events: auto;
+  position: absolute;
+  z-index: 1;
+}
+
+button.poo-flow-connection-label:hover,
+button.poo-flow-connection-label:focus-visible {
+  border-color: color-mix(in srgb, var(--zx-accent, #82aaff) 78%, transparent);
+  background: color-mix(in srgb, var(--zx-accent, #82aaff) 16%, var(--zx-surface, #1f2335));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zx-accent, #82aaff) 14%, transparent);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .react-flow__node.poo-flow-node--focus,
+  .react-flow__node.poo-flow-node--related,
+  .react-flow__node.poo-flow-node--dimmed,
+  .react-flow__edge.poo-flow-edge--focus,
+  .react-flow__edge.poo-flow-edge--related,
+  .react-flow__edge.poo-flow-edge--dimmed {
+    transition: none;
+  }
+}

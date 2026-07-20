@@ -1,0 +1,88 @@
+#+TITLE: POO Flow Graph Runtime Contract
+#+DATE: 2026-07-20
+#+AUTHOR: TAO3K
+#+FILETAGS: :org-zhixing:architecture:poo-flow:react-flow:
+
+* Purpose
+
+The POO Flow graph is a runtime projection of Scheme-owned workflow objects.  It
+is not an independent JSON workflow editor.  Subagent workflows, Funflow, cases,
+profiles, checkpoints, states, properties, and containment remain owned by the
+POO Flow runtime and its typed boundary.
+
+* Projection and compound geometry
+
+Scenario and subflow objects use native compound coordinates.  A direct child
+references its parent with =parentId=; positions remain relative inside the
+container and absolute only at the layout adapter boundary.  ELK completes the
+final compound geometry before React Flow mounts.  This prevents placeholder
+node sizes from producing a second zoom, a visible relayout, or a
+=ResizeObserver= delivery loop.
+
+* Execution debugger
+
+Run, pause, step, reset, run-to, node breakpoints, and checkpoint breakpoints are
+transitions of one pure debugger state machine.  The debugger emits
+=poo-flow.graph-debugger-receipt.v1= receipts.  A reset returns the camera to the
+canonical layout; ordinary run and step transitions never recenter a graph that
+the reader has moved.
+
+Breakpoint precedence is deterministic:
+
+1. an explicit run-to target;
+2. the active node breakpoint;
+3. the first matching incoming checkpoint in source order.
+
+Workflow replacement filters stale breakpoint identifiers.  Snapshots are
+versioned and sort breakpoint keys so the same execution state is reproducible.
+
+* Typed topology mutation
+
+Compose mode is fail-closed.  Connection and reconnection handles are enabled
+only when a caller supplies a =PooFlowTopologyMutationAdapter=.  Every operation
+uses =poo-flow.graph-topology-intent.v1= and carries an intent identifier,
+workflow identifier, expected revision, and a typed connect, disconnect, or
+reconnect operation.
+
+The adapter must return a =poo-flow.graph-topology-receipt.v1= receipt.  After an
+applied receipt, the graph reloads and validates the authoritative projection.
+Unknown endpoints, duplicate identifiers, revision conflicts, unsupported
+capabilities, mismatched receipts, adapter failures, and malformed reloads are
+rejected without applying an optimistic local edge.
+
+This boundary permits a downstream theme or remote Module Federation package to
+connect its own Scheme/WASM runtime while keeping the core graph independent of
+that repository.  It does not pretend that a static projection is a successful
+runtime mutation.
+
+* Interaction and accessibility
+
+The graph is an interactive region, not an image.  React Flow nodes and edges
+remain keyboard focusable.  =Escape= closes the object or checkpoint inspector
+and restores focus to its trigger.  Topology operations announce pending and
+final receipt states through an =aria-live= status surface.  The same semantics
+are exercised at phone and desktop widths.
+
+* Fixed performance scenarios
+
+The repository fixes two complementary benchmark layers:
+
+- projection and collapse budgets at 8, 50, 200, and 1,000 nodes;
+- cold and warm ELK budgets at 50, 200, and 1,000 nodes for flat and compound
+  graphs.
+
+The browser fixture records its ELK duration in =data-poo-flow-layout-ms= and
+gates the real Scheme-generated Subagent Workflow and Funflow projections on
+mobile and desktop.  The scenario catalog also checks overflow, console errors,
+page errors, and tap-target size.
+
+* Acceptance
+
+- A generated Scheme scenario is the source of every rendered scenario node.
+- A container can collapse and expand without losing typed child ownership.
+- Run mode remains draggable and never recenters during execution.
+- Reset restores canonical centered geometry.
+- Compose is read-only without an explicit typed mutation adapter.
+- All applied topology receipts survive an authoritative reload validation.
+- The first visible graph frame uses final ELK geometry.
+- Browser acceptance emits no =ResizeObserver= runtime error.

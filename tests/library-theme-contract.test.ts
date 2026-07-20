@@ -22,7 +22,11 @@ import {
   type ThemeApi,
 } from "../src/library";
 import { record } from "./modelFixtures";
-import { isolatedThemeCatalog, isolatedThemeEntries } from "virtual:org-zhixing/theme-runtime";
+import {
+  isolatedSelectedThemeId,
+  isolatedThemeCatalog,
+  getIsolatedSelectedTheme,
+} from "virtual:org-zhixing/theme-runtime";
 import minimalNotesTheme from "@org-zhixing/theme-minimal-notes";
 import documentsTheme from "@org-zhixing/theme-documents";
 
@@ -47,9 +51,12 @@ describe("Org Zhixing library theme contract", () => {
       "minimal-notes",
       "theme-gallery",
     ]);
-    expect(isolatedThemeEntries.map(([id, theme]) => [id, theme.name])).toEqual([
-      ["elegant-blog", "elegant-blog"],
-    ]);
+    expect(
+      [[isolatedSelectedThemeId, getIsolatedSelectedTheme()]].map(([id, theme]) => [
+        id,
+        theme.name,
+      ]),
+    ).toEqual([["elegant-blog", "elegant-blog"]]);
     expect(
       resolveConfiguredTheme(
         createThemeRegistry([minimalNotesTheme]),

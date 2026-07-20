@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { ContentShellData } from "../services/contentServices";
 import { lifeFacetFor, routePathForView } from "./routeViewHelpers";
 
-import { isolatedSelectedTheme } from "virtual:org-zhixing/theme-runtime";
+import { useThemeRuntime } from "../theme-system/react/ThemeRuntimeProvider";
 
 import { resolveThemeNavigationHref, themeNavigationItemsFrom } from "../themeNavigation";
 
@@ -16,7 +16,8 @@ export function NavigationItems({
   shell: ContentShellData;
   onNavigate?: () => void;
 }): ReactNode {
-  const themeNavigation = themeNavigationItemsFrom(isolatedSelectedTheme.rendererBindings);
+  const { selectedTheme } = useThemeRuntime();
+  const themeNavigation = themeNavigationItemsFrom(selectedTheme.rendererBindings);
 
   return (
     <>

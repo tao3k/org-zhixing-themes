@@ -5,7 +5,6 @@ import { defineConfig } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { parse } from "smol-toml";
 import { resolveThemeIsolation } from "./src/theme-system/build/resolveThemeIsolation";
-import { createThemeFederationPlugin } from "./src/theme-system/build/themeFederationPlugin";
 import { themeIsolationPlugin } from "./src/theme-system/build/themeIsolationPlugin";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
@@ -22,7 +21,6 @@ const themeIsolation = await resolveThemeIsolation({
   workspaceRoot: projectRoot,
   configPath: publicConfigPath,
 });
-const themeFederation = createThemeFederationPlugin(themeIsolation);
 const selectedThemeTransport = themeIsolation.catalog.find(
   ({ id }) => id === themeIsolation.selectedThemeId,
 )?.transport;
@@ -32,9 +30,14 @@ const publicConfigSource = readFileSync(publicConfigPath, "utf8");
 const publicConfig = parse(publicConfigSource) as Record<string, unknown>;
 const contentRoot = configuredContentRoot(publicConfig);
 const attachmentLogicalRoot = configuredAttachmentRoot(publicConfig, contentRoot);
-const attachmentSourceRoot = externalContentRoot
+const publicAttachmentSourceRoot = resolve(publicRoot, attachmentLogicalRoot);
+const externalAttachmentSourceRoot = externalContentRoot
   ? resolve(externalContentRoot, relativeContentPath(attachmentLogicalRoot, contentRoot))
-  : resolve(publicRoot, attachmentLogicalRoot);
+  : null;
+const attachmentSourceRoot =
+  externalAttachmentSourceRoot && existsSync(externalAttachmentSourceRoot)
+    ? externalAttachmentSourceRoot
+    : publicAttachmentSourceRoot;
 const attachmentOutputRoot = publicMediaPath(attachmentLogicalRoot);
 const staticManifestPath = resolve(cacheRoot, "static-site.json");
 const staticGalleryPath = resolve(cacheRoot, "org-zhixing.gallery.json");
@@ -58,11 +61,7 @@ const deploymentBasePath = normalizeBasePath(
 const assetPrefix = deploymentBasePath === "/" ? "/" : `${deploymentBasePath}/`;
 
 export default defineConfig({
-  plugins: [
-    pluginReact(),
-    ...(themeFederation ? [themeFederation] : []),
-    themeIsolationPlugin.rsbuild(themeIsolation),
-  ],
+  plugins: [pluginReact(), themeIsolationPlugin.rsbuild(themeIsolation)],
   resolve: {
     alias: {
       "@org-zhixing-cache": cacheRoot,
@@ -84,6 +83,10 @@ export default defineConfig({
   output: {
     assetPrefix,
     cleanDistPath: true,
+    manifest: {
+      filename: "asset-manifest.json",
+      prefix: false,
+    },
     distPath: {
       root: process.env.ORG_ZHIXING_DIST_ROOT ?? "dist",
       js: "assets",
@@ -101,11 +104,12 @@ export default defineConfig({
       assets: "[name].[contenthash:8][ext]",
     },
     copy: [
-      ...(process.env.ORG_ZHIXING_CONFIG
+      ...(externalContentRoot || process.env.ORG_ZHIXING_CONFIG
         ? [
             {
-              from: resolve(process.env.ORG_ZHIXING_CONFIG),
+              from: resolve(publicRoot, "org-zhixing.toml"),
               to: "org-zhixing.toml",
+              transform: () => publicConfigSource,
             },
           ]
         : []),

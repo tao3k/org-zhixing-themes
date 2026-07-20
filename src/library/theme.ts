@@ -33,6 +33,7 @@ export type ThemeContext = {
   staticSite?: StaticSiteData | null;
   source?: StaticSource | null;
   document?: OrgizeDocumentView | null;
+  renderedHtml?: string;
 };
 
 export type ThemeRenderResult =
@@ -120,8 +121,8 @@ const mergeThemeAssetManifests = (
   entrypoints:
     themeAssets.entrypoints || layoutAssets?.entrypoints
       ? {
-          ...(themeAssets.entrypoints ?? {}),
-          ...(layoutAssets?.entrypoints ?? {}),
+          ...themeAssets.entrypoints,
+          ...layoutAssets?.entrypoints,
         }
       : undefined,
 });

@@ -25,7 +25,7 @@ describe("Org Poo Flow rendering", () => {
     expect(findOrgPooFlowBlocks(root)).toHaveLength(2);
   });
 
-  it("keeps source readable and runs through an injected runtime lazily", async () => {
+  it("keeps source available and loads an injected runtime graph lazily", async () => {
     const root = fixture();
     const runner: PooFlowRunner = {
       run: vi.fn(
@@ -44,19 +44,21 @@ describe("Org Poo Flow rendering", () => {
     const stop = installOrgPooFlowRendering(root, runner, loader);
 
     const figure = root.querySelector(".org-poo-flow") as HTMLElement;
-    const button = figure.querySelector("button") as HTMLButtonElement;
+    const sourceButton = figure.querySelector(".org-poo-flow__source-toggle") as HTMLButtonElement;
     expect(figure.textContent).toContain("(workflow (step validate)");
     expect(loader).not.toHaveBeenCalled();
 
     await act(async () => {
-      button.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(runner.run).toHaveBeenCalledOnce();
-    expect(loader).toHaveBeenCalledOnce();
+    expect(runner.run).toHaveBeenCalledTimes(2);
+    expect(loader).toHaveBeenCalledTimes(2);
     expect(figure.dataset.state).toBe("complete");
     expect(figure.textContent).toContain("2 graph events");
+    expect(figure.classList.contains("org-poo-flow--source-collapsed")).toBe(true);
+    act(() => sourceButton.click());
+    expect(figure.classList.contains("org-poo-flow--source-collapsed")).toBe(false);
 
     act(() => stop());
     expect(root.querySelectorAll(".org-poo-flow")).toHaveLength(0);
@@ -66,8 +68,9 @@ describe("Org Poo Flow rendering", () => {
   it("exposes a stable source fallback when no runtime adapter is configured", () => {
     const root = fixture();
     const stop = installOrgPooFlowRendering(root, undefined, vi.fn());
-    const button = root.querySelector(".org-poo-flow__run") as HTMLButtonElement;
-    expect(button.disabled).toBe(true);
+    const figure = root.querySelector(".org-poo-flow") as HTMLElement;
+    expect(figure.dataset.state).toBe("unavailable");
+    expect((figure.querySelector(".org-poo-flow__retry") as HTMLButtonElement).hidden).toBe(true);
     expect(root.textContent).toContain("Runtime adapter not connected");
     stop();
   });
@@ -92,7 +95,6 @@ describe("Org Poo Flow rendering", () => {
     expect(figure.textContent).toContain("Projection ready");
 
     await act(async () => {
-      (figure.querySelector("button") as HTMLButtonElement).click();
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(figure.textContent).toContain("2 projected events");
@@ -128,7 +130,6 @@ describe("Org Poo Flow rendering", () => {
     }));
 
     await act(async () => {
-      (root.querySelector(".org-poo-flow__run") as HTMLButtonElement).click();
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 

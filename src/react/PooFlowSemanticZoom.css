@@ -1,0 +1,9 @@
+.poo-flow-graph[data-poo-flow-zoom="properties"] .poo-flow-node-facet--capability,
+.poo-flow-graph[data-poo-flow-zoom="states"] .poo-flow-node-facet--capability,
+.poo-flow-graph[data-poo-flow-zoom="states"] .poo-flow-node-facet--property,
+.poo-flow-graph[data-poo-flow-zoom="condition"] .poo-flow-node-facet--capability,
+.poo-flow-graph[data-poo-flow-zoom="condition"] .poo-flow-node-facet--property,
+.poo-flow-graph[data-poo-flow-zoom="condition"] .poo-flow-node-facet--state,
+.poo-flow-graph[data-poo-flow-zoom="overview"] .poo-flow-node-facets {
+  display: none;
+}

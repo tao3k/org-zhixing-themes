@@ -17,8 +17,7 @@
   padding: 7px 12px;
   color: var(--face-faded);
   background: var(--surface-paper);
-  font: var(--weight-medium) var(--type-label-size) / var(--type-label-leading)
-    var(--font-mono);
+  font: var(--weight-medium) var(--type-label-size) / var(--type-label-leading) var(--font-mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -96,8 +95,7 @@
   border-radius: 0;
 }
 
-.org-typst-block[data-org-typst-view="preview"]
-  > :is(pre, .org-code-highlight),
+.org-typst-block[data-org-typst-view="preview"] > :is(pre, .org-code-highlight),
 .org-typst-block[data-org-typst-view="source"] > .org-typst-preview {
   display: none !important;
 }

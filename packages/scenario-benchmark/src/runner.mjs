@@ -1,5 +1,5 @@
 import { readFile, readdir, stat, writeFile } from "node:fs/promises";
-import { dirname, extname, join, resolve } from "node:path";
+import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { parse } from "smol-toml";
@@ -25,6 +25,15 @@ if (command === "check") {
   );
 } else if (command === "update-baseline") {
   const current = await collectBuildMetrics();
+  const hardGateFailures = compareMetrics(current, {
+    unselectedThemeMarkers: 0,
+    federationArtifactCount: 0,
+  });
+  if (hardGateFailures.length > 0) {
+    throw new Error(
+      `SCENARIO-E003 refusing to baseline an isolation failure:\n${hardGateFailures.join("\n")}`,
+    );
+  }
   const previous = await optionalJson(baselinePath);
   const next = {
     schemaVersion: 1,
@@ -112,6 +121,13 @@ async function collectBuildMetrics() {
   const files = await filesBelow(distRoot);
   const js = files.filter((file) => extname(file) === ".js");
   const css = files.filter((file) => extname(file) === ".css");
+  const manifest = JSON.parse(await readFile(join(distRoot, "asset-manifest.json"), "utf8"));
+  const initial = manifest.entries?.app?.initial;
+  if (!Array.isArray(initial?.js) || !Array.isArray(initial?.css)) {
+    throw new Error("SCENARIO-E003 asset manifest is missing the app initial asset set");
+  }
+  const initialJs = buildAssetPaths(distRoot, initial.js);
+  const initialCss = buildAssetPaths(distRoot, initial.css);
   const config = parse(await readFile(join(root, "public/org-zhixing.toml"), "utf8"));
   const selectedTheme = typeof config.theme === "string" ? config.theme : "elegant-blog";
   const unselectedPackages = [...catalog.entries()]
@@ -120,14 +136,26 @@ async function collectBuildMetrics() {
   let unselectedThemeMarkers = 0;
   for (const file of js) {
     const source = await readFile(file, "utf8");
-    for (const marker of unselectedPackages) unselectedThemeMarkers += occurrences(source, marker);
+    for (const marker of unselectedPackages) {
+      const count = occurrences(source, marker);
+      unselectedThemeMarkers += count;
+      if (count > 0) {
+        console.error(
+          `scenario-isolation-leak file=${file.slice(root.length + 1)} marker=${marker} count=${count}`,
+        );
+      }
+    }
   }
   return {
-    totalJsBytes: await totalBytes(js),
-    entryJsBytes: await totalBytes(js.filter((file) => /\/app\.[^.]+\.js$/.test(file))),
-    totalCssBytes: await totalBytes(css),
-    jsAssetCount: js.length,
-    cssAssetCount: css.length,
+    artifactJsBytes: await totalBytes(js),
+    artifactCssBytes: await totalBytes(css),
+    artifactJsAssetCount: js.length,
+    artifactCssAssetCount: css.length,
+    initialJsBytes: await totalBytes(initialJs),
+    entryJsBytes: await totalBytes(initialJs.filter((file) => /\/app\.[^.]+\.js$/.test(file))),
+    initialCssBytes: await totalBytes(initialCss),
+    initialJsAssetCount: initialJs.length,
+    initialCssAssetCount: initialCss.length,
     unselectedThemeMarkers,
     federationArtifactCount: files.filter((file) => /\/mf-(?:manifest|stats)\.json$/u.test(file))
       .length,
@@ -136,14 +164,32 @@ async function collectBuildMetrics() {
 
 function limitsFor(metrics) {
   return {
-    totalJsBytes: Math.ceil(metrics.totalJsBytes * 1.05),
+    artifactJsBytes: Math.ceil(metrics.artifactJsBytes * 1.05),
+    artifactCssBytes: Math.ceil(metrics.artifactCssBytes * 1.05),
+    artifactJsAssetCount: metrics.artifactJsAssetCount,
+    artifactCssAssetCount: metrics.artifactCssAssetCount,
+    initialJsBytes: Math.ceil(metrics.initialJsBytes * 1.05),
     entryJsBytes: Math.ceil(metrics.entryJsBytes * 1.05),
-    totalCssBytes: Math.ceil(metrics.totalCssBytes * 1.05),
-    jsAssetCount: metrics.jsAssetCount,
-    cssAssetCount: metrics.cssAssetCount,
+    initialCssBytes: Math.ceil(metrics.initialCssBytes * 1.05),
+    initialJsAssetCount: metrics.initialJsAssetCount,
+    initialCssAssetCount: metrics.initialCssAssetCount,
     unselectedThemeMarkers: 0,
     federationArtifactCount: 0,
   };
+}
+
+function buildAssetPaths(distRoot, assets) {
+  return assets.map((asset) => {
+    if (typeof asset !== "string") {
+      throw new Error("SCENARIO-E004 asset manifest contains a non-string path");
+    }
+    const path = resolve(distRoot, asset);
+    const localPath = relative(distRoot, path);
+    if (localPath.startsWith("..") || isAbsolute(localPath)) {
+      throw new Error(`SCENARIO-E005 asset manifest path escapes dist: ${asset}`);
+    }
+    return path;
+  });
 }
 
 function compareMetrics(current, limits) {

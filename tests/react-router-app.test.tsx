@@ -3,7 +3,12 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { attachmentGalleryFromSources } from "../src/attachmentGalleryModel";
+import { createThemeRegistry, defineTheme, type ZhixingTheme } from "../src/library";
 import { createOrgZhixingRouter } from "../src/react/router";
+import {
+  ThemeRuntimeProvider,
+  type ThemeRuntime,
+} from "../src/theme-system/react/ThemeRuntimeProvider";
 import type {
   StaticGalleryData,
   StaticGallerySummary,
@@ -117,6 +122,25 @@ describe("Org Zhixing React Router app", () => {
     expect(document.body.textContent).not.toContain("No travel places");
   });
 
+  it("renders a direct Org document without repeating the site hero", async () => {
+    const selectedTheme = defineTheme({
+      name: "isolated-route-theme",
+      layouts: {
+        page: ({ renderedHtml }) => ({
+          html: `<article class="isolated-route-layout">${renderedHtml ?? ""}</article>`,
+        }),
+      },
+    });
+    await mountStaticRouter("/wallpaper-gallery", fetchStaticFixture(), "", selectedTheme);
+
+    await waitForText("Static rendered body");
+    expect(window.location.pathname).toBe("/wallpaper-gallery");
+    expect(document.querySelector(".site-header")).toBeTruthy();
+    expect(document.querySelector(".site-hero")).toBeNull();
+    expect(document.querySelector(".isolated-route-layout")).toBeTruthy();
+    expect(document.body.textContent).toContain("Static Gallery");
+  });
+
   it("keeps Zen reading chrome-free and handles keyboard article navigation", async () => {
     const fetch = fetchBlogStaticFixture();
     await mountStaticRouter("/blogs", fetch);
@@ -209,16 +233,21 @@ describe("Org Zhixing React Router app", () => {
     expect(trigger).toBeTruthy();
     expect(trigger?.getBoundingClientRect).toBeTypeOf("function");
     expect(trigger?.getAttribute("aria-expanded")).toBe("false");
-    await act(async () => trigger?.click());
-
-    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).toBeTruthy());
+    await act(async () => {
+      trigger?.click();
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+    });
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
     expect(trigger?.getAttribute("aria-expanded")).toBe("true");
     expect(document.body.textContent).toContain("Choose a view from the life archive.");
     const notes = document.querySelector<HTMLAnchorElement>('.mobile-nav-list a[href="/notes"]');
     expect(notes).toBeTruthy();
-    await act(async () => notes?.click());
+    await act(async () => {
+      notes?.click();
+      await new Promise((resolve) => window.setTimeout(resolve, 50));
+    });
 
-    await waitForText("2 indexed notes from 2 Org sources");
+    expect(document.body.textContent).toContain("2 indexed notes from 2 Org sources");
     expect(window.location.pathname).toBe("/notes");
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(trigger?.getAttribute("aria-expanded")).toBe("false");
@@ -262,6 +291,7 @@ describe("Org Zhixing React Router app", () => {
     path = "/gallery",
     fetch = fetchStaticFixture(),
     initialHtml = "",
+    selectedTheme?: ZhixingTheme,
   ): Promise<ReturnType<typeof createOrgZhixingRouter>> => {
     window.history.replaceState(null, "", path);
     vi.stubGlobal("fetch", fetch);
@@ -269,12 +299,35 @@ describe("Org Zhixing React Router app", () => {
     rootNode.id = "app";
     rootNode.innerHTML = initialHtml;
     document.body.append(rootNode);
+    const runtimeTheme =
+      selectedTheme ??
+      defineTheme({
+        name: "router-test-theme",
+        layouts: {},
+      });
     const router = createOrgZhixingRouter({
       getQueryClient: testQueryClientFactory(),
+      selectedTheme: runtimeTheme,
     });
+    const runtime: ThemeRuntime = {
+      isolationId: "router-test",
+      selection: {
+        id: runtimeTheme.name,
+        package: null,
+        defaultVariant: "default",
+        variants: ["default"],
+        transport: { kind: "workspace", module: "router-test-theme" },
+      },
+      selectedTheme: runtimeTheme,
+      registry: createThemeRegistry([runtimeTheme]),
+    };
     await act(async () => {
       mountedRoot = createRoot(rootNode);
-      mountedRoot.render(<RouterProvider router={router} />);
+      mountedRoot.render(
+        <ThemeRuntimeProvider runtime={runtime}>
+          <RouterProvider router={router} />
+        </ThemeRuntimeProvider>,
+      );
     });
     return router;
   };

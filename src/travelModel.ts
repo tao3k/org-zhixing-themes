@@ -221,7 +221,7 @@ const isTravelCandidate = (record: SectionRecord): boolean => {
   if (record.effectiveTags.some((tag) => tag.toLowerCase() === "travel")) {
     return true;
   }
-  if (Boolean(regionFromHeading(sectionTitle(record)) || regionFromRecord(record))) {
+  if (regionFromHeading(sectionTitle(record)) || regionFromRecord(record)) {
     return true;
   }
   return Boolean(coordinatesFromRecord(record) || propertyValue(record, "GOOGLE_MAPS_QUERY"));

@@ -18,6 +18,7 @@ export type ShellChromeProps = {
   onEnterZen: () => void;
   onExitZen?: () => void;
   readerMode: "library" | "zen";
+  showSiteHero: boolean;
   shell: ContentShellData;
   theme: ZhixingTheme;
 };
@@ -35,6 +36,7 @@ function ShellChromeView({
   onVariantChange,
   onEnterZen,
   onExitZen,
+  showSiteHero,
 }: ShellChromeProps): ReactNode {
   const [orgSearchOpen, setOrgSearchOpen] = useState(false);
   const searchEnabled = Boolean(shell.staticSite?.sources.length);
@@ -97,7 +99,7 @@ function ShellChromeView({
             themeControls,
           )
         : null}
-      {readerMode === "library"
+      {readerMode === "library" && showSiteHero
         ? renderReactSpaThemeSlot(
             theme,
             "site-hero",

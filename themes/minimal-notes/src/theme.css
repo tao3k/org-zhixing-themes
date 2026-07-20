@@ -6,16 +6,8 @@
   --radius-label: 2px;
   --hairline: color-mix(in srgb, var(--face-normal) 24%, transparent);
   --hairline-soft: color-mix(in srgb, var(--face-normal) 14%, transparent);
-  --surface-quiet: color-mix(
-    in srgb,
-    var(--surface-paper) 88%,
-    var(--face-salient)
-  );
-  --surface-salient: color-mix(
-    in srgb,
-    var(--surface-paper) 82%,
-    var(--face-salient)
-  );
+  --surface-quiet: color-mix(in srgb, var(--surface-paper) 88%, var(--face-salient));
+  --surface-salient: color-mix(in srgb, var(--surface-paper) 82%, var(--face-salient));
 }
 
 :root[data-theme="minimal-notes"] body {

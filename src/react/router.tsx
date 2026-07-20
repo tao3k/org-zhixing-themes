@@ -5,35 +5,36 @@ import {
   createRoute,
   createRouter,
   useNavigate,
-  redirect,
 } from "@tanstack/react-router";
-import type { QueryClient } from "@tanstack/react-query";
 import type { MouseEventHandler, ReactNode } from "react";
-import { lazy, useEffect, useMemo } from "react";
+import { lazy, useEffect, useMemo, useState } from "react";
 import { adjacentBlogArticleSelection } from "../blogNavigation";
 import type { AgendaPanelKey } from "../agendaTypes";
 import { isAgendaMode, isAgendaPanel } from "../agendaState";
 import { renderAppView as renderView } from "../appViewRender";
+import { renderThemeLayout } from "../library/theme";
+import { useThemeRuntime } from "../theme-system/react/ThemeRuntimeProvider";
 import { travelViewFromStaticSite } from "../travelSiteProjection";
-import type { ContentShellData } from "../services/contentServices";
-import type { ViewKey } from "../model";
 import { isEditableTarget, viewDomNodes } from "./routeViewHelpers";
 import { getReactQueryClient } from "./queryClient";
 import { orgZhixingBasePath } from "./deploymentBasePath";
 import { createAgendaSurfaceClickHandler } from "./agendaSurfaceNavigation";
 import { HtmlSurface } from "./HtmlSurface";
+import { RoutedHtmlSurface } from "./RoutedHtmlSurface";
 import { renderReactSpaThemeSlot } from "./themeBinding";
-import { createDefaultThemeRegistry, resolveConfiguredTheme } from "../library";
-import {
-  contentRoutesForShell,
-  loadThemeDocument,
-  themeOwnsContentRoutes,
-} from "./themeContentRouting";
 import { ThemeRootLayout } from "./ThemeRootLayout";
-
-export type OrgZhixingRouterContext = {
-  getQueryClient: () => Promise<QueryClient>;
-};
+import { contentRoutesForShell } from "./themeContentRouting";
+import {
+  loadArticleQuery,
+  loadContentShellQuery,
+  loadDocumentQuery,
+  loadGalleryQuery,
+  loadNotesQuery,
+  loadThemeDocumentQuery,
+  redirectToThemeContentRoot,
+  type OrgZhixingRouterContext,
+} from "./routerLoaders";
+export type { OrgZhixingRouterContext } from "./routerLoaders";
 
 const rootRoute = createRootRouteWithContext<OrgZhixingRouterContext>()({
   component: RootLayout,
@@ -148,94 +149,6 @@ export const createOrgZhixingRouter = (
 
 export const router = createOrgZhixingRouter();
 
-async function loadContentShellQuery(context: OrgZhixingRouterContext): Promise<ContentShellData> {
-  const queryClient = await context.getQueryClient();
-  return queryClient.ensureQueryData({
-    queryKey: ["org-zhixing", "content-shell"],
-    queryFn: async () => {
-      const { loadContentShellData } = await import("../services/contentServices");
-      return loadContentShellData();
-    },
-  });
-}
-
-async function loadGalleryQuery(
-  context: OrgZhixingRouterContext,
-): Promise<Awaited<ReturnType<typeof import("../staticSiteData").loadStaticGalleryData>>> {
-  const queryClient = await context.getQueryClient();
-  return queryClient.ensureQueryData({
-    queryKey: ["org-zhixing", "gallery"],
-    queryFn: async () => {
-      const { loadStaticGalleryData } = await import("../staticSiteData");
-      return loadStaticGalleryData();
-    },
-  });
-}
-
-async function loadArticleQuery(
-  context: OrgZhixingRouterContext,
-  articleId: string,
-): Promise<Awaited<ReturnType<typeof import("../services/contentServices").loadBlogArticleData>>> {
-  const shell = await loadContentShellQuery(context);
-  const queryClient = await context.getQueryClient();
-  return queryClient.ensureQueryData({
-    queryKey: ["org-zhixing", shell.staticSite?.generatedAt ?? "dynamic", "article", articleId],
-    queryFn: async () => {
-      const { loadBlogArticleData } = await import("../services/contentServices");
-      return loadBlogArticleData(articleId, shell);
-    },
-  });
-}
-
-async function loadNotesQuery(
-  context: OrgZhixingRouterContext,
-): Promise<Awaited<ReturnType<typeof import("../services/contentServices").loadSiteNotesData>>> {
-  const shell = await loadContentShellQuery(context);
-  const queryClient = await context.getQueryClient();
-  return queryClient.ensureQueryData({
-    queryKey: ["org-zhixing", shell.staticSite?.generatedAt ?? "dynamic", "notes"],
-    queryFn: async () => {
-      const { loadSiteNotesData } = await import("../services/contentServices");
-      return loadSiteNotesData(shell);
-    },
-  });
-}
-
-async function loadThemeDocumentQuery(context: OrgZhixingRouterContext, docId: string) {
-  const shell = await loadContentShellQuery(context);
-  const routes = contentRoutesForShell(shell);
-  if (!routes) throw redirect({ to: "/blogs" });
-  return loadThemeDocument(shell, docId, await context.getQueryClient());
-}
-
-async function redirectToThemeContentRoot({ context }: { context: OrgZhixingRouterContext }) {
-  if (themeOwnsContentRoutes(await loadContentShellQuery(context))) throw redirect({ to: "/" });
-}
-
-async function loadDocumentQuery(
-  context: OrgZhixingRouterContext,
-  view: ViewKey,
-  options: Parameters<typeof import("../services/contentServices").loadStaticDocumentData>[1],
-): Promise<
-  Awaited<ReturnType<typeof import("../services/contentServices").loadStaticDocumentData>>
-> {
-  const shell = await loadContentShellQuery(context);
-  const queryClient = await context.getQueryClient();
-  return queryClient.ensureQueryData({
-    queryKey: [
-      "org-zhixing",
-      shell.staticSite?.generatedAt ?? "dynamic",
-      "document",
-      view,
-      shell.initialSource.sourceFile,
-    ],
-    queryFn: async () => {
-      const { loadStaticDocumentData } = await import("../services/contentServices");
-      return loadStaticDocumentData(shell, options);
-    },
-  });
-}
-
 function RootLayout(): ReactNode {
   return (
     <ThemeRootLayout shell={rootRoute.useLoaderData()}>
@@ -246,18 +159,28 @@ function RootLayout(): ReactNode {
 
 function HomePage(): ReactNode {
   const shell = rootRoute.useLoaderData();
-  return contentRoutesForShell(shell)?.renderHome(shell) ?? <Navigate replace to="/blogs" />;
+  const context = rootRoute.useRouteContext();
+  return (
+    contentRoutesForShell(shell, context.selectedTheme)?.renderHome(shell) ?? (
+      <Navigate replace to="/blogs" />
+    )
+  );
 }
 
 function ThemeDocumentPage(): ReactNode {
-  const shell = rootRoute.useLoaderData();
   const data = themeDocumentRoute.useLoaderData();
-  return contentRoutesForShell(shell)?.renderDocument(data) ?? <Navigate replace to="/blogs" />;
+  if (data.kind === "contentRoutes") {
+    return data.routes.renderDocument(data.data);
+  }
+  if (data.kind === "layout") {
+    return <RoutedHtmlSurface html={data.html} />;
+  }
+  return <RoutedHtmlSurface html={data.document.html} />;
 }
 
 function BlogIndexPage(): ReactNode {
   const shell = rootRoute.useLoaderData();
-  const selectedTheme = resolveConfiguredTheme(createDefaultThemeRegistry(), shell.siteConfig);
+  const { selectedTheme } = useThemeRuntime();
   const search = blogsRoute.useSearch() as { tag?: string; time?: string };
   const navigate = useNavigate();
   const html = useMemo(
@@ -272,8 +195,36 @@ function BlogIndexPage(): ReactNode {
       }),
     [search.tag, search.time, shell.staticSite?.blog],
   );
+  const supportsIndexLayout = selectedTheme.layouts?.index != null;
+  const [themedHtml, setThemedHtml] = useState<string | null>(null);
   useEffect(() => {
-    if (!html.includes("data-blog-virtual-list")) {
+    if (!supportsIndexLayout) {
+      setThemedHtml(null);
+      return;
+    }
+    const controller = new AbortController();
+    setThemedHtml(null);
+    void renderThemeLayout(selectedTheme, "index", {
+      site: shell.siteConfig,
+      route: { kind: "index", path: "/blogs", view: "blog" },
+      staticSite: shell.staticSite ?? null,
+      document: null,
+    })
+      .then(({ html: layoutHtml }) => {
+        if (!controller.signal.aborted) {
+          setThemedHtml(layoutHtml);
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setThemedHtml(html);
+        }
+      });
+    return () => controller.abort();
+  }, [html, selectedTheme, shell.siteConfig, shell.staticSite, supportsIndexLayout]);
+  const surfaceHtml = supportsIndexLayout ? (themedHtml ?? "") : html;
+  useEffect(() => {
+    if (!surfaceHtml.includes("data-blog-virtual-list")) {
       return;
     }
     const controller = new AbortController();
@@ -283,7 +234,7 @@ function BlogIndexPage(): ReactNode {
       }
     });
     return () => controller.abort();
-  }, [html]);
+  }, [surfaceHtml]);
   const onClick: MouseEventHandler<HTMLDivElement> = (event) => {
     const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
       "button[data-blog-article], button[data-blog-tag], button[data-blog-time]",
@@ -324,7 +275,7 @@ function BlogIndexPage(): ReactNode {
     selectedTheme,
     "blog-index",
     { shell },
-    <HtmlSurface html={html} onClick={onClick} />,
+    <HtmlSurface html={surfaceHtml} onClick={onClick} />,
   );
 }
 

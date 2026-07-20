@@ -1,0 +1,45 @@
+.org-poo-flow {
+  position: relative;
+  left: 50%;
+  width: max(100%, min(60rem, calc(100vw - 32rem)));
+  transform: translateX(-50%);
+}
+
+.org-poo-flow--source-collapsed > pre,
+.org-poo-flow--source-collapsed > .org-code-highlight {
+  display: none;
+}
+
+.org-poo-flow__source-toggle {
+  margin-inline-start: auto;
+  padding: 0.5rem 0.78rem;
+  border: 1px solid color-mix(in srgb, var(--org-zhixing-text, #cdd6f4) 28%, transparent);
+  border-radius: 0.55rem;
+  background: color-mix(
+    in srgb,
+    var(--org-zhixing-surface, #1e1e2e) 88%,
+    var(--org-zhixing-accent, #89b4fa) 12%
+  );
+  color: var(--org-zhixing-text, #cdd6f4);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.org-poo-flow__source-toggle:hover {
+  border-color: var(--org-zhixing-accent, #89b4fa);
+  background: color-mix(
+    in srgb,
+    var(--org-zhixing-surface, #1e1e2e) 78%,
+    var(--org-zhixing-accent, #89b4fa) 22%
+  );
+}
+
+@media (max-width: 70rem) {
+  .org-poo-flow {
+    left: auto;
+    width: 100%;
+    transform: none;
+  }
+}

@@ -1,0 +1,21 @@
+#+TITLE: Vendored Runtime Package Receipts
+#+DATE: 2026-07-19
+#+AUTHOR: tao3k
+#+FILETAGS: :org-zhixing:packages:runtime:receipts:
+
+* Scope
+These immutable npm package artifacts keep the standalone org-zhixing-themes
+checkout reproducible while the corresponding packages await registry releases.
+They are consumed through package.json and package-lock.json; application code
+must never address files inside the archives or node_modules directly.
+
+* Owners
+- =orgize-0.10.0-alpha.0.tgz= is built from the orgize-wasm package and the
+  orgize checkout's HTML source-block metadata implementation.
+- =poo-flow-runtime-wasm-0.1.0.tgz= is built from
+  =poo-flow/bindings/runtime-wasm= and contains the typed workflow plan plus the
+  compact WASM execution cursor.
+
+* Promotion
+After these exact packages are published, replace the file specifications with
+immutable registry versions and retain package-lock integrity verification.

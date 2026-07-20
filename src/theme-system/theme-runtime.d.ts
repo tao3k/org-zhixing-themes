@@ -7,7 +7,6 @@ declare module "virtual:org-zhixing/theme-runtime" {
   export const isolatedSelectedVariant: string;
   export const isolatedSelectedThemeMetadata: ThemeCatalogEntry;
   export const isolatedThemeCatalog: readonly ThemeCatalogEntry[];
-  export const isolatedSelectedTheme: ZhixingTheme;
-  export const isolatedThemes: readonly ZhixingTheme[];
-  export const isolatedThemeEntries: readonly (readonly [string, ZhixingTheme])[];
+  export const getIsolatedSelectedTheme: () => ZhixingTheme;
+  export const loadIsolatedSelectedTheme: () => Promise<ZhixingTheme>;
 }

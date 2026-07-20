@@ -1,10 +1,9 @@
 import { createContext, useContext, type ReactNode } from "react";
 import {
-  isolatedSelectedTheme,
   isolatedSelectedThemeId,
   isolatedSelectedThemeMetadata,
   isolatedSelectedVariant,
-  isolatedThemes,
+  loadIsolatedSelectedTheme,
   themeIsolationId,
 } from "virtual:org-zhixing/theme-runtime";
 import { createThemeRegistry, type ThemeRegistry } from "../../library/themeRegistry";
@@ -19,16 +18,17 @@ export type ThemeRuntime = {
   readonly registry: ThemeRegistry;
 };
 
-const createIsolatedThemeRuntime = (): ThemeRuntime => {
-  const registry = createThemeRegistry(isolatedThemes);
+const createIsolatedThemeRuntime = async (): Promise<ThemeRuntime> => {
+  const selectedTheme = await loadIsolatedSelectedTheme();
+  const registry = createThemeRegistry([selectedTheme]);
   const catalogEntry = isolatedSelectedThemeMetadata;
-  const manifest = themePackageManifestFor(isolatedSelectedTheme);
+  const manifest = themePackageManifestFor(selectedTheme);
   if (
     catalogEntry.id !== isolatedSelectedThemeId ||
-    isolatedSelectedTheme.name !== isolatedSelectedThemeId
+    selectedTheme.name !== isolatedSelectedThemeId
   ) {
     throw new Error(
-      `THEME-E032 theme module contract mismatch: expected "${isolatedSelectedThemeId}", received "${isolatedSelectedTheme.name}"`,
+      `THEME-E032 theme module contract mismatch: expected "${isolatedSelectedThemeId}", received "${selectedTheme.name}"`,
     );
   }
   if (
@@ -42,21 +42,26 @@ const createIsolatedThemeRuntime = (): ThemeRuntime => {
   return Object.freeze({
     isolationId: themeIsolationId,
     selection: isolatedSelectedThemeMetadata,
-    selectedTheme: isolatedSelectedTheme,
+    selectedTheme,
     registry,
   });
 };
 
-export const isolatedThemeRuntime: ThemeRuntime = createIsolatedThemeRuntime();
+let isolatedThemeRuntimePromise: Promise<ThemeRuntime> | undefined;
+
+export const loadIsolatedThemeRuntime = (): Promise<ThemeRuntime> => {
+  isolatedThemeRuntimePromise ??= createIsolatedThemeRuntime();
+  return isolatedThemeRuntimePromise;
+};
 
 const ThemeRuntimeContext = createContext<ThemeRuntime | null>(null);
 
 export const ThemeRuntimeProvider = ({
   children,
-  runtime = isolatedThemeRuntime,
+  runtime,
 }: {
   children: ReactNode;
-  runtime?: ThemeRuntime;
+  runtime: ThemeRuntime;
 }) => <ThemeRuntimeContext value={runtime}>{children}</ThemeRuntimeContext>;
 
 export const useThemeRuntime = (): ThemeRuntime => {
