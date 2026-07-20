@@ -20,7 +20,7 @@ const scenarios = [
 test("generated Scheme scenarios render and collapse as native compound subflows", async ({
   page,
 }) => {
-  await page.goto("/poo-flow-subflows");
+  await page.goto("/10-architecture-examples-poo-flow-subflows");
   const graphs = page.locator(".org-poo-flow");
   await expect(graphs).toHaveCount(2);
 

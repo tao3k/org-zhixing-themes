@@ -1,7 +1,7 @@
 #+TITLE: POO Flow Compound Scenarios
 #+DATE: 2026-07-20
 #+AUTHOR: TAO3K
-#+FILETAGS: :poo-flow:react-flow:subflow:benchmark:
+#+FILETAGS: :poo-flow:react-flow:subflow:example:
 
 This fixture exercises generated Scheme workflows through the runtime-wasm registry.
 The browser renderer receives only the workflow ID; it does not synthesize graph nodes.

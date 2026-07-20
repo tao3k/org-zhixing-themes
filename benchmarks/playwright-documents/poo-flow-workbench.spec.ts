@@ -9,7 +9,7 @@ test.afterEach(async ({ page }) => {
 test("POO Flow workbench modes, semantic map, and breakpoints remain coherent", async ({
   page,
 }) => {
-  await page.goto("/poo-flow-runtime");
+  await page.goto("/10-architecture-examples-poo-flow-runtime");
   const figure = page.locator(".org-poo-flow");
   const nodes = figure.locator(".react-flow__node");
   await expect(nodes).toHaveCount(8);

@@ -4,7 +4,7 @@
   "route": "/poo-flow-runtime",
   "theme": "documents",
   "variant": "mocha",
-  "fixture": "benchmarks/fixtures/docs/poo-flow-runtime.org",
+  "fixture": "docs/10_architecture/examples/poo-flow-runtime.org",
   "projects": ["compact-phone", "modern-phone", "tablet", "desktop"],
   "actions": [
     { "type": "goto" },

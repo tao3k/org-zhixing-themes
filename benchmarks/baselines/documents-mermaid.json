@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sampleCount": 5,
-  "route": "/mermaid-performance",
+  "route": "/10-architecture-examples-mermaid-performance",
   "viewport": {
     "width": 1440,
     "height": 900

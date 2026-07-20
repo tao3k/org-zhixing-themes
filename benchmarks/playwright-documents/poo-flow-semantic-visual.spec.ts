@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("POO Flow projects semantic icons and a fluid active execution route", async ({ page }) => {
-  await page.goto("/poo-flow-runtime");
+  await page.goto("/10-architecture-examples-poo-flow-runtime");
 
   const figure = page.locator(".org-poo-flow");
   await expect(figure.locator(".react-flow__node")).toHaveCount(8);

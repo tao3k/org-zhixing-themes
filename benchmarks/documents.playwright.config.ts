@@ -22,7 +22,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "node packages/theme-tooling/src/theme-preview.mjs --theme documents --content-dir benchmarks/fixtures/docs --port 4183",
+      "node packages/theme-tooling/src/theme-preview.mjs --theme documents --content-dir docs --port 4183",
     cwd: process.cwd(),
     url: `${baseURL}/`,
     reuseExistingServer: false,

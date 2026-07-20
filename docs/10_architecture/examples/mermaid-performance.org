@@ -1,4 +1,7 @@
-#+title: Documents Mermaid Performance Scenario
+#+TITLE: Documents Mermaid Performance Scenario
+#+DATE: 2026-07-20
+#+AUTHOR: TAO3K
+#+FILETAGS: :documents:mermaid:performance:example:
 
 * Immediate architecture
 
