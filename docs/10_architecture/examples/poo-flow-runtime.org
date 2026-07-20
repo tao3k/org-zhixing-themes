@@ -1,3 +1,8 @@
+#+TITLE: POO Flow Profile Composition Scenario
+#+DATE: 2026-07-20
+#+AUTHOR: TAO3K
+#+FILETAGS: :poo-flow:react-flow:runtime:example:
+
 * POO Flow Profile Composition Scenario
 This fixed fixture qualifies recursive Case composition, reusable Profile provenance, the package-managed WASM cursor, and the React Flow interaction lifecycle.
 

@@ -79,6 +79,38 @@ export default defineConfig({
   html: {
     template: resolve(projectRoot, "index.html"),
     scriptLoading: "module",
+    tags:
+      themeIsolation.selectedThemeId === "documents"
+        ? [
+            (tags) => {
+              for (const tag of tags) {
+                const href = tag.attrs?.href;
+                if (
+                  tag.tag !== "link" ||
+                  typeof href !== "string" ||
+                  !/poo_flow_runtime.*\.wasm$/.test(href)
+                ) {
+                  continue;
+                }
+                tag.attrs = {
+                  ...tag.attrs,
+                  as: "fetch",
+                  crossorigin: "anonymous",
+                  type: "application/wasm",
+                };
+              }
+            },
+          ]
+        : [],
+  },
+  performance: {
+    preload:
+      themeIsolation.selectedThemeId === "documents"
+        ? {
+            type: "all-assets",
+            include: [/poo_flow_runtime.*\.wasm$/],
+          }
+        : undefined,
   },
   output: {
     assetPrefix,

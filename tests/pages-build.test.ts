@@ -116,6 +116,8 @@ describe("Pages build tooling", () => {
       JSON.stringify({
         blog: {
           articles: [
+            { sourceId: "10-architecture-examples-poo-flow-runtime" },
+            { sourceId: "10-architecture-examples-poo-flow-subflows" },
             { sourceId: "90-operations-90-05-typst-performance" },
             { sourceId: "10-architecture-10-03-router" },
           ],
@@ -123,7 +125,14 @@ describe("Pages build tooling", () => {
       }),
     );
 
-    await expect(materializePagesRouteShells(root)).resolves.toBe(2);
+    await expect(materializePagesRouteShells(root)).resolves.toBe(4);
+
+    expect(
+      readFileSync(join(root, "10-architecture-examples-poo-flow-runtime", "index.html"), "utf8"),
+    ).toContain("data-initial-app-shell");
+    expect(
+      readFileSync(join(root, "10-architecture-examples-poo-flow-subflows", "index.html"), "utf8"),
+    ).toContain("data-initial-app-shell");
     expect(
       readFileSync(join(root, "90-operations-90-05-typst-performance.html"), "utf8"),
     ).toContain("data-initial-app-shell");

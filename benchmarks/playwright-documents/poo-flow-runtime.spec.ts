@@ -14,10 +14,8 @@ test("POO Flow runs the generated Profile composition through the WASM cursor", 
     (response) => response.url().includes("poo_flow_runtime") && response.url().endsWith(".wasm"),
   );
   const navigationStarted = performance.now();
-  await page.goto("/poo-flow-runtime");
-  const source = page.locator("pre[data-poo-flow='browser-profile-composition']");
+  await page.goto("/10-architecture-examples-poo-flow-runtime");
   const figure = page.locator("figure.org-poo-flow");
-  await expect(source).toHaveCount(1);
   await expect(figure).toBeVisible();
   const projectionMs = performance.now() - navigationStarted;
 
@@ -26,7 +24,14 @@ test("POO Flow runs the generated Profile composition through the WASM cursor", 
   );
 
   const wasm = await wasmResponse;
-  const wasmLoadMs = performance.now() - navigationStarted;
+  await wasm.finished();
+  const wasmLoadMs = await page.evaluate((url) => {
+    const entry = performance.getEntriesByName(url, "resource").at(-1) as
+      | PerformanceResourceTiming
+      | undefined;
+    if (!entry) throw new Error(`POO-FLOW-BENCH-E005 missing WASM resource timing for ${url}`);
+    return entry.responseEnd - entry.startTime;
+  }, wasm.url());
   expect(wasm.status()).toBe(200);
   expect(new URL(wasm.url()).pathname).toMatch(/poo_flow_runtime\.[a-f0-9]+\.wasm$/);
 
@@ -36,6 +41,15 @@ test("POO Flow runs the generated Profile composition through the WASM cursor", 
   await expect(figure.locator(".react-flow__attribution")).toHaveCount(0);
 
   await expect(figure.locator(".poo-flow-graph")).toHaveAttribute("data-poo-flow-layout", "ready");
+  const sourceToggle = figure.getByRole("button", { name: "Source code", exact: true });
+  await expect(sourceToggle).toHaveAttribute("aria-expanded", "false");
+  await sourceToggle.click();
+  await expect(sourceToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(figure).not.toHaveClass(/org-poo-flow--source-collapsed/);
+  await expect(figure.locator("pre")).toBeVisible();
+  await sourceToggle.click();
+  await expect(sourceToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(figure).toHaveClass(/org-poo-flow--source-collapsed/);
   const graphCenterOffset = () =>
     figure.evaluate((root) => {
       const pane = root.querySelector<HTMLElement>(".react-flow__pane");
@@ -138,7 +152,7 @@ test("POO Flow runs the generated Profile composition through the WASM cursor", 
 });
 
 test("POO Flow preserves the user's viewport while execution advances", async ({ page }) => {
-  await page.goto("/poo-flow-runtime");
+  await page.goto("/10-architecture-examples-poo-flow-runtime");
   const figure = page.locator(".org-poo-flow");
   await figure.scrollIntoViewIfNeeded();
   await page.locator(".poo-flow-graph .react-flow__node").first().waitFor();

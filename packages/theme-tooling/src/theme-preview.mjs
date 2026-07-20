@@ -149,11 +149,12 @@ const main = async () => {
         previewConfig,
         previewCacheRoot,
       );
-      for (const arguments_ of [
-        ["scripts/build-elegant-theme.mjs"],
-        ["--import", "tsx", "scripts/generate-static-site.mjs"],
+      const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+      for (const [command, arguments_] of [
+        [npmCommand, ["run", "generate:theme-assets"]],
+        [process.execPath, ["--import", "tsx", "scripts/generate-static-site.mjs"]],
       ]) {
-        const preparation = spawn(process.execPath, arguments_, {
+        const preparation = spawn(command, arguments_, {
           cwd: workspaceRoot,
           env: previewEnvironment,
           stdio: "inherit",
