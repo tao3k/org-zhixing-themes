@@ -1,5 +1,12 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, type MouseEventHandler, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type MouseEvent,
+  type MouseEventHandler,
+  type ReactNode,
+} from "react";
 import { orgZhixingBasePath } from "./deploymentBasePath";
 import { HtmlSurface } from "./HtmlSurface";
 import { installOrgContentEnhancements } from "./orgContentEnhancements";
@@ -48,6 +55,32 @@ export const routedHtmlNavigationTarget = (
   return `${pathname || "/"}${destination.search}${destination.hash}`;
 };
 
+export const routedAnchorNavigationFromEvent = (
+  event: MouseEvent<HTMLElement>,
+  currentHref: string,
+  basePath = "/",
+): RoutedHtmlInternalNavigation | null => {
+  if (event.defaultPrevented) return null;
+  const anchor = (event.target as Element | null)?.closest?.("a[href]");
+  if (!(anchor instanceof HTMLAnchorElement)) return null;
+  const target = routedHtmlNavigationTarget(
+    {
+      activation:
+        event.button !== 0
+          ? "non-primary"
+          : event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
+            ? "modified"
+            : "primary",
+      download: anchor.hasAttribute("download"),
+      href: anchor.getAttribute("href") ?? "",
+      target: anchor.getAttribute("target"),
+    },
+    currentHref,
+    basePath,
+  );
+  return target ? { anchor, target } : null;
+};
+
 export function RoutedHtmlSurface({
   html,
   onInternalNavigation,
@@ -67,27 +100,15 @@ export function RoutedHtmlSurface({
   }, [html]);
   const onClick = useCallback<MouseEventHandler<HTMLDivElement>>(
     (event) => {
-      const anchor = (event.target as Element | null)?.closest?.("a[href]");
-      if (!(anchor instanceof HTMLAnchorElement)) return;
-      const target = routedHtmlNavigationTarget(
-        {
-          activation:
-            event.button !== 0
-              ? "non-primary"
-              : event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
-                ? "modified"
-                : "primary",
-          download: anchor.hasAttribute("download"),
-          href: anchor.getAttribute("href") ?? "",
-          target: anchor.getAttribute("target"),
-        },
+      const navigation = routedAnchorNavigationFromEvent(
+        event,
         window.location.href,
         orgZhixingBasePath(),
       );
-      if (!target) return;
+      if (!navigation) return;
       event.preventDefault();
-      if (internalNavigationRef.current?.({ anchor, target })) return;
-      void navigate({ to: target } as never);
+      if (internalNavigationRef.current?.(navigation)) return;
+      void navigate({ to: navigation.target } as never);
     },
     [navigate],
   );

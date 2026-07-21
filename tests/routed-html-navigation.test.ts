@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { routedHtmlNavigationTarget } from "../src/react/RoutedHtmlSurface";
+import {
+  routedAnchorNavigationFromEvent,
+  routedHtmlNavigationTarget,
+} from "../src/react/RoutedHtmlSurface";
 
 const click = (href: string, overrides = {}) => ({
   activation: "primary" as const,
@@ -38,5 +41,33 @@ describe("routed HTML navigation", () => {
     ).toBeNull();
     expect(routedHtmlNavigationTarget(click("/doc", { download: true }), current)).toBeNull();
     expect(routedHtmlNavigationTarget(click("/doc", { target: "_blank" }), current)).toBeNull();
+  });
+
+  it("delegates plain React anchors once and ignores already handled events", () => {
+    const anchor = document.createElement("a");
+    anchor.href = "/platform";
+    const label = document.createElement("span");
+    anchor.append(label);
+    const event = {
+      altKey: false,
+      button: 0,
+      ctrlKey: false,
+      defaultPrevented: false,
+      metaKey: false,
+      shiftKey: false,
+      target: label,
+    } as unknown as Parameters<typeof routedAnchorNavigationFromEvent>[0];
+
+    expect(routedAnchorNavigationFromEvent(event, "https://example.test/", "/")).toEqual({
+      anchor,
+      target: "/platform",
+    });
+    expect(
+      routedAnchorNavigationFromEvent(
+        { ...event, defaultPrevented: true },
+        "https://example.test/",
+        "/",
+      ),
+    ).toBeNull();
   });
 });
