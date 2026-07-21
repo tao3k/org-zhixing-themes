@@ -1,4 +1,4 @@
-export * from "./contentRoutes";
+export * from "./contentRoutes.ts";
 
 export const themeModuleProtocol = "org-zhixing/theme-module/v1" as const;
 
