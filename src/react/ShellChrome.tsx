@@ -1,9 +1,20 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEventHandler,
+  type ReactNode,
+} from "react";
 import type { ContentShellData } from "../services/contentServices";
 import type { ZhixingTheme } from "../library";
+import { orgZhixingBasePath } from "./deploymentBasePath";
 import { renderReactSpaThemeSlot } from "./themeBinding";
 import { NavigationItems } from "./NavigationItems";
+import { routedAnchorNavigationFromEvent } from "./RoutedHtmlSurface";
 import { ThemeVariantNavigation } from "./ThemeVariantNavigation";
 import { isOrgSearchShortcut, ORG_SEARCH_REQUEST_EVENT } from "./orgSearchEvents";
 import { isEditableKeyboardTarget, isZenModeShortcut } from "./readerShortcuts";
@@ -40,6 +51,20 @@ function ShellChromeView({
 }: ShellChromeProps): ReactNode {
   const [orgSearchOpen, setOrgSearchOpen] = useState(false);
   const searchEnabled = Boolean(shell.staticSite?.sources.length);
+  const navigate = useNavigate();
+  const onShellClick = useCallback<MouseEventHandler<HTMLElement>>(
+    (event) => {
+      const navigation = routedAnchorNavigationFromEvent(
+        event,
+        window.location.href,
+        orgZhixingBasePath(),
+      );
+      if (!navigation) return;
+      event.preventDefault();
+      void navigate({ to: navigation.target } as never);
+    },
+    [navigate],
+  );
 
   useEffect(() => {
     const openSearch = (): void => setOrgSearchOpen(true);
@@ -81,6 +106,7 @@ function ShellChromeView({
     <main
       className={`shell theme-surface theme-surface--${theme.name}${readerMode === "zen" ? " shell--zen" : ""}`}
       data-theme-surface={theme.name}
+      onClick={onShellClick}
     >
       {readerMode === "library"
         ? renderReactSpaThemeSlot(theme, "site-header", { shell }, <SiteHeader shell={shell} />)
