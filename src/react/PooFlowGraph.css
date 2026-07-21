@@ -3,7 +3,7 @@
 @import "./PooFlowCompositionGraph.css";
 @import "./PooFlowGraphInteraction.css";
 @import "./PooFlowGraphLayout.css";
-@import "./PooFlowGraphWorkbenchControls.css";
+@import "./PooFlowGraphContextControls.css";
 @import "./PooFlowHumanGraph.css";
 @import "./PooFlowNodeHeader.css";
 @import "./PooFlowSelectionFocus.css";

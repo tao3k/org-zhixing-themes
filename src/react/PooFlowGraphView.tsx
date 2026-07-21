@@ -22,7 +22,6 @@ import {
   type PooFlowGraphEdge,
   type PooFlowGraphNode,
 } from "./PooFlowGraphRenderers";
-import { PooFlowGraphWorkbenchControls } from "./PooFlowGraphWorkbenchControls";
 import { PooFlowInspector } from "./PooFlowInspector";
 import { responsiveLayoutDirection } from "./pooFlowGraphLayout";
 import { pooFlowZoomTier } from "./pooFlowVisibility";
@@ -55,7 +54,6 @@ export interface PooFlowGraphViewProps {
   readonly dispatchDebugger: Dispatch<PooFlowDebuggerEvent>;
   readonly topologyMutable: boolean;
   readonly submitTopologyOperation: (operation: PooFlowTopologyOperation) => Promise<void>;
-  readonly setInteractionMode: Dispatch<SetStateAction<PooFlowGraphMode>>;
   readonly cursor: number;
   readonly playing: boolean;
   readonly run: () => void;
@@ -94,7 +92,6 @@ function InteractivePooFlowGraphView({
   dispatchDebugger,
   topologyMutable,
   submitTopologyOperation,
-  setInteractionMode,
   cursor,
   playing,
   run,
@@ -232,59 +229,59 @@ function InteractivePooFlowGraphView({
               {selectedEvent?.detail ? <p>{selectedEvent.detail}</p> : null}
             </Panel>
           ) : null}
-          <PooFlowGraphWorkbenchControls
-            mode={interactionMode}
-            nodeCount={projection.nodes.length}
-            onModeChange={(mode) => {
-              setInteractionMode(mode);
-              if (mode !== "run") {
-                dispatchDebugger({ type: "pause", clearRunTo: true });
-              }
-            }}
-          />
         </ReactFlow>
       ) : (
         <div className="poo-flow-layout-pending" role="status">
           Preparing workflow layout
         </div>
       )}
-      <div
-        className="poo-flow-runner nodrag nopan"
-        role="toolbar"
-        aria-label="Workflow execution controls"
-      >
-        <span className="poo-flow-runner__status" aria-live="polite">
-          {cursor < 0
-            ? "Ready"
-            : cursor >= projection.nodes.length
-              ? "Complete"
-              : `${playing ? "Running" : "Paused"} · step ${cursor + 1}/${projection.nodes.length}`}
-        </span>
-        <button type="button" className="poo-flow-runner__primary" onClick={run} disabled={playing}>
-          {cursor >= 0 && cursor < projection.nodes.length ? "Resume" : "Run"}
-        </button>
-        <button type="button" onClick={pause} disabled={!playing}>
-          Pause
-        </button>
-        <button
-          type="button"
-          onClick={step}
-          disabled={!layoutReady || playing || cursor >= projection.nodes.length}
+      {interactionPolicy.runtimeControlsVisible ? (
+        <div
+          className="poo-flow-runner nodrag nopan"
+          role="toolbar"
+          aria-label="Workflow execution controls"
         >
-          Step
-        </button>
-        <button type="button" onClick={reset}>
-          Reset
-        </button>
-        <label>
-          Speed
-          <select value={stepDelay} onChange={(event) => setStepDelay(Number(event.target.value))}>
-            <option value={1500}>0.5×</option>
-            <option value={900}>1×</option>
-            <option value={450}>2×</option>
-          </select>
-        </label>
-      </div>
+          <span className="poo-flow-runner__status" aria-live="polite">
+            {cursor < 0
+              ? "Ready"
+              : cursor >= projection.nodes.length
+                ? "Complete"
+                : `${playing ? "Running" : "Paused"} · step ${cursor + 1}/${projection.nodes.length}`}
+          </span>
+          <button
+            type="button"
+            className="poo-flow-runner__primary"
+            onClick={run}
+            disabled={playing}
+          >
+            {cursor >= 0 && cursor < projection.nodes.length ? "Resume" : "Run"}
+          </button>
+          <button type="button" onClick={pause} disabled={!playing}>
+            Pause
+          </button>
+          <button
+            type="button"
+            onClick={step}
+            disabled={!layoutReady || playing || cursor >= projection.nodes.length}
+          >
+            Step
+          </button>
+          <button type="button" onClick={reset}>
+            Reset
+          </button>
+          <label>
+            Speed
+            <select
+              value={stepDelay}
+              onChange={(event) => setStepDelay(Number(event.target.value))}
+            >
+              <option value={1500}>0.5×</option>
+              <option value={900}>1×</option>
+              <option value={450}>2×</option>
+            </select>
+          </label>
+        </div>
+      ) : null}
     </div>
   );
 }

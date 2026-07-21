@@ -48,10 +48,16 @@ export interface PooFlowGraphTopologyMutationControl {
 export interface PooFlowGraphProps {
   readonly result: PooFlowRunResult;
   readonly workflowId?: string;
+  readonly mode?: PooFlowGraphMode;
   readonly topologyMutation?: PooFlowGraphTopologyMutationControl;
 }
 
-function InteractivePooFlowGraph({ result, workflowId, topologyMutation }: PooFlowGraphProps) {
+function InteractivePooFlowGraph({
+  result,
+  workflowId,
+  mode: interactionMode = "run",
+  topologyMutation,
+}: PooFlowGraphProps) {
   const projection = useMemo(
     () =>
       createPooFlowGraphProjection(
@@ -65,7 +71,6 @@ function InteractivePooFlowGraph({ result, workflowId, topologyMutation }: PooFl
   const [layoutedNodes, setLayoutedNodes] = useState(initialNodes);
   const canonicalLayoutNodes = useRef(initialNodes);
   const [layoutGeneration, setLayoutGeneration] = useState(0);
-  const [interactionMode, setInteractionMode] = useState<PooFlowGraphMode>("run");
   const [topologyPending, setTopologyPending] = useState(false);
   const [topologyReceipt, setTopologyReceipt] = useState<PooFlowTopologyReceipt>();
   const topologyIntentSequence = useRef(0);
@@ -125,13 +130,13 @@ function InteractivePooFlowGraph({ result, workflowId, topologyMutation }: PooFl
   );
   const childCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const event of projection.nodes) {
-      if (event.parentId) {
-        counts.set(event.parentId, (counts.get(event.parentId) ?? 0) + 1);
+    for (const node of initialNodes) {
+      if (node.parentId) {
+        counts.set(node.parentId, (counts.get(node.parentId) ?? 0) + 1);
       }
     }
     return counts;
-  }, [projection.nodes]);
+  }, [initialNodes]);
   const nodes = useMemo<PooFlowGraphNode[]>(
     () =>
       layoutedNodes.map((node) => {
@@ -159,7 +164,6 @@ function InteractivePooFlowGraph({ result, workflowId, topologyMutation }: PooFl
               });
             },
             onRunTo: (nodeId: string) => {
-              setInteractionMode("run");
               dispatchDebugger({ type: "run-to", nodeId });
             },
             onToggleCollapse: (nodeId: string) => {
@@ -449,7 +453,6 @@ function InteractivePooFlowGraph({ result, workflowId, topologyMutation }: PooFl
       dispatchDebugger={dispatchDebugger}
       topologyMutable={Boolean(topologyMutation)}
       submitTopologyOperation={submitTopologyOperation}
-      setInteractionMode={setInteractionMode}
       cursor={cursor}
       playing={playing}
       run={run}

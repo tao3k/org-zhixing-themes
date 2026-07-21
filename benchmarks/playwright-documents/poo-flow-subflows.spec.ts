@@ -30,6 +30,12 @@ test("generated Scheme scenarios render and collapse as native compound subflows
     await expect(graph.locator(".poo-flow-graph")).toHaveAttribute("data-poo-flow-layout", "ready");
     const root = graph.locator(`[data-poo-flow-scenario="${scenario.id}"]`);
     await expect(root).toBeVisible();
+    await expect(root).toHaveAttribute("data-poo-flow-container", "true");
+    await expect(root.getByText("Subflow", { exact: true })).toBeVisible();
+    await expect(root.locator(".poo-flow-shape__container-scope")).toHaveText(
+      `Scope · ${scenario.id}`,
+    );
+    await expect(graph.getByRole("group", { name: "Graph mode" })).toHaveCount(0);
     const layoutDuration = Number(
       await graph.locator(".poo-flow-graph").getAttribute("data-poo-flow-layout-ms"),
     );
