@@ -31,11 +31,13 @@ type RemoteThemeRecord = {
 export type ResolveThemeIsolationOptions = {
   workspaceRoot: string;
   configPath: string;
+  themeEntryOverride?: string;
 };
 
 export const resolveThemeIsolation = async ({
   workspaceRoot,
   configPath,
+  themeEntryOverride,
 }: ResolveThemeIsolationOptions): Promise<ThemeIsolationSnapshot> => {
   const packagePath = join(workspaceRoot, "package.json");
   const rootPackage = JSON.parse(await readFile(packagePath, "utf8")) as {
@@ -64,6 +66,18 @@ export const resolveThemeIsolation = async ({
     catalog.push(remoteThemeCatalogEntry(id, value, `${configPath}#theme_remotes.${id}`));
   }
   const selectedThemeId = stringValue(config.theme) ?? "elegant-blog";
+  const selectedIndex = catalog.findIndex(({ id }) => id === selectedThemeId);
+  const overrideEntry = themeEntryOverride?.trim();
+  const selectedCatalogEntry = catalog[selectedIndex];
+  if (overrideEntry && selectedCatalogEntry?.transport.kind === "federated") {
+    catalog[selectedIndex] = {
+      ...selectedCatalogEntry,
+      transport: {
+        ...selectedCatalogEntry.transport,
+        entry: overrideEntry,
+      },
+    };
+  }
   const selected = catalog.find(({ id }) => id === selectedThemeId);
   const selectedVariant =
     stringValue(config.theme_variant) ?? selected?.defaultVariant ?? "default";

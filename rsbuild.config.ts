@@ -20,6 +20,7 @@ const publicConfigPath = process.env.ORG_ZHIXING_CONFIG
 const themeIsolation = await resolveThemeIsolation({
   workspaceRoot: projectRoot,
   configPath: publicConfigPath,
+  themeEntryOverride: process.env.ORG_ZHIXING_THEME_ENTRY,
 });
 const selectedThemeTransport = themeIsolation.catalog.find(
   ({ id }) => id === themeIsolation.selectedThemeId,

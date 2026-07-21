@@ -154,6 +154,15 @@ variants = ["latte", "mocha"]
           },
         }),
       ]);
+      const overridden = await resolveThemeIsolation({
+        workspaceRoot,
+        configPath,
+        themeEntryOverride: "https://preview.example.com/tao3k/mf-manifest.json",
+      });
+      expect(overridden.catalog[0]?.transport).toMatchObject({
+        kind: "federated",
+        entry: "https://preview.example.com/tao3k/mf-manifest.json",
+      });
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }
