@@ -18,5 +18,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "tests", "vitest.config.ts", "rsbuild.config.ts"]
+  "include": [
+    "src",
+    "tests",
+    "packages/theme-contract/src",
+    "vitest.config.ts",
+    "rsbuild.config.ts"
+  ]
 }

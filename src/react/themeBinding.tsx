@@ -1,4 +1,5 @@
 import { createElement, type ComponentType, type ReactNode } from "react";
+import type { FederatedContentRoutes } from "../../packages/theme-contract/src";
 import type { ZhixingTheme } from "../library";
 import type { ContentShellData } from "../services/contentServices";
 
@@ -29,12 +30,11 @@ export type ReactSpaThemeBinding = {
   contentRoutes?: ReactSpaContentRouteBinding;
 };
 
-export type ReactSpaContentRouteBinding = {
-  exclusiveContentRoutes?: boolean;
-  loadDocument: (shell: ContentShellData, documentId: string) => Promise<unknown>;
-  renderDocument: (data: unknown) => ReactNode;
-  renderHome: (shell: ContentShellData) => ReactNode;
-};
+export type ReactSpaContentRouteBinding = FederatedContentRoutes<
+  ContentShellData,
+  unknown,
+  ReactNode
+>;
 
 export const defineReactSpaContentRoutes = <TData,>(binding: {
   exclusiveContentRoutes?: boolean;
