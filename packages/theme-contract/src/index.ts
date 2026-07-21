@@ -1,3 +1,5 @@
+export * from "./contentRoutes";
+
 export const themeModuleProtocol = "org-zhixing/theme-module/v1" as const;
 
 export type FederatedThemeManifest = {
