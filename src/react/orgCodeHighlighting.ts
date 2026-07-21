@@ -19,6 +19,9 @@ const records = new WeakMap<HTMLElement, CodeBlockRecord>();
 let highlighterPromise: Promise<Highlighter> | null = null;
 
 const languageAliases: Record<string, string> = {
+  gerbil: "scheme",
+  lisp: "scheme",
+  racket: "scheme",
   js: "javascript",
   md: "markdown",
   py: "python",

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import {
+  configureOrgCodeLanguage,
   findOrgCodeBlocks,
   installOrgCodeHighlighting,
   prepareOrgCodeBlocks,
@@ -70,6 +71,103 @@ describe("Org Babel syntax highlighting", () => {
     );
     expect(document.querySelector(".org-code-highlight-pre")).not.toBeNull();
     stop();
+  });
+
+  it("normalizes Scheme-family language aliases to the Scheme loader", async () => {
+    class VisibleObserver {
+      readonly callback: IntersectionObserverCallback;
+
+      constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback;
+      }
+
+      observe(target: Element): void {
+        this.callback(
+          [{ isIntersecting: true, target } as IntersectionObserverEntry],
+          this as never,
+        );
+      }
+
+      disconnect(): void {}
+      unobserve(): void {}
+    }
+
+    vi.stubGlobal("IntersectionObserver", VisibleObserver);
+    document.body.innerHTML = ["scheme", "gerbil", "racket", "lisp"]
+      .map((language) => `<pre class="src src-${language}">(define (identity value) value)</pre>`)
+      .join("");
+
+    const languageLoader = vi.fn(async () => ({ id: "scheme" }) as never);
+    const disposeLanguage = configureOrgCodeLanguage("scheme", languageLoader);
+    const codeToHtml = vi.fn(
+      (_code: string, _options: { lang: string; theme: string }) =>
+        "<pre><code><span>define</span></code></pre>",
+    );
+    const stop = installOrgCodeHighlighting(document, async () => ({
+      codeToHtml,
+      getLoadedLanguages: () => [],
+      loadLanguage: vi.fn(async () => undefined),
+    }));
+
+    try {
+      await vi.waitFor(() =>
+        expect(
+          [...document.querySelectorAll<HTMLElement>("figure[data-org-code-highlight]")].map(
+            (figure) => figure.dataset.orgCodeHighlight,
+          ),
+        ).toEqual(["ready", "ready", "ready", "ready"]),
+      );
+
+      expect(languageLoader).toHaveBeenCalledTimes(4);
+      expect(codeToHtml).toHaveBeenCalledTimes(4);
+      for (const [, options] of codeToHtml.mock.calls) {
+        expect(options).toEqual(expect.objectContaining({ lang: "scheme", theme: "tokyo-night" }));
+      }
+    } finally {
+      stop();
+      disposeLanguage();
+    }
+  });
+
+  it("renders Scheme with the real Shiki grammar", async () => {
+    class VisibleObserver {
+      readonly callback: IntersectionObserverCallback;
+
+      constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback;
+      }
+
+      observe(target: Element): void {
+        this.callback(
+          [{ isIntersecting: true, target } as IntersectionObserverEntry],
+          this as never,
+        );
+      }
+
+      disconnect(): void {}
+      unobserve(): void {}
+    }
+
+    vi.stubGlobal("IntersectionObserver", VisibleObserver);
+    document.body.innerHTML =
+      '<pre class="src src-scheme">(define (square value) (* value value))</pre>';
+    const stop = installOrgCodeHighlighting(document);
+
+    try {
+      await vi.waitFor(
+        () =>
+          expect(
+            document.querySelector<HTMLElement>("figure[data-org-code-highlight]")?.dataset
+              .orgCodeHighlight,
+          ).toBe("ready"),
+        { timeout: 10_000 },
+      );
+
+      expect(document.querySelector("pre.shiki")).not.toBeNull();
+      expect(document.querySelectorAll("pre.shiki code span").length).toBeGreaterThan(0);
+    } finally {
+      stop();
+    }
   });
 
   it("accepts Shiki languages beyond a handwritten allow-list", () => {
