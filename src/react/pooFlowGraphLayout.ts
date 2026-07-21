@@ -12,15 +12,18 @@ const nodeWidth = 268;
 const nodeHeight = 118;
 
 export function toNodes(events: readonly SemanticPooFlowNode[]): PooFlowGraphNode[] {
-  const childCounts = new Map<string, number>();
-  events.forEach((event) => {
-    if (event.parentId) childCounts.set(event.parentId, (childCounts.get(event.parentId) ?? 0) + 1);
-  });
   const nodesById = new Map(events.map((event) => [event.id, event]));
+  const nativeParentIds = new Map(
+    events.map((event) => [event.id, pooFlowNativeParentId(event, nodesById)]),
+  );
+  const childCounts = new Map<string, number>();
+  nativeParentIds.forEach((parentId) => {
+    if (parentId) childCounts.set(parentId, (childCounts.get(parentId) ?? 0) + 1);
+  });
   return events.map((event, index) => ({
     id: event.id,
     type: event.kind,
-    parentId: pooFlowNativeParentId(event, nodesById),
+    parentId: nativeParentIds.get(event.id),
     deletable: false,
     position: { x: 0, y: 0 },
     sourcePosition: Position.Right,

@@ -66,32 +66,50 @@
 
 .poo-flow-shape--container {
   display: block;
-  padding: 0.82rem 0.95rem;
-  background: color-mix(
-    in srgb,
-    var(--org-zhixing-surface, #1e1e2e) 94%,
-    var(--poo-flow-kind-color, #89b4fa) 6%
-  );
+  padding: 0.9rem 1rem;
+  border-width: 2px;
+  border-radius: 1.05rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--poo-flow-kind-color, #89b4fa) 18%, transparent) 0,
+      color-mix(in srgb, var(--poo-flow-kind-color, #89b4fa) 7%, transparent) 6.6rem,
+      transparent 6.6rem
+    ),
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 18px,
+      color-mix(in srgb, var(--poo-flow-kind-color, #89b4fa) 3%, transparent) 18px 19px
+    ),
+    color-mix(
+      in srgb,
+      var(--org-zhixing-surface, #1e1e2e) 96%,
+      var(--poo-flow-kind-color, #89b4fa) 4%
+    );
   box-shadow:
-    0 0.85rem 2rem rgb(8 9 16 / 24%),
-    inset 0 1px 0 rgb(255 255 255 / 4%);
+    0 1rem 2.4rem rgb(8 9 16 / 30%),
+    inset 0 0 0 1px color-mix(in srgb, var(--poo-flow-kind-color, #89b4fa) 14%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 7%);
 }
 
 .poo-flow-shape--container::before {
   inset: 0 0 auto;
   width: auto;
-  height: 3px;
+  height: 5px;
+  border-radius: 1.05rem 1.05rem 0 0;
 }
 
 .poo-flow-shape--container .poo-flow-shape__title {
   display: block;
-  margin-top: 0.58rem;
-  font-size: 1rem;
+  margin-top: 0.7rem;
+  font-size: 1.08rem;
 }
 
 .poo-flow-shape__container-meta {
-  display: block;
-  margin-top: 0.28rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.38rem;
   color: color-mix(
     in srgb,
     var(--org-zhixing-text, #cdd6f4) 62%,
@@ -99,6 +117,19 @@
   );
   font-family: ui-monospace, "SFMono-Regular", "Roboto Mono", monospace;
   font-size: 0.62rem;
+}
+
+.poo-flow-shape__container-scope {
+  padding: 0.22rem 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--poo-flow-kind-color, #89b4fa) 32%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--poo-flow-kind-color, #89b4fa) 9%, transparent);
+  color: color-mix(in srgb, var(--org-zhixing-text, #cdd6f4) 78%, white);
+  letter-spacing: 0.025em;
+}
+
+.poo-flow-shape__container-meta .poo-flow-shape__collapse {
+  margin-inline-start: auto;
 }
 
 .poo-flow-node--composition .poo-flow-shape {

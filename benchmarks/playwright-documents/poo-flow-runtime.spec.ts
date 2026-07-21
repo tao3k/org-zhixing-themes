@@ -37,6 +37,8 @@ test("POO Flow runs the generated Profile composition through the WASM cursor", 
 
   await expect(figure.locator(".react-flow__node")).toHaveCount(8);
   await expect(figure.locator(".react-flow__edge-path")).toHaveCount(7);
+  await expect(figure.getByRole("group", { name: "Graph mode" })).toHaveCount(0);
+  await expect(figure.locator('[data-poo-flow-container="true"]')).toHaveCount(0);
   await expect(figure.locator(".react-flow__minimap")).toHaveCount(0);
   await expect(figure.locator(".react-flow__attribution")).toHaveCount(0);
 

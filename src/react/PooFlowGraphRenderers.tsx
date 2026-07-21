@@ -76,8 +76,9 @@ function PooFlowNode({ data, selected, isConnectable }: NodeProps<PooFlowGraphNo
       data-selected={selected || undefined}
       data-poo-flow-id={event.id}
       data-poo-flow-parent-id={event.parentId}
+      data-poo-flow-container={container || undefined}
       data-poo-flow-scenario={event.scenario}
-      aria-label={`${nodeKindLabel(data.event.kind)} ${data.event.label}, ${data.state}`}
+      aria-label={`${container ? "Subflow" : nodeKindLabel(data.event.kind)} ${data.event.label}, ${data.state}`}
     >
       <NodeToolbar
         isVisible={selected}
@@ -117,7 +118,9 @@ function PooFlowNode({ data, selected, isConnectable }: NodeProps<PooFlowGraphNo
         <span className="poo-flow-shape__kind">
           <PooFlowSemanticIcon event={event} />
         </span>
-        <span className="poo-flow-shape__kind-label">{nodeKindLabel(event.kind)}</span>
+        <span className="poo-flow-shape__kind-label">
+          {container ? "Subflow" : nodeKindLabel(event.kind)}
+        </span>
         <span className="poo-flow-shape__ordinal">
           {String(index + 1).padStart(2, "0")} / {String(eventCount).padStart(2, "0")}
         </span>
@@ -128,6 +131,9 @@ function PooFlowNode({ data, selected, isConnectable }: NodeProps<PooFlowGraphNo
         <span className="poo-flow-shape__container-meta">
           <span>
             {childCount} contained {childCount === 1 ? "member" : "members"}
+          </span>
+          <span className="poo-flow-shape__container-scope">
+            {event.scenario ? `Scope · ${event.scenario}` : "Nested workflow scope"}
           </span>
           <button
             type="button"
