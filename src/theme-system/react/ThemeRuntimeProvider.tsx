@@ -50,7 +50,10 @@ const createIsolatedThemeRuntime = async (): Promise<ThemeRuntime> => {
 let isolatedThemeRuntimePromise: Promise<ThemeRuntime> | undefined;
 
 export const loadIsolatedThemeRuntime = (): Promise<ThemeRuntime> => {
-  isolatedThemeRuntimePromise ??= createIsolatedThemeRuntime();
+  isolatedThemeRuntimePromise ??= createIsolatedThemeRuntime().catch((error: unknown) => {
+    isolatedThemeRuntimePromise = undefined;
+    throw error;
+  });
   return isolatedThemeRuntimePromise;
 };
 

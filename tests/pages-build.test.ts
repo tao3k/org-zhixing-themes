@@ -129,16 +129,16 @@ describe("Pages build tooling", () => {
 
     expect(
       readFileSync(join(root, "10-architecture-examples-poo-flow-runtime", "index.html"), "utf8"),
-    ).toContain("data-initial-app-shell");
+    ).toContain('data-theme-runtime-state="pending"');
     expect(
       readFileSync(join(root, "10-architecture-examples-poo-flow-subflows", "index.html"), "utf8"),
-    ).toContain("data-initial-app-shell");
+    ).toContain('data-theme-runtime-state="pending"');
     expect(
       readFileSync(join(root, "90-operations-90-05-typst-performance.html"), "utf8"),
-    ).toContain("data-initial-app-shell");
+    ).toContain('data-theme-runtime-state="pending"');
     expect(
       readFileSync(join(root, "90-operations-90-05-typst-performance", "index.html"), "utf8"),
-    ).toContain("data-initial-app-shell");
+    ).toContain('data-theme-runtime-state="pending"');
     expect(existsSync(join(root, "index", "index.html"))).toBe(false);
     for (const route of [
       "blogs",
@@ -151,7 +151,7 @@ describe("Pages build tooling", () => {
       "diagnostics",
     ]) {
       expect(readFileSync(join(root, route, "index.html"), "utf8")).toContain(
-        "data-initial-app-shell",
+        'data-theme-runtime-state="pending"',
       );
     }
     expect(readFileSync(join(root, "gallery", "index.html"), "utf8")).toContain(

@@ -38,20 +38,23 @@ describe("route shell writer", () => {
     const galleryHtml = await readFile(resolve(distRoot, "gallery/index.html"), "utf8");
     for (const route of ["blogs", "notes", "memory", "agenda", "capture", "diagnostics"]) {
       const routeHtml = await readFile(resolve(distRoot, route, "index.html"), "utf8");
-      expect(routeHtml).toContain("data-initial-app-shell");
+      expect(routeHtml).toContain('data-theme-runtime-state="pending"');
       expect(routeHtml).toContain("/org-zhixing-themes/assets/app.js");
     }
     for (const html of [rootHtml, fallbackHtml]) {
-      expect(html).toContain("data-initial-app-shell");
-      expect(html).toContain('role="status"');
-      expect(html).toContain('aria-live="polite"');
+      expect(html).toContain('data-theme-runtime-state="pending"');
+      expect(html).toContain('aria-busy="true"');
+      expect(html).not.toContain("data-initial-app-shell");
+      expect(html).not.toContain("Loading theme");
+      expect(html).not.toContain("知行合一");
+      expect(html).not.toContain("Loading Zhixing");
       expect(html).toContain("org-zhixing.static.json");
       expect(html).toContain("org-zhixing.toml");
       expect(html).toContain('as="fetch"');
     }
     expect(galleryHtml).toContain('data-static-route="gallery"');
     expect(galleryHtml).toContain('aria-label="Attachment gallery"');
-    expect(galleryHtml).not.toContain("data-initial-app-shell");
+    expect(galleryHtml).not.toContain("data-theme-runtime-state");
     expect(galleryHtml).not.toContain('<script type="module"');
     expect(rootHtml).not.toContain("org-zhixing.gallery.json");
     expect(fallbackHtml).not.toContain("org-zhixing.gallery.json");
@@ -81,7 +84,7 @@ describe("route shell writer", () => {
     await writeRouteShells({ distRoot });
 
     const galleryHtml = await readFile(resolve(distRoot, "gallery/index.html"), "utf8");
-    expect(galleryHtml).toContain("data-initial-app-shell");
+    expect(galleryHtml).toContain('data-theme-runtime-state="pending"');
     expect(galleryHtml).not.toContain('as="image"');
     expect(galleryHtml).toContain("/org-zhixing-themes/org-zhixing.gallery.json");
   });

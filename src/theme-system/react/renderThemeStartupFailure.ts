@@ -1,9 +1,12 @@
+import { setThemeRuntimeBoundaryState } from "./themeRuntimeBoundary";
+
 export const renderThemeStartupFailure = (
   error: unknown,
   retry: () => void,
   root: HTMLElement | null = document.querySelector<HTMLElement>("#app"),
 ): void => {
   if (!root) return;
+  setThemeRuntimeBoundaryState(root, "failed");
   const message = error instanceof Error ? error.message : String(error);
   const surface = document.createElement("main");
   surface.className = "theme-startup-failure";
