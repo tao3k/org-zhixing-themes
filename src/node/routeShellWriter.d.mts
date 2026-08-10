@@ -1,5 +1,5 @@
 export const writeRouteShells: (options: { distRoot: string; hydrate?: boolean }) => Promise<void>;
-export const injectInitialAppShell: (html: string) => string;
+export const injectThemeRuntimeBoundary: (html: string) => string;
 export const injectStaticRoutePage: (
   html: string,
   routeHtml: string,

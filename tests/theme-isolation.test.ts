@@ -110,6 +110,7 @@ describe("theme isolation framework", () => {
     );
     expect(renderThemeRuntimeModule(remote)).toContain('loadRemote("documents_pro/theme")');
     expect(renderThemeRuntimeModule(remote)).toContain("org-zhixing/theme-module/v1");
+    expect(renderThemeRuntimeModule(remote)).toContain("isolatedSelectedThemePromise = undefined");
     expect(createThemeFederationPlugin(remote)?.name).toBe("rsbuild:module-federation-enhanced");
     expect(selectedThemeFederationRemotes(remote)).toEqual({
       documents_pro: "documents_pro@https://themes.example.com/mf-manifest.json",

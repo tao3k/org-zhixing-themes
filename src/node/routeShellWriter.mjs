@@ -16,7 +16,7 @@ export const writeRouteShells = async ({ distRoot, hydrate = false }) => {
     `${baseHref}org-zhixing.static.json`,
     `${baseHref}org-zhixing.toml`,
   ]);
-  const initialShellHtml = injectInitialAppShell(shellHtml);
+  const initialShellHtml = injectThemeRuntimeBoundary(shellHtml);
   await writeFile(indexPath, initialShellHtml, "utf8");
   await writeFile(resolve(distRoot, "404.html"), initialShellHtml, "utf8");
   for (const route of ["blogs", "notes", "memory", "agenda", "capture", "diagnostics"]) {
@@ -73,10 +73,10 @@ export const writeRouteShells = async ({ distRoot, hydrate = false }) => {
   }
 };
 
-export const injectInitialAppShell = (html) =>
+export const injectThemeRuntimeBoundary = (html) =>
   html.replace(
     /<div\s+id="app"\s*><\/div>/i,
-    `<div id="app"><div data-initial-app-shell role="status" aria-live="polite" aria-label="Loading selected theme" style="min-height:100svh;display:grid;place-items:center;padding:1rem;font:500 .75rem/1.25 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:CanvasText;background:Canvas;color-scheme:light dark"><span style="opacity:.55">Loading theme…</span></div></div>`,
+    `<div id="app" data-theme-runtime-state="pending" aria-busy="true"></div>`,
   );
 
 export const injectStaticRoutePage = (
@@ -105,7 +105,7 @@ export const injectStaticRoutePage = (
     <div class="runtime-state" aria-hidden="true"><strong id="active-source-title">${escapeHtmlAttribute(source?.name ?? "Org source")}</strong><small id="active-source-path">${escapeHtmlAttribute(source?.file ?? "")}</small></div>
   </main>`;
   const rendered = html.replace(
-    /<div\s+id="app"\s*>[\s\S]*?<\/div>(?=\s*<\/body>)/i,
+    /<div\s+id="app"(?=\s|>)[^>]*>[\s\S]*?<\/div>(?=\s*<\/body>)/i,
     `<div id="app" data-static-route="${escapeHtmlAttribute(activeView)}">${chrome}</div>`,
   );
   return preserveApplicationScripts ? rendered : stripApplicationScripts(rendered);

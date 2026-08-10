@@ -9,28 +9,7 @@
   </head>
   <body>
     <div id="app">
-      <div
-        data-initial-app-shell
-        role="status"
-        aria-live="polite"
-        aria-label="Loading selected theme"
-        style="
-          min-height: 100svh;
-          display: grid;
-          place-items: center;
-          padding: 1rem;
-          font:
-            500 0.75rem/1.25 system-ui,
-            sans-serif;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: CanvasText;
-          background: Canvas;
-          color-scheme: light dark;
-        "
-      >
-        <span style="opacity: 0.55">Loading theme…</span>
-      </div>
+      <div data-theme-runtime-state="pending" aria-busy="true"></div>
     </div>
   </body>
 </html>

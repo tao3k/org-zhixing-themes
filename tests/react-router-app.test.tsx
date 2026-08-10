@@ -212,7 +212,7 @@ describe("Org Zhixing React Router app", () => {
     await waitForText("2 image items");
   });
 
-  it("replaces the static initial shell without hydration or console errors", async () => {
+  it("claims and replaces stale host presentation without hydration or console errors", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     await mountStaticRouter(
       "/blogs",

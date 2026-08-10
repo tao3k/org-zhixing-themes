@@ -10,6 +10,8 @@ describe("federated theme startup recovery", () => {
 
     expect(root.textContent).toContain("Theme unavailable");
     expect(root.textContent).toContain("THEME-E034 remote manifest unavailable");
+    expect(root.dataset.themeRuntimeState).toBe("failed");
+    expect(root.hasAttribute("aria-busy")).toBe(false);
     root.querySelector("button")?.click();
     expect(retry).toHaveBeenCalledOnce();
   });
