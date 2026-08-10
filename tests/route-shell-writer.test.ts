@@ -45,6 +45,10 @@ describe("route shell writer", () => {
       expect(html).toContain("data-initial-app-shell");
       expect(html).toContain('role="status"');
       expect(html).toContain('aria-live="polite"');
+      expect(html).toContain('aria-label="Loading selected theme"');
+      expect(html).toContain("Loading theme…");
+      expect(html).not.toContain("知行合一");
+      expect(html).not.toContain("Loading Zhixing");
       expect(html).toContain("org-zhixing.static.json");
       expect(html).toContain("org-zhixing.toml");
       expect(html).toContain('as="fetch"');

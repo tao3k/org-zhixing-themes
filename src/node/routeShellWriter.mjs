@@ -76,7 +76,7 @@ export const writeRouteShells = async ({ distRoot, hydrate = false }) => {
 export const injectInitialAppShell = (html) =>
   html.replace(
     /<div\s+id="app"\s*><\/div>/i,
-    `<div id="app"><div data-initial-app-shell role="status" aria-live="polite" aria-label="Loading Zhixing" style="min-height:2.75rem;display:flex;align-items:baseline;gap:.625rem;padding:.75rem 1rem;font:500 1rem/1.25 system-ui,sans-serif;color:#252522;background:#faf9f6"><strong>知行合一</strong><small style="font-size:.75rem;color:#6f6d66">Loading…</small></div></div>`,
+    `<div id="app"><div data-initial-app-shell role="status" aria-live="polite" aria-label="Loading selected theme" style="min-height:100svh;display:grid;place-items:center;padding:1rem;font:500 .75rem/1.25 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:CanvasText;background:Canvas;color-scheme:light dark"><span style="opacity:.55">Loading theme…</span></div></div>`,
   );
 
 export const injectStaticRoutePage = (
