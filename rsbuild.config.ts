@@ -206,6 +206,12 @@ export default defineConfig({
         : {
             rewrites: [
               {
+                from: new RegExp(
+                  `^${deploymentBasePath.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}/zhixing-mark\\.svg$`,
+                ),
+                to: "/zhixing-mark.svg",
+              },
+              {
                 from: new RegExp(`^${deploymentBasePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/`),
                 to: ({ parsedUrl }: { parsedUrl: { pathname: string } }) =>
                   devServerAssetPath(parsedUrl.pathname, deploymentBasePath) ?? parsedUrl.pathname,
