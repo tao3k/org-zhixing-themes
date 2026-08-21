@@ -7,11 +7,19 @@ describe("theme navigation contributions", () => {
     expect(
       themeNavigationItemsFrom({
         navigation: [
-          { name: "Documents", href: "themes/documents/", description: "docs" },
+          {
+            name: "Themes",
+            children: [{ name: "Documents", href: "themes/documents/", description: "docs" }],
+          },
           { name: "Invalid" },
         ],
       }),
-    ).toEqual([{ name: "Documents", href: "themes/documents/", description: "docs" }]);
+    ).toEqual([
+      {
+        name: "Themes",
+        children: [{ name: "Documents", href: "themes/documents/", description: "docs" }],
+      },
+    ]);
   });
 
   it("resolves relative preview routes beneath the deployment base", () => {

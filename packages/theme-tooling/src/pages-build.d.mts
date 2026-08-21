@@ -1,13 +1,14 @@
 export type PagesBuildOptions = {
   basePath: string | null;
   configPath: string;
-  contentDir: string;
+  contentDir: string | null;
   outputDir: string;
   workspaceRoot: string;
 };
 
-export type ValidatedPagesBuildOptions = Omit<PagesBuildOptions, "basePath"> & {
+export type ValidatedPagesBuildOptions = Omit<PagesBuildOptions, "basePath" | "contentDir"> & {
   basePath: string;
+  contentDir: string;
 };
 
 export const parsePagesBuildArgs: (argv: string[], workspaceRoot?: string) => PagesBuildOptions;

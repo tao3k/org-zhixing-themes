@@ -70,6 +70,25 @@ describe("Pages build tooling", () => {
     });
   });
 
+  it("uses the configured content directory when --content is absent", async () => {
+    const root = mkdtempSync(join(tmpdir(), "org-zhixing-pages-config-content-"));
+    roots.push(root);
+    mkdirSync(join(root, "public", "blog"), { recursive: true });
+    writeFileSync(
+      join(root, "public", "site.toml"),
+      '[site]\nbase_url = "https://example.test/project/"\n\n[content]\ncontent_dir = "blog"\n',
+    );
+    const options = parsePagesBuildArgs(
+      ["--config", "public/site.toml", "--out", join(tmpdir(), "org-zhixing-pages-output")],
+      root,
+    );
+
+    expect(options.contentDir).toBeNull();
+    await expect(validatePagesBuildConfig(options)).resolves.toMatchObject({
+      contentDir: join(root, "public", "blog"),
+    });
+  });
+
   it("rejects a base path that disagrees with the site config", async () => {
     const root = mkdtempSync(join(tmpdir(), "org-zhixing-pages-test-"));
     roots.push(root);

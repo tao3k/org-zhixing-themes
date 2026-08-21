@@ -24,19 +24,25 @@ export default defineThemePackage({
     ...elegantBlogRendererBindings,
     navigation: [
       {
-        name: "Documents",
-        description: "technical documentation",
-        href: "themes/documents/",
-      },
-      {
-        name: "Elegant Blog",
-        description: "editorial blog",
-        href: "themes/elegant-blog/",
-      },
-      {
-        name: "Minimal Notes",
-        description: "minimal knowledge notes",
-        href: "themes/minimal-notes/",
+        name: "Themes",
+        description: "theme previews",
+        children: [
+          {
+            name: "Documents",
+            description: "technical documentation",
+            href: "themes/documents/",
+          },
+          {
+            name: "Elegant Blog",
+            description: "editorial blog",
+            href: "themes/elegant-blog/",
+          },
+          {
+            name: "Minimal Notes",
+            description: "minimal knowledge notes",
+            href: "themes/minimal-notes/",
+          },
+        ],
       },
     ],
   },

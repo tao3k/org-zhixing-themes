@@ -32,6 +32,9 @@ describe("GitHub Pages workflow", () => {
       /pages-artifact:[\s\S]*needs:\s*\n\s*- npm-test\s*\n\s*- scenario-mobile/,
     );
     expect(workflow).toMatch(/deploy-pages:[\s\S]*needs:\s*\n\s*- pages-artifact/);
+    expect(workflow).toMatch(
+      /npm run pages:themes --[ \t]*\\\r?\n[ \t]*--config public\/org-zhixing\.toml[ \t]*\\\r?\n[ \t]*--out dist[ \t]*\\\r?\n[ \t]*--base \/org-zhixing-themes\/\r?\n[ \t]*npm run pages:route-shells -- --dist dist/,
+    );
     expect(workflow).toContain("name: github-pages");
     expect(workflow).toContain("pages: write");
     expect(workflow).toContain("id-token: write");

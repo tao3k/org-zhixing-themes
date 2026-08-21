@@ -104,6 +104,48 @@ button {
   text-align: left;
 }
 
+.site-nav-group {
+  position: relative;
+  min-width: 96px;
+  border-left: 1px solid var(--hairline-soft);
+}
+
+.site-nav-group-label {
+  display: grid;
+  gap: 1px;
+  padding: 3px 14px;
+  color: var(--face-faded);
+  cursor: pointer;
+  list-style: none;
+}
+
+.site-nav-group-label::-webkit-details-marker {
+  display: none;
+}
+
+.site-nav-group-items {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  min-width: 220px;
+  border: 1px solid var(--hairline-soft);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-floating);
+}
+
+.site-nav-group-items .site-nav-item {
+  min-width: 0;
+  border-left: 0;
+  border-top: 1px solid var(--hairline-soft);
+  padding: var(--space-2) var(--space-3);
+}
+
+.site-nav-group-items .site-nav-item:first-child {
+  border-top: 0;
+}
+
 .site-nav-item:hover,
 .site-nav-item.active {
   color: var(--face-strong);

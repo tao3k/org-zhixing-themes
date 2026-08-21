@@ -2,7 +2,7 @@
 import { spawn } from "node:child_process";
 import { copyFile, cp, mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { parse } from "smol-toml";
 import { writeRouteShells } from "../../../src/node/routeShellWriter.mjs";
 
@@ -32,7 +32,8 @@ export const parsePagesBuildArgs = (argv, workspaceRoot = process.cwd()) => {
   return {
     basePath: optional("--base"),
     configPath: resolve(workspaceRoot, required("--config")),
-    contentDir: resolve(workspaceRoot, required("--content")),
+    contentDir:
+      optional("--content") === null ? null : resolve(workspaceRoot, optional("--content")),
     outputDir: resolve(workspaceRoot, required("--out")),
     workspaceRoot: resolve(workspaceRoot),
   };
@@ -40,10 +41,18 @@ export const parsePagesBuildArgs = (argv, workspaceRoot = process.cwd()) => {
 
 export const validatePagesBuildConfig = async (options) => {
   await assertFile(options.configPath, "config");
-  await assertDirectory(options.contentDir, "content");
-  assertSafeOutput(options);
   const source = await readFile(options.configPath, "utf8");
   const config = parse(source);
+  const contentDir =
+    options.contentDir ??
+    resolve(
+      config.content?.content_base === "workspace"
+        ? options.workspaceRoot
+        : dirname(options.configPath),
+      config.content?.content_dir ?? "blog",
+    );
+  await assertDirectory(contentDir, "content");
+  assertSafeOutput({ ...options, contentDir });
   const configuredBasePath = basePathFromConfig(config);
   const requestedBasePath = options.basePath ? normalizeBasePath(options.basePath) : null;
   if (requestedBasePath && requestedBasePath !== configuredBasePath) {
@@ -51,7 +60,7 @@ export const validatePagesBuildConfig = async (options) => {
       `PAGES-E003 --base ${requestedBasePath} does not match config base ${configuredBasePath}`,
     );
   }
-  return { ...options, basePath: requestedBasePath ?? configuredBasePath };
+  return { ...options, contentDir, basePath: requestedBasePath ?? configuredBasePath };
 };
 
 export const pagesBuildEnvironment = (environment, options, cacheRoot) => ({
