@@ -6,6 +6,7 @@ import { pluginReact } from "@rsbuild/plugin-react";
 import { parse } from "smol-toml";
 import { resolveThemeIsolation } from "./src/theme-system/build/resolveThemeIsolation";
 import { themeIsolationPlugin } from "./src/theme-system/build/themeIsolationPlugin";
+import { devServerAssetPath } from "./src/devServerBasePath";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const orgizePackageRoot = resolve(projectRoot, "node_modules/orgize");
@@ -199,7 +200,18 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
-    historyApiFallback: true,
+    historyApiFallback:
+      deploymentBasePath === "/"
+        ? true
+        : {
+            rewrites: [
+              {
+                from: new RegExp(`^${deploymentBasePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/`),
+                to: ({ parsedUrl }: { parsedUrl: { pathname: string } }) =>
+                  devServerAssetPath(parsedUrl.pathname, deploymentBasePath) ?? parsedUrl.pathname,
+              },
+            ],
+          },
     publicDir: {
       name: publicRoot,
       copyOnBuild: !externalContentRoot,
