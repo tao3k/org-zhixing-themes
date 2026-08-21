@@ -16,6 +16,9 @@ dist-ssr
 .run
 .lighthouseci
 
+# Local packaged vendor artifacts
+/vendor/*
+
 # Module Federation generated types
 /@mf-types/
 

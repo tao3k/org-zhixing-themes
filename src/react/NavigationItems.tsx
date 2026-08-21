@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import type { ContentShellData } from "../services/contentServices";
-import { lifeFacetFor, routePathForView } from "./routeViewHelpers";
+import { routePathForView } from "./routeViewHelpers";
 import { orgZhixingBasePath } from "../deploymentBasePath";
 
 import { useThemeRuntime } from "../theme-system/react/ThemeRuntimeProvider";
@@ -66,7 +66,6 @@ export function NavigationItems({
           onClick={onNavigate}
         >
           <span>{item.name}</span>
-          <small>{lifeFacetFor(item.view)}</small>
         </Link>
       ))}
       {renderThemeNavigation(themeNavigation, onNavigate)}
