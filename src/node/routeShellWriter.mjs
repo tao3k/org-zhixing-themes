@@ -24,7 +24,9 @@ export const writeRouteShells = async ({ distRoot, hydrate = false }) => {
     `${baseHref}org-zhixing.static.json`,
     `${baseHref}org-zhixing.toml`,
   ]);
-  const initialShellHtml = injectThemeRuntimeBoundary(shellHtml);
+  const initialShellHtml = injectThemeRuntimeBoundary(
+    injectFaviconLink(shellHtml, `${baseHref}favicon.svg`),
+  );
   await writeFile(indexPath, initialShellHtml, "utf8");
   await writeFile(resolve(distRoot, "404.html"), initialShellHtml, "utf8");
   for (const route of [
@@ -140,6 +142,12 @@ export const injectFetchPreloads = (html, hrefs) =>
 export const injectImagePreload = (html, href) => {
   const link = `    <link rel="preload" as="image" type="image/webp" href="${escapeHtmlAttribute(href)}" fetchpriority="high" />\n`;
   return injectHeadLink(html, link);
+};
+
+const injectFaviconLink = (html, href) => {
+  const link = `    <link rel="icon" type="image/svg+xml" href="${escapeHtmlAttribute(href)}" />\n`;
+  const iconPattern = /\s*<link\b[^>]*\brel="(?:icon|shortcut icon)"[^>]*>\s*/iu;
+  return iconPattern.test(html) ? html.replace(iconPattern, `\n${link}`) : injectHeadLink(html, link);
 };
 
 const injectHeadLink = (html, link) =>
