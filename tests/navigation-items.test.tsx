@@ -48,7 +48,7 @@ describe("theme navigation", () => {
     );
 
     expect(output).toContain('data-theme-navigation-group="Themes"');
-    expect(output).toContain('<details');
+    expect(output).toContain("<details");
     expect(output).toContain('<summary class="site-nav-group-label">');
     expect(output).toContain('data-theme-navigation-item="Documents"');
     expect(output).toContain('href="/org-zhixing-themes/themes/documents/"');
@@ -57,7 +57,9 @@ describe("theme navigation", () => {
     expect(output).toContain('data-theme-navigation-item="Minimal Notes"');
     expect(output).toContain('href="/org-zhixing-themes/themes/minimal-notes/"');
 
-    const group = output.match(/<details[^>]*data-theme-navigation-group="Themes"[\s\S]*?<\/details>/)?.[0];
+    const group = output.match(
+      /<details[^>]*data-theme-navigation-group="Themes"[\s\S]*?<\/details>/,
+    )?.[0];
     expect(group).toBeDefined();
     expect((group?.match(/data-theme-navigation-item=/g) ?? []).length).toBe(3);
     for (const href of [

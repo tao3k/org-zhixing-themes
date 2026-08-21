@@ -147,7 +147,9 @@ export const injectImagePreload = (html, href) => {
 const injectFaviconLink = (html, href) => {
   const link = `    <link rel="icon" type="image/svg+xml" href="${escapeHtmlAttribute(href)}" />\n`;
   const iconPattern = /\s*<link\b[^>]*\brel="(?:icon|shortcut icon)"[^>]*>\s*/iu;
-  return iconPattern.test(html) ? html.replace(iconPattern, `\n${link}`) : injectHeadLink(html, link);
+  return iconPattern.test(html)
+    ? html.replace(iconPattern, `\n${link}`)
+    : injectHeadLink(html, link);
 };
 
 const injectHeadLink = (html, link) =>
