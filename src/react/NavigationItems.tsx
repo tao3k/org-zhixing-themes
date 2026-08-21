@@ -2,12 +2,12 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import type { ContentShellData } from "../services/contentServices";
 import { lifeFacetFor, routePathForView } from "./routeViewHelpers";
+import { orgZhixingBasePath } from "../deploymentBasePath";
 
 import { useThemeRuntime } from "../theme-system/react/ThemeRuntimeProvider";
 
 import { resolveThemeNavigationHref, themeNavigationItemsFrom } from "../themeNavigation";
 import type { ThemeNavigationItem } from "../themeNavigation";
-import { orgZhixingBasePath } from "../deploymentBasePath";
 
 function renderThemeNavigation(
   items: readonly ThemeNavigationItem[],
