@@ -32,6 +32,7 @@ describe("theme navigation", () => {
           navigation: [
             {
               name: "Themes",
+              description: "Theme preview",
               children: [
                 { name: "Documents", description: "Org documents", href: "themes/documents/" },
                 {
@@ -78,6 +79,7 @@ describe("theme navigation", () => {
     expect(output).toContain('data-theme-navigation-group="Themes"');
     expect(output).toContain("<details");
     expect(output).toContain('<summary class="site-nav-group-label">');
+    expect(output).not.toContain("Theme preview");
     expect(output).toContain('data-theme-navigation-item="Documents"');
     expect(output).toContain('href="/org-zhixing-themes/themes/documents/"');
     expect(output).toContain('data-theme-navigation-item="Elegant Blog"');

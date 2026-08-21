@@ -125,6 +125,19 @@
   }
 }
 
+@media (min-width: 901px) {
+  .site-nav {
+    min-height: 36px;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .site-nav > .site-nav-item,
+  .site-nav > .site-nav-group {
+    flex: 0 0 auto;
+  }
+}
+
 @media (max-width: 767px) {
   .site-header {
     position: sticky;

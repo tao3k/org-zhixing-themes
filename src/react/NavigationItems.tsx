@@ -19,7 +19,6 @@ function renderThemeNavigation(
         <details key={item.name} className="site-nav-group" data-theme-navigation-group={item.name}>
           <summary className="site-nav-group-label">
             <span>{item.name}</span>
-            {item.description ? <small>{item.description}</small> : null}
           </summary>
           <div className="site-nav-group-items">
             {renderThemeNavigation(item.children, onNavigate)}
