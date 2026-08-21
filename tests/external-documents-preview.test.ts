@@ -48,8 +48,10 @@ $ integral_0^1 x dif x $
       const source = manifest.sources[0];
       expect(source?.sourceFile).toBe("docs/latex-typst.org");
       const shard = readFileSync(join(outputDir, source!.shardPath), "utf8");
-      expect(shard).toContain('class=\\"language-latex\\"');
-      expect(shard).toContain('class=\\"language-typst\\"');
+      expect(shard).toContain('class=\\"org-code-highlight\\" data-org-code-highlight=\\"ready\\"');
+      expect(shard).toContain("<figcaption>latex</figcaption>");
+      expect(shard).toContain("<figcaption>typst</figcaption>");
+      expect(shard).toContain('class=\\"shiki tokyo-night org-code-highlight-pre\\"');
       expect(shard).toContain("\\\\(E = mc^2\\\\)");
     } finally {
       rmSync(root, { force: true, recursive: true });
