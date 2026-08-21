@@ -42,6 +42,7 @@ describe("route shell writer", () => {
     await writeRouteShells({ distRoot });
 
     const rootHtml = await readFile(resolve(distRoot, "index.html"), "utf8");
+    const nestedHtml = await readFile(resolve(distRoot, "themes/fixture-theme/index.html"), "utf8");
     const fallbackHtml = await readFile(resolve(distRoot, "404.html"), "utf8");
     const galleryHtml = await readFile(resolve(distRoot, "gallery/index.html"), "utf8");
     for (const route of [
@@ -67,6 +68,13 @@ describe("route shell writer", () => {
       expect(html).toContain("org-zhixing.static.json");
       expect(html).toContain("org-zhixing.toml");
       expect(html).toContain('as="fetch"');
+    }
+    for (const [html, base] of [
+      [rootHtml, "https://tao3k.github.io/org-zhixing-themes/"],
+      [nestedHtml, "https://tao3k.github.io/org-zhixing-themes/themes/fixture-theme/"],
+    ]) {
+      const href = html.match(/<link[^>]+rel="icon"[^>]+href="([^"]+)"/)?.[1];
+      expect(new URL(href!, base).pathname).toBe("/org-zhixing-themes/favicon.svg");
     }
     expect(galleryHtml).toContain('data-static-route="gallery"');
     expect(galleryHtml).toContain('aria-label="Attachment gallery"');

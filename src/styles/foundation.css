@@ -90,6 +90,12 @@ button {
   scrollbar-width: thin;
 }
 
+@media (min-width: 860px) {
+  .site-nav {
+    overflow: visible;
+  }
+}
+
 .site-nav-item {
   display: grid;
   gap: 1px;
