@@ -14,7 +14,6 @@
     "./poo-flow/react": "./src/react/PooFlowGraph.tsx"
   },
   "scripts": {
-    "pretest": "npm run test:docs && npm run test:contracts",
     "dev": "npm run generate:theme-assets && npm run generate:static && rsbuild dev",
     "generate:theme-assets": "node scripts/build-elegant-theme.mjs && oxfmt src/styles/theme.css",
     "theme:check": "node packages/theme-tooling/src/theme-check.mjs",
@@ -23,11 +22,13 @@
     "theme:preview": "node packages/theme-tooling/src/theme-preview.mjs",
     "pages:build": "node --import tsx packages/theme-tooling/src/pages-build.mjs",
     "pages:themes": "node packages/theme-tooling/src/pages-theme-gallery.mjs",
+    "pages:route-shells": "node --import tsx packages/theme-tooling/src/pages-route-shells.mjs",
     "generate:static": "node --import tsx scripts/generate-static-site.mjs",
     "build": "npm run generate:theme-assets && npm run generate:static && tsc -b && rsbuild build && node --import tsx scripts/write-spa-fallback.mjs && node packages/theme-tooling/src/normalize-spa-shells.mjs",
     "test": "vitest run tests --exclude tests/poo-flow-scale-performance.test.ts --exclude tests/typst-performance-regression.test.ts",
     "test:poo-flow-performance": "vitest run tests/poo-flow-scale-performance.test.ts --no-file-parallelism --maxWorkers=1",
-    "ci": "npm run format:check && npm run lint && npm run generate:theme-assets && npm run typecheck && npm run harness && npm test && npm run scenario:typst:cache && npm run test:poo-flow-performance && npm run build && npm run scenario:check",
+    "verify:core": "npm run format:check && npm run lint && npm run generate:theme-assets && npm run typecheck && npm run harness && npm test && npm run scenario:typst:cache && npm run test:poo-flow-performance && npm run build && npm run scenario:check",
+    "verify:docs": "npm run test:docs && npm run test:contracts && npm run test:typst",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint --deny-warnings .",

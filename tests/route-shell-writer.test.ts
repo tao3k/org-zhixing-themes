@@ -30,13 +30,29 @@ describe("route shell writer", () => {
       JSON.stringify({ schemaVersion: 1, records: [], entryCount: 0, sourceCount: 0 }),
       "utf8",
     );
+    await writeFile(
+      resolve(distRoot, "theme-manifest.json"),
+      JSON.stringify({
+        schemaVersion: 1,
+        themes: [{ id: "fixture-theme" }, { id: "../unsafe-theme" }],
+      }),
+      "utf8",
+    );
 
     await writeRouteShells({ distRoot });
 
     const rootHtml = await readFile(resolve(distRoot, "index.html"), "utf8");
     const fallbackHtml = await readFile(resolve(distRoot, "404.html"), "utf8");
     const galleryHtml = await readFile(resolve(distRoot, "gallery/index.html"), "utf8");
-    for (const route of ["blogs", "notes", "memory", "agenda", "capture", "diagnostics"]) {
+    for (const route of [
+      "blogs",
+      "notes",
+      "memory",
+      "agenda",
+      "capture",
+      "diagnostics",
+      "themes/fixture-theme",
+    ]) {
       const routeHtml = await readFile(resolve(distRoot, route, "index.html"), "utf8");
       expect(routeHtml).toContain('data-theme-runtime-state="pending"');
       expect(routeHtml).toContain("/org-zhixing-themes/assets/app.js");

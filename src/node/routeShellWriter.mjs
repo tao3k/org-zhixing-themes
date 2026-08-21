@@ -12,6 +12,14 @@ export const writeRouteShells = async ({ distRoot, hydrate = false }) => {
   const baseHref = deploymentBaseHref(indexHtml);
   const staticData = await readJsonData(resolve(distRoot, "org-zhixing.static.json"));
   const siteConfig = await readTomlData(resolve(distRoot, "org-zhixing.toml"));
+  const themeManifest = await readJsonData(resolve(distRoot, "theme-manifest.json"));
+  const themeRoutes = Array.isArray(themeManifest?.themes)
+    ? themeManifest.themes.flatMap(({ id }) =>
+        typeof id === "string" && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/u.test(id)
+          ? [`themes/${id}`]
+          : [],
+      )
+    : [];
   const shellHtml = injectFetchPreloads(indexHtml, [
     `${baseHref}org-zhixing.static.json`,
     `${baseHref}org-zhixing.toml`,
@@ -19,7 +27,15 @@ export const writeRouteShells = async ({ distRoot, hydrate = false }) => {
   const initialShellHtml = injectThemeRuntimeBoundary(shellHtml);
   await writeFile(indexPath, initialShellHtml, "utf8");
   await writeFile(resolve(distRoot, "404.html"), initialShellHtml, "utf8");
-  for (const route of ["blogs", "notes", "memory", "agenda", "capture", "diagnostics"]) {
+  for (const route of [
+    "blogs",
+    "notes",
+    "memory",
+    "agenda",
+    "capture",
+    "diagnostics",
+    ...themeRoutes,
+  ]) {
     const routeRoot = resolve(distRoot, route);
     await mkdir(routeRoot, { recursive: true });
     await writeFile(resolve(routeRoot, "index.html"), initialShellHtml, "utf8");
