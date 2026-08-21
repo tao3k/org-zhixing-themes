@@ -30,4 +30,10 @@ describe("React Router boundary", () => {
     expect(router).toContain("redirectToThemeContentRoot");
     expect(router).toContain("function ThemeDocumentPage");
   });
+
+  it("leaves static theme navigation to the browser instead of intercepting it as a router route", () => {
+    const shellChrome = readFileSync("src/react/ShellChrome.tsx", "utf8");
+    expect(shellChrome).toContain('closest("a[data-theme-navigation-item]")');
+    expect(shellChrome).toContain("if (\n        event.target instanceof Element");
+  });
 });
