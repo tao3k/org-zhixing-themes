@@ -6,7 +6,6 @@ import { pluginReact } from "@rsbuild/plugin-react";
 import { parse } from "smol-toml";
 import { resolveThemeIsolation } from "./src/theme-system/build/resolveThemeIsolation";
 import { themeIsolationPlugin } from "./src/theme-system/build/themeIsolationPlugin";
-import { devServerAssetPath } from "./src/devServerBasePath";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 const orgizePackageRoot = resolve(projectRoot, "node_modules/orgize");
@@ -197,27 +196,11 @@ export default defineConfig({
     ],
   },
   server: {
+    base: deploymentBasePath,
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
-    historyApiFallback:
-      deploymentBasePath === "/"
-        ? true
-        : {
-            rewrites: [
-              {
-                from: new RegExp(
-                  `^${deploymentBasePath.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}/zhixing-mark\\.svg$`,
-                ),
-                to: "/zhixing-mark.svg",
-              },
-              {
-                from: new RegExp(`^${deploymentBasePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/`),
-                to: ({ parsedUrl }: { parsedUrl: { pathname: string } }) =>
-                  devServerAssetPath(parsedUrl.pathname, deploymentBasePath) ?? parsedUrl.pathname,
-              },
-            ],
-          },
+    historyApiFallback: true,
     publicDir: {
       name: publicRoot,
       copyOnBuild: !externalContentRoot,
@@ -225,6 +208,7 @@ export default defineConfig({
     },
   },
   dev: {
+    assetPrefix,
     hmr: true,
     liveReload: true,
     progressBar: true,
