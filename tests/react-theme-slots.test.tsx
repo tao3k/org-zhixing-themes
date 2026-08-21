@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import type { ZhixingTheme } from "../src/library";
 import {
   createDefaultThemeRegistry,
   createThemeRegistry,
@@ -7,6 +8,8 @@ import {
   resolveConfiguredTheme,
 } from "../src/library";
 import { renderReactSpaThemeSlot } from "../src/react/themeBinding";
+import { shouldShowSiteHero } from "../src/react/ThemeRootLayout";
+import type { ContentShellData } from "../src/services/contentServices";
 import minimalNotesTheme from "@org-zhixing/theme-minimal-notes";
 import documentsTheme from "@org-zhixing/theme-documents";
 import elegantBlogTheme from "@org-zhixing/theme-elegant-blog";
@@ -91,5 +94,45 @@ describe("React SPA theme slots", () => {
         renderReactSpaThemeSlot(elegant, "blog-index", { shell: {} as never }, original),
       ),
     ).toContain('data-theme-layout="elegant-blog/blog-index"');
+  });
+
+  it("keeps the documents navigation slot visible on document article routes", () => {
+    const registry = createThemeRegistry([documentsTheme, elegantBlogTheme, minimalNotesTheme]);
+    const shell = {
+      siteConfig: parseSiteConfig('theme = "documents"\ntheme_variant = "mocha"'),
+      staticSite: { sources: [] },
+    } as unknown as ContentShellData;
+    const docs = resolveConfiguredTheme(registry, shell.siteConfig);
+    const blog = resolveConfiguredTheme(registry, parseSiteConfig('theme = "elegant-blog"'));
+
+    expect(shouldShowSiteHero("/10-architecture-examples-poo-flow-subflows", shell, docs)).toBe(
+      true,
+    );
+    expect(shouldShowSiteHero("/10-architecture-examples-poo-flow-subflows", shell, blog)).toBe(
+      false,
+    );
+  });
+
+  it("does not concatenate a page-owned home hero into another application route", () => {
+    const shell = {
+      siteConfig: parseSiteConfig('theme = "documents"\ntheme_variant = "mocha"'),
+      staticSite: { sources: [] },
+    } as unknown as ContentShellData;
+    const applicationTheme = {
+      name: "application",
+      rendererBindings: {
+        "react-spa": {
+          kind: "org-zhixing/react-spa/v1",
+          contentRoutes: {
+            exclusiveContentRoutes: true,
+            loadDocument: async () => null,
+            renderDocument: () => null,
+            renderHome: () => null,
+          },
+        },
+      },
+    } as unknown as ZhixingTheme;
+
+    expect(shouldShowSiteHero("/principles", shell, applicationTheme)).toBe(false);
   });
 });

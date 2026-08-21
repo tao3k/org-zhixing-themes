@@ -7,15 +7,10 @@ import { useThemeRuntime } from "../theme-system/react/ThemeRuntimeProvider";
 
 import { resolveThemeNavigationHref, themeNavigationItemsFrom } from "../themeNavigation";
 import type { ThemeNavigationItem } from "../themeNavigation";
-
-declare const __webpack_public_path__: string;
-
-const themeNavigationPublicPath = () =>
-  typeof __webpack_public_path__ === "string" ? __webpack_public_path__ : "/";
+import { orgZhixingBasePath } from "../deploymentBasePath";
 
 function renderThemeNavigation(
   items: readonly ThemeNavigationItem[],
-  publicPath: string,
   onNavigate?: () => void,
 ): ReactNode[] {
   return items.flatMap((item) => {
@@ -27,7 +22,7 @@ function renderThemeNavigation(
             {item.description ? <small>{item.description}</small> : null}
           </summary>
           <div className="site-nav-group-items">
-            {renderThemeNavigation(item.children, publicPath, onNavigate)}
+            {renderThemeNavigation(item.children, onNavigate)}
           </div>
         </details>
       );
@@ -38,7 +33,7 @@ function renderThemeNavigation(
     return (
       <a
         key={item.href}
-        href={resolveThemeNavigationHref(item.href, publicPath)}
+        href={resolveThemeNavigationHref(item.href, orgZhixingBasePath())}
         className="site-nav-item"
         data-theme-navigation-item={item.name}
         onClick={onNavigate}
@@ -74,7 +69,7 @@ export function NavigationItems({
           <small>{lifeFacetFor(item.view)}</small>
         </Link>
       ))}
-      {renderThemeNavigation(themeNavigation, themeNavigationPublicPath(), onNavigate)}
+      {renderThemeNavigation(themeNavigation, onNavigate)}
     </>
   );
 }

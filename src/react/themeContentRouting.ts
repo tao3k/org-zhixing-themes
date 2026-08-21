@@ -13,6 +13,11 @@ export const themeOwnsContentRoutes = (
   selectedTheme?: ZhixingTheme,
 ): boolean => contentRoutesForShell(shell, selectedTheme)?.exclusiveContentRoutes === true;
 
+export const themeShowsSiteHeroOnContentRoutes = (
+  shell: ContentShellData,
+  selectedTheme?: ZhixingTheme,
+): boolean => contentRoutesForShell(shell, selectedTheme)?.showSiteHeroOnContentRoutes === true;
+
 export const loadThemeDocument = (
   shell: ContentShellData,
   documentId: string,

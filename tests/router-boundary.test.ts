@@ -22,9 +22,10 @@ describe("React Router boundary", () => {
     expect(normalizeOrgZhixingBasePath("/org-zhixing-themes/")).toBe("/org-zhixing-themes");
   });
 
-  it("owns documentation at the root without routing Documents through Blog", () => {
+  it("owns arbitrarily nested theme routes at the root without routing them through Blog", () => {
     const router = readFileSync("src/react/router.tsx", "utf8");
-    expect(router).toContain('path: "/$docId"');
+    expect(router).toContain('path: "/$"');
+    expect(router).toContain("params._splat");
     expect(router).toContain("component: HomePage");
     expect(router).toContain("redirectToThemeContentRoot");
     expect(router).toContain("function ThemeDocumentPage");

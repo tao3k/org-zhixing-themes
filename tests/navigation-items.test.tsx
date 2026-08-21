@@ -14,7 +14,8 @@ afterEach(() => {
 
 describe("theme navigation", () => {
   it("renders every registered theme route beneath the Themes menu", () => {
-    vi.stubGlobal("__webpack_public_path__", "/org-zhixing-themes/");
+    vi.stubGlobal("__ORG_ZHIXING_BASE_PATH__", "/org-zhixing-themes/");
+    vi.stubGlobal("__webpack_public_path__", "/org-zhixing-themes/assets/");
     const runtime = {
       isolationId: "navigation-test",
       registry: createThemeRegistry([]),
@@ -69,5 +70,10 @@ describe("theme navigation", () => {
     ]) {
       expect(new URL(href, "https://tao3k.github.io/org-zhixing-themes/").pathname).toBe(href);
     }
+    expect(output).toContain('href="/org-zhixing-themes/themes/documents/"');
+    expect(output).toContain('href="/org-zhixing-themes/themes/elegant-blog/"');
+    expect(output).toContain('href="/org-zhixing-themes/themes/minimal-notes/"');
+    expect(output).not.toContain("/org-zhixing-themes/assets/themes/");
+    expect(output).not.toContain("/org-zhixing-themes/assets/themes/");
   });
 });

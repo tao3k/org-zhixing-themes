@@ -33,6 +33,18 @@ jobs:
       - name: CI
         run: npm run verify:core
 
+  docs-contracts:
+    name: Docs and contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:docs
+
   scenario-mobile:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -73,6 +85,7 @@ jobs:
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs:
       - npm-test
+      - docs-contracts
       - scenario-mobile
     runs-on: ubuntu-latest
     permissions:

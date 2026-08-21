@@ -116,9 +116,9 @@ const diagnosticsRoute = createRoute({
 
 const themeDocumentRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/$docId",
+  path: "/$",
   component: ThemeDocumentPage,
-  loader: ({ context, params }) => loadThemeDocumentQuery(context, params.docId),
+  loader: ({ context, params }) => loadThemeDocumentQuery(context, params._splat ?? ""),
 });
 
 const routeTree = rootRoute.addChildren([

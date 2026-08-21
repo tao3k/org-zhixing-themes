@@ -550,6 +550,36 @@
 :root[data-theme="documents"] .documents-index > h3 {
   margin-bottom: 18px;
 }
+
+:root[data-theme="documents"] .documents-featured-documents {
+  margin: -16px 0 52px;
+  border: 1px solid color-mix(in srgb, var(--docs-green) 42%, var(--docs-border));
+  border-radius: 22px;
+  padding: clamp(20px, 3vw, 30px);
+  background:
+    radial-gradient(
+      circle at 14% 0%,
+      color-mix(in srgb, var(--docs-green) 14%, transparent),
+      transparent 42%
+    ),
+    color-mix(in srgb, var(--surface-paper) 54%, transparent);
+  box-shadow: 0 22px 70px color-mix(in srgb, var(--docs-green) 9%, transparent);
+}
+
+:root[data-theme="documents"] .documents-featured-documents > h3 {
+  margin: 8px 0 8px;
+  font-size: clamp(1.45rem, 2.5vw, 2.15rem);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+:root[data-theme="documents"] .documents-featured-documents > p:not(.documents-node-id) {
+  max-width: 68ch;
+  margin: 0 0 22px;
+  color: var(--docs-subtext);
+  line-height: 1.65;
+}
+
 :root[data-theme="documents"] .documents-document-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -577,6 +607,17 @@
   border-color: var(--docs-blue);
   color: var(--docs-blue);
   transform: translateY(-1px);
+}
+
+:root[data-theme="documents"] .documents-document-list--featured a {
+  min-height: 104px;
+  border-color: color-mix(in srgb, var(--docs-green) 35%, var(--docs-border));
+  background: color-mix(in srgb, var(--docs-green) 8%, var(--surface-paper));
+}
+
+:root[data-theme="documents"] .documents-document-list--featured a:hover {
+  border-color: var(--docs-green);
+  color: var(--docs-green);
 }
 
 :root[data-theme="documents"] .documents-document-list span {
