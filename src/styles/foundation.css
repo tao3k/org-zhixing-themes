@@ -145,6 +145,7 @@ button {
   border: 1px solid var(--hairline-soft);
   background-color: var(--surface-raised);
   background-image: none;
+  contain: paint;
   box-shadow: var(--shadow-floating);
 }
 
@@ -153,6 +154,9 @@ button {
 }
 
 .site-nav-group-items .site-nav-item {
+  display: grid;
+  align-items: start;
+  gap: 3px;
   min-width: 0;
   border-left: 0;
   border-top: 1px solid var(--hairline-soft);
@@ -161,6 +165,11 @@ button {
 
 .site-nav-group-items .site-nav-item:first-child {
   border-top: 0;
+}
+
+.site-nav-group-items .site-nav-item small {
+  overflow: visible;
+  white-space: normal;
 }
 
 .site-nav-item:hover,
