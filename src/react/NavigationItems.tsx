@@ -8,6 +8,19 @@ import { useThemeRuntime } from "../theme-system/react/ThemeRuntimeProvider";
 
 import { resolveThemeNavigationHref, themeNavigationItemsFrom } from "../themeNavigation";
 import type { ThemeNavigationItem } from "../themeNavigation";
+import { navigationIconFor, navigationIconKeyForView } from "./navigationIconRegistry";
+
+const NavigationIcon = ({ name }: { name: string }) => {
+  const Icon = navigationIconFor(name);
+  return (
+    <Icon
+      className="site-nav-icon"
+      data-navigation-icon={name}
+      aria-hidden="true"
+      weight="regular"
+    />
+  );
+};
 
 function renderThemeNavigation(
   items: readonly ThemeNavigationItem[],
@@ -18,6 +31,7 @@ function renderThemeNavigation(
       return (
         <details key={item.name} className="site-nav-group" data-theme-navigation-group={item.name}>
           <summary className="site-nav-group-label">
+            <NavigationIcon name="themes" />
             <span>{item.name}</span>
             {item.description ? <small>{item.description}</small> : null}
           </summary>
@@ -38,6 +52,7 @@ function renderThemeNavigation(
         data-theme-navigation-item={item.name}
         onClick={onNavigate}
       >
+        <NavigationIcon name="fallback" />
         <span>{item.name}</span>
         <small>{item.description}</small>
       </a>
@@ -65,6 +80,7 @@ export function NavigationItems({
           activeProps={{ className: "site-nav-item active" }}
           onClick={onNavigate}
         >
+          <NavigationIcon name={navigationIconKeyForView(item.view)} />
           <span>{item.name}</span>
         </Link>
       ))}

@@ -76,6 +76,9 @@ describe("theme navigation", () => {
     );
 
     expect(output).toContain('data-theme-navigation-group="Themes"');
+    expect(output).toContain('class="site-nav-icon"');
+    expect(output).toContain('data-navigation-icon="themes"');
+    expect(output).toContain('aria-hidden="true"');
     expect(output).toContain("<details");
     expect(output).toContain('<summary class="site-nav-group-label">');
     expect(output).toContain('data-theme-navigation-item="Documents"');

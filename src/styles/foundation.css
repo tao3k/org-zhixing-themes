@@ -178,6 +178,17 @@ button {
   line-height: 1.2;
 }
 
+.site-nav-icon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--face-normal);
+}
+
+.site-nav-group-label .site-nav-icon {
+  flex: 0 0 16px;
+}
+
 .site-nav-item small {
   overflow: hidden;
   color: var(--face-muted);

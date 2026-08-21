@@ -25,7 +25,7 @@ export const writeRouteShells = async ({ distRoot, hydrate = false }) => {
     `${baseHref}org-zhixing.toml`,
   ]);
   const initialShellHtml = injectThemeRuntimeBoundary(
-    injectFaviconLink(shellHtml, `${baseHref}favicon.svg`),
+    injectFaviconLink(shellHtml, `${baseHref}zhixing-mark.svg`),
   );
   await writeFile(indexPath, initialShellHtml, "utf8");
   await writeFile(resolve(distRoot, "404.html"), initialShellHtml, "utf8");
@@ -145,7 +145,8 @@ export const injectImagePreload = (html, href) => {
 };
 
 const injectFaviconLink = (html, href) => {
-  const link = `    <link rel="icon" type="image/svg+xml" href="${escapeHtmlAttribute(href)}" />\n`;
+  const escapedHref = escapeHtmlAttribute(href);
+  const link = `    <link rel="icon" type="image/svg+xml" href="${escapedHref}" />\n    <link rel="mask-icon" href="${escapedHref}" color="#2f3935" />\n`;
   const iconPattern = /\s*<link\b[^>]*\brel="(?:icon|shortcut icon)"[^>]*>\s*/iu;
   return iconPattern.test(html)
     ? html.replace(iconPattern, `\n${link}`)
