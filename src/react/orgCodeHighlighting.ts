@@ -1,4 +1,5 @@
 import type { LanguageInput } from "@shikijs/types";
+import { normalizeOrgCodeLanguage } from "../orgCodeLanguage";
 
 type Highlighter = {
   getLoadedLanguages: () => string[];
@@ -17,21 +18,6 @@ type CodeBlockRecord = {
 
 const records = new WeakMap<HTMLElement, CodeBlockRecord>();
 let highlighterPromise: Promise<Highlighter> | null = null;
-
-const languageAliases: Record<string, string> = {
-  gerbil: "scheme",
-  lisp: "scheme",
-  racket: "scheme",
-  js: "javascript",
-  md: "markdown",
-  py: "python",
-  sh: "bash",
-  shell: "bash",
-  tex: "latex",
-  ts: "typescript",
-  typ: "typst",
-  yml: "yaml",
-};
 
 const codeTheme = "tokyo-night";
 
@@ -52,7 +38,7 @@ export const configureOrgCodeLanguage = (
   language: string,
   loader: OrgCodeLanguageLoader,
 ): (() => void) => {
-  const canonicalLanguage = languageAliases[language.toLowerCase()] ?? language.toLowerCase();
+  const canonicalLanguage = normalizeOrgCodeLanguage(language);
   const previous = languageLoaders.get(canonicalLanguage);
   languageLoaders.set(canonicalLanguage, loader);
   return () => {
@@ -68,7 +54,7 @@ const languageFromBlock = (block: HTMLElement): string | null => {
     if (!match) continue;
     const declaredLanguage = match[1]?.toLowerCase();
     if (!declaredLanguage || declaredLanguage === "mermaid") continue;
-    return languageAliases[declaredLanguage] ?? declaredLanguage;
+    return normalizeOrgCodeLanguage(declaredLanguage);
   }
   return null;
 };
