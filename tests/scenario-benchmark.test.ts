@@ -44,7 +44,11 @@ describe("Scenario Benchmark contracts", () => {
     expect(baseline.observed.unselectedThemeMarkers).toBeLessThanOrEqual(
       baseline.limits.unselectedThemeMarkers,
     );
-    expect(packageJson.scripts.ci).toContain("npm run build && npm run scenario:check");
+    expect(packageJson.scripts.pretest).toBeUndefined();
+    expect(packageJson.scripts["verify:core"]).toContain("npm run build && npm run scenario:check");
+    expect(packageJson.scripts["verify:docs"]).toBe(
+      "npm run test:docs && npm run test:contracts && npm run test:typst",
+    );
     expect(packageJson.scripts["scenario:update-baseline"]).not.toBe(
       packageJson.scripts["scenario:check"],
     );

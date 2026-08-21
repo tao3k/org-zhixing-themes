@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: CI
-        run: npm run ci
+        run: npm run verify:core
 
   scenario-mobile:
     runs-on: ubuntu-latest

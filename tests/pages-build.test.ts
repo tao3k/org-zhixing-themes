@@ -16,6 +16,41 @@ import {
 
 const roots: string[] = [];
 
+it("emits Typst Wasm assets under the Pages base path", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "org-zhixing-pages-typst-"));
+  roots.push(outputDir);
+
+  await runPagesBuild({
+    configPath: join(process.cwd(), "public", "org-zhixing.toml"),
+    contentDir: join(process.cwd(), "blog"),
+    outputDir,
+    basePath: "/org-zhixing-themes/",
+    workspaceRoot: process.cwd(),
+  });
+
+  const manifest = JSON.parse(readFileSync(join(outputDir, "asset-manifest.json"), "utf8")) as {
+    allFiles?: string[];
+  };
+  const allFiles = manifest.allFiles ?? [];
+  const compiler = allFiles.filter((file) =>
+    /^assets\/typst_ts_web_compiler_bg\.[^.]+\.wasm$/.test(file),
+  );
+  const renderer = allFiles.filter((file) =>
+    /^assets\/typst_ts_renderer_bg\.[^.]+\.wasm$/.test(file),
+  );
+
+  expect(compiler).toHaveLength(1);
+  expect(renderer).toHaveLength(1);
+  expect(`/org-zhixing-themes/${compiler[0]}`).toMatch(
+    /^\/org-zhixing-themes\/assets\/typst_ts_web_compiler_bg\.[^.]+\.wasm$/,
+  );
+  expect(`/org-zhixing-themes/${renderer[0]}`).toMatch(
+    /^\/org-zhixing-themes\/assets\/typst_ts_renderer_bg\.[^.]+\.wasm$/,
+  );
+  expect(readFileSync(join(outputDir, compiler[0]!)).byteLength).toBeGreaterThan(0);
+  expect(readFileSync(join(outputDir, renderer[0]!)).byteLength).toBeGreaterThan(0);
+}, 30_000);
+
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { force: true, recursive: true });
 });
@@ -171,3 +206,4 @@ describe("Pages build tooling", () => {
     await expect(materializeStaticRouteShells(root)).rejects.toThrow("PAGES-E005");
   });
 });
+import { runPagesBuild } from "../packages/theme-tooling/src/pages-build.mjs";
