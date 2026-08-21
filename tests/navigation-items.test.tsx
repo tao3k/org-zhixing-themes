@@ -63,7 +63,8 @@ describe("theme navigation", () => {
     )?.[0];
     expect(group).toBeDefined();
     expect((group?.match(/data-theme-navigation-item=/g) ?? []).length).toBe(3);
-    for (const href of [
+    const hrefs = [...output.matchAll(/href="([^"]+)"/g)].map(([, href]) => href);
+    expect(hrefs).toEqual([
       "/org-zhixing-themes/themes/documents/",
       "/org-zhixing-themes/themes/elegant-blog/",
       "/org-zhixing-themes/themes/minimal-notes/",
@@ -71,5 +72,12 @@ describe("theme navigation", () => {
       expect(new URL(href, "https://tao3k.github.io/org-zhixing-themes/").pathname).toBe(href);
     }
     expect(output).not.toContain("/org-zhixing-themes/assets/themes/");
+    expect(
+      [
+        "/org-zhixing-themes/themes/documents/",
+        "/org-zhixing-themes/themes/elegant-blog/",
+        "/org-zhixing-themes/themes/minimal-notes/",
+      ].some((href) => href.startsWith("/org-zhixing-themes/assets/")),
+    ).toBe(false);
   });
 });
