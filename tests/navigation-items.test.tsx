@@ -1,5 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children, ...props }: { children: ReactNode } & Record<string, unknown>) => (
+    <a {...props}>{children}</a>
+  ),
+}));
+
 import { createThemeRegistry } from "../src/library";
 import { NavigationItems } from "../src/react/NavigationItems";
 import type { ContentShellData } from "../src/services/contentServices";
@@ -25,9 +33,17 @@ describe("theme navigation", () => {
             {
               name: "Themes",
               children: [
-                { name: "Documents", href: "themes/documents/" },
-                { name: "Elegant Blog", href: "themes/elegant-blog/" },
-                { name: "Minimal Notes", href: "themes/minimal-notes/" },
+                { name: "Documents", description: "Org documents", href: "themes/documents/" },
+                {
+                  name: "Elegant Blog",
+                  description: "Longform writing",
+                  href: "themes/elegant-blog/",
+                },
+                {
+                  name: "Minimal Notes",
+                  description: "Compact notes",
+                  href: "themes/minimal-notes/",
+                },
               ],
             },
           ],
@@ -44,7 +60,18 @@ describe("theme navigation", () => {
 
     const output = renderToStaticMarkup(
       <ThemeRuntimeProvider runtime={runtime}>
-        <NavigationItems shell={{ siteConfig: { menu: [] } } as unknown as ContentShellData} />
+        <NavigationItems
+          shell={
+            {
+              siteConfig: {
+                menu: [
+                  { name: "Blogs", view: "blog" },
+                  { name: "Notes", view: "notes" },
+                ],
+              },
+            } as unknown as ContentShellData
+          }
+        />
       </ThemeRuntimeProvider>,
     );
 
@@ -57,6 +84,9 @@ describe("theme navigation", () => {
     expect(output).toContain('href="/org-zhixing-themes/themes/elegant-blog/"');
     expect(output).toContain('data-theme-navigation-item="Minimal Notes"');
     expect(output).toContain('href="/org-zhixing-themes/themes/minimal-notes/"');
+    expect(output).toContain("Org documents");
+    expect(output).not.toContain(">Blogs</span><small>");
+    expect(output).not.toContain(">Notes</span><small>");
 
     const group = output.match(
       /<details[^>]*data-theme-navigation-group="Themes"[\s\S]*?<\/details>/,

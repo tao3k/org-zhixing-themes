@@ -81,6 +81,8 @@ button {
 }
 
 .site-nav {
+  position: relative;
+  z-index: 30;
   display: flex;
   gap: 0;
   align-items: stretch;
@@ -112,6 +114,7 @@ button {
 
 .site-nav-group {
   position: relative;
+  z-index: 1;
   min-width: 96px;
   border-left: 1px solid var(--hairline-soft);
 }
@@ -131,14 +134,20 @@ button {
 
 .site-nav-group-items {
   position: absolute;
-  z-index: 20;
+  z-index: 40;
   top: calc(100% + 6px);
   right: 0;
   display: grid;
+  isolation: isolate;
   min-width: 220px;
   border: 1px solid var(--hairline-soft);
-  background: var(--surface-raised);
+  background-color: var(--surface-raised);
+  background-image: none;
   box-shadow: var(--shadow-floating);
+}
+
+.site-nav-group[open] {
+  z-index: 40;
 }
 
 .site-nav-group-items .site-nav-item {
