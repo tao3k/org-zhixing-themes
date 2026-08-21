@@ -34,10 +34,13 @@ export type ReactSpaContentRouteBinding = FederatedContentRoutes<
   ContentShellData,
   unknown,
   ReactNode
->;
+> & {
+  showSiteHeroOnContentRoutes?: boolean;
+};
 
 export const defineReactSpaContentRoutes = <TData,>(binding: {
   exclusiveContentRoutes?: boolean;
+  showSiteHeroOnContentRoutes?: boolean;
   loadDocument: (shell: ContentShellData, documentId: string) => Promise<TData>;
   renderDocument: (data: TData) => ReactNode;
   renderHome: (shell: ContentShellData) => ReactNode;

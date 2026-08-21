@@ -14,7 +14,8 @@ afterEach(() => {
 
 describe("theme navigation", () => {
   it("renders every registered theme route beneath the Themes menu", () => {
-    vi.stubGlobal("__webpack_public_path__", "/org-zhixing-themes/");
+    vi.stubGlobal("__ORG_ZHIXING_BASE_PATH__", "/org-zhixing-themes/");
+    vi.stubGlobal("__webpack_public_path__", "/org-zhixing-themes/assets/");
     const runtime = {
       isolationId: "navigation-test",
       registry: createThemeRegistry([]),
@@ -62,12 +63,19 @@ describe("theme navigation", () => {
     )?.[0];
     expect(group).toBeDefined();
     expect((group?.match(/data-theme-navigation-item=/g) ?? []).length).toBe(3);
-    for (const href of [
+    const hrefs = [...output.matchAll(/href="([^"]+)"/g)].map(([, href]) => href);
+    expect(hrefs).toEqual([
       "/org-zhixing-themes/themes/documents/",
       "/org-zhixing-themes/themes/elegant-blog/",
       "/org-zhixing-themes/themes/minimal-notes/",
-    ]) {
-      expect(new URL(href, "https://tao3k.github.io/org-zhixing-themes/").pathname).toBe(href);
-    }
+    ]);
+    expect(output).not.toContain("/org-zhixing-themes/assets/themes/");
+    expect(
+      [
+        "/org-zhixing-themes/themes/documents/",
+        "/org-zhixing-themes/themes/elegant-blog/",
+        "/org-zhixing-themes/themes/minimal-notes/",
+      ].some((href) => href.startsWith("/org-zhixing-themes/assets/")),
+    ).toBe(false);
   });
 });

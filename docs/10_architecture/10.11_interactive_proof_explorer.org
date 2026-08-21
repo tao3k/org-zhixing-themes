@@ -1,0 +1,165 @@
+#+TITLE: Interactive Proof Explorer
+#+DATE: 2026-08-09
+#+AUTHOR: TAO3K
+#+FILETAGS: :org-zhixing:architecture:poo-flow:proof:lean:
+#+ID: org-zhixing-interactive-proof-explorer
+
+* TODO Interactive Proof Explorer
+:PROPERTIES:
+:Status: Accepted
+:Scenario: POO Flow graph, Person interaction, formal verification
+:END:
+
+The interactive proof explorer is the bridge between workflow execution and
+admissible action.  It must not be a passive badge that says a workflow was
+verified.  It is a user-facing explanation surface that lets a person inspect
+why a completed execution trace can or cannot become an accepted action.
+
+The design position is:
+
+#+begin_quote
+Execution shows what happened.  Proof explains why the result is allowed to
+matter.
+#+end_quote
+
+This keeps TAO3K aligned with its core principle: intelligence must earn action
+qualification through evidence, contracts, formal checks, and human authority.
+
+* Scope
+
+The first implementation is an interactive product prototype, not a full Lean
+runtime integration.
+
+It may use deterministic proof fixtures derived from Scheme-owned POO Flow graph
+projections.  It must expose a stable interaction model before the real Lean,
+Julia, contract checker, or external proof backends are wired into the browser
+runtime.
+
+The implementation must not introduce a second workflow authoring language.
+Scheme remains the workflow source.  React Flow remains the execution projection.
+The proof explorer explains obligations over that projection.
+
+* Interaction model
+
+The page has three coupled surfaces:
+
+1. React Flow execution graph.
+2. Proof obligation list.
+3. Proof detail and receipt panel.
+
+When the user runs a workflow, the graph transitions through runtime states.
+After execution, the proof explorer opens the obligations produced for the trace.
+The user can inspect obligations one by one instead of receiving a single
+opaque success indicator.
+
+Each proof obligation has:
+
+| Field | Meaning |
+|-------+---------|
+| Claim | the invariant or policy being checked |
+| Source | the Scheme block, profile, case, edge, or contract that generated it |
+| Evidence | the runtime trace facts used by the check |
+| Rule | the contract rule, Lean obligation, or formal policy |
+| Result | proved, failed, unchecked, requires witness, or human authority required |
+
+Clicking a graph node or edge focuses the related proof obligations.  Clicking a
+proof obligation highlights the graph facts that support or violate it.
+
+* Obligation classes
+
+The first version should model these obligation classes:
+
+| Obligation | Purpose |
+|------------+---------|
+| capability-qualified | a profile or agent has the required capability |
+| composition-valid | a composed case follows declared Scheme structure |
+| handoff-preserves-evidence | evidence survives transfer between actors or runtimes |
+| trace-matches-declaration | runtime trace matches the declared workflow graph |
+| high-risk-authority | high-risk action remains under human authority |
+| admissible-action | the final action can be accepted as a receipt-bearing outcome |
+
+These names are product-facing.  The eventual Lean or contract backend may use
+different internal names, but the browser surface should preserve this level of
+clarity.
+
+* Visual structure
+
+The figure should be compact and inspectable:
+
+#+begin_src text
+React Flow Execution
+  -> Trace Facts
+  -> Proof Obligations
+  -> Admissible Action Receipt
+#+end_src
+
+The proof list should not look like another large workflow graph.  It should
+feel like an instrument panel or theorem console attached to the running graph.
+
+Recommended states:
+
+| State | Visual intent |
+|-------+---------------|
+| pending | waiting for execution facts |
+| checking | obligation is being evaluated |
+| proved | accepted by the selected rule |
+| failed | evidence violates the rule |
+| witness-required | proof needs external evidence or human input |
+| authority-required | action is blocked until a responsible human confirms authority |
+
+The explorer must make failures first-class.  A failed proof is not a broken
+demo; it is the product showing that the system refuses to grant action
+qualification without evidence.
+
+* Product semantics
+
+The site should not describe this as "Lean proves the workflow".  That sentence
+is too broad and technically weak.
+
+The correct product statement is:
+
+#+begin_quote
+A completed trace is not accepted because it ran.  It becomes admissible only
+when the declared Scheme contracts and selected formal obligations explain why
+the action is allowed.
+#+end_quote
+
+This supports the TAO3K positioning: AI does not erase human benefit,
+responsibility, or high-risk authority.  The proof explorer gives humans a
+better interface to understand and contest the system's reasoning.
+
+* Implementation boundary
+
+Version one should:
+
+- derive proof fixtures from the existing POO Flow projection;
+- link obligations to graph nodes and edges;
+- expose a receipt-shaped summary after the checks complete;
+- keep proof state deterministic for tests and demos;
+- avoid a real Lean runtime dependency in the browser;
+- preserve a path to later wire real Lean, Julia, and contract checker results.
+
+The receipt shape should be explicit enough to evolve into:
+
+#+begin_src text
+admissible-action.receipt.v1
+  workflow-id
+  trace-digest
+  obligation-count
+  proved-count
+  failed-count
+  witness-required-count
+  authority-required-count
+  final-status
+#+end_src
+
+* Acceptance criteria
+
+- Running the POO Flow figure can open proof obligations after execution.
+- Selecting a graph node focuses related obligations.
+- Selecting an obligation highlights related graph evidence.
+- The proof detail explains claim, source, evidence, rule, and result.
+- The final receipt distinguishes proved, failed, witness-required, and
+  authority-required outcomes.
+- The interaction works without a live Lean runtime.
+- The design does not create a parallel JSON workflow model.

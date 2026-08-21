@@ -21,49 +21,81 @@ const loadDocument = async (
   return { document, shell };
 };
 
-const renderHome = (shell: ContentShellData): ReactNode => (
-  <section className="documents-index" aria-label="Documentation index">
-    <p className="documents-node-id">TECHNICAL KNOWLEDGE BASE · ORG-ROAM</p>
-    <h2>Read, understand, and navigate the system.</h2>
-    <p className="documents-index-lead">
-      Architecture, contracts, decisions, and operations live together as an indexed Org
-      documentation corpus.
-    </p>
-    <div className="documents-index-stats" aria-label="Documentation statistics">
-      <div>
-        <strong>{shell.staticSite?.sources.length ?? 0}</strong>
-        <span>Documents</span>
+const renderHome = (shell: ContentShellData): ReactNode => {
+  const featuredSources = pooFlowSources(shell);
+  return (
+    <section className="documents-index" aria-label="Documentation index">
+      <p className="documents-node-id">TECHNICAL KNOWLEDGE BASE · ORG-ROAM</p>
+      <h2>Read, understand, and navigate the system.</h2>
+      <p className="documents-index-lead">
+        Architecture, contracts, decisions, and operations live together as an indexed Org
+        documentation corpus.
+      </p>
+      <div className="documents-index-stats" aria-label="Documentation statistics">
+        <div>
+          <strong>{shell.staticSite?.sources.length ?? 0}</strong>
+          <span>Documents</span>
+        </div>
+        <div>
+          <strong>{shell.siteConfig.contentRoot}</strong>
+          <span>Source directory</span>
+        </div>
+        <div>
+          <strong>Org</strong>
+          <span>Source of truth</span>
+        </div>
       </div>
-      <div>
-        <strong>{shell.siteConfig.contentRoot}</strong>
-        <span>Source directory</span>
-      </div>
-      <div>
-        <strong>Org</strong>
-        <span>Source of truth</span>
-      </div>
-    </div>
-    <h3>Start reading</h3>
-    <ol className="documents-document-list">
-      {(shell.staticSite?.sources ?? []).map((source) => (
-        <li key={source.id}>
-          <Link params={{ docId: source.id }} to="/$docId">
-            <span>
-              <strong>{source.orgTitle ?? source.name}</strong>
-              <small>{source.sourceFile}</small>
-            </span>
-            <i aria-hidden="true">→</i>
-          </Link>
-        </li>
-      ))}
-    </ol>
-  </section>
-);
+      {featuredSources.length > 0 ? (
+        <section className="documents-featured-documents" aria-label="POO Flow graph fixtures">
+          <p className="documents-node-id">POO FLOW · INTERACTIVE GRAPH</p>
+          <h3>Runtime-backed Scheme graph fixtures</h3>
+          <p>
+            These Org pages exercise the runtime-wasm workflow registry and render Scheme-owned
+            workflows through the documents reader.
+          </p>
+          <ol className="documents-document-list documents-document-list--featured">
+            {featuredSources.map((source) => (
+              <li key={source.id}>
+                <Link params={{ docId: source.id }} to="/$docId">
+                  <span>
+                    <strong>{source.orgTitle ?? source.name}</strong>
+                    <small>{source.sourceFile}</small>
+                  </span>
+                  <i aria-hidden="true">→</i>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+      <h3>Start reading</h3>
+      <ol className="documents-document-list">
+        {(shell.staticSite?.sources ?? []).map((source) => (
+          <li key={source.id}>
+            <Link params={{ docId: source.id }} to="/$docId">
+              <span>
+                <strong>{source.orgTitle ?? source.name}</strong>
+                <small>{source.sourceFile}</small>
+              </span>
+              <i aria-hidden="true">→</i>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+};
+
+const pooFlowSources = (shell: ContentShellData) =>
+  (shell.staticSite?.sources ?? []).filter((source) =>
+    /(?:^|[/._-])poo-flow(?:$|[/._-])/i.test(`${source.sourceFile} ${source.id}`),
+  );
 
 const renderDocument = (data: DocumentsDocumentData): ReactNode => <DocumentsReader {...data} />;
 
 export const documentsContentRoutes = defineReactSpaContentRoutes({
   exclusiveContentRoutes: true,
+  showSiteHeroOnContentRoutes: true,
   loadDocument,
   renderDocument,
   renderHome,

@@ -29,7 +29,7 @@ describe("GitHub Pages workflow", () => {
       /deploy-pages:[\s\S]*github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/,
     );
     expect(workflow).toMatch(
-      /pages-artifact:[\s\S]*needs:\s*\n\s*- npm-test\s*\n\s*- scenario-mobile/,
+      /pages-artifact:[\s\S]*needs:\s*\n\s*- npm-test\s*\n\s*- docs-contracts\s*\n\s*- scenario-mobile/,
     );
     expect(workflow).toMatch(/deploy-pages:[\s\S]*needs:\s*\n\s*- pages-artifact/);
     expect(workflow).toMatch(
