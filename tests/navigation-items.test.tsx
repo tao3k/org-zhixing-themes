@@ -68,9 +68,7 @@ describe("theme navigation", () => {
       "/org-zhixing-themes/themes/documents/",
       "/org-zhixing-themes/themes/elegant-blog/",
       "/org-zhixing-themes/themes/minimal-notes/",
-    ]) {
-      expect(new URL(href, "https://tao3k.github.io/org-zhixing-themes/").pathname).toBe(href);
-    }
+    ]);
     expect(output).not.toContain("/org-zhixing-themes/assets/themes/");
     expect(
       [

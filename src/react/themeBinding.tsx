@@ -34,7 +34,9 @@ export type ReactSpaContentRouteBinding = FederatedContentRoutes<
   ContentShellData,
   unknown,
   ReactNode
->;
+> & {
+  showSiteHeroOnContentRoutes?: boolean;
+};
 
 export const defineReactSpaContentRoutes = <TData,>(binding: {
   exclusiveContentRoutes?: boolean;
