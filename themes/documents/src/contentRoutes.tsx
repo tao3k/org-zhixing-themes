@@ -1,8 +1,7 @@
-import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import type { ContentShellData, StaticDocumentData } from "../../../src/services/contentServices";
 import { loadStaticDocumentData } from "../../../src/services/contentServices";
-import { defineReactSpaContentRoutes } from "../../../src/react/themeBinding";
+import { defineReactSpaContentRoutes, ThemeScopedDocumentLink } from "../../../src/react/themeBinding";
 import { DocumentsReader, type DocumentsDocumentData } from "./DocumentsReader";
 
 const loadDocument = async (
@@ -56,13 +55,13 @@ const renderHome = (shell: ContentShellData): ReactNode => {
           <ol className="documents-document-list documents-document-list--featured">
             {featuredSources.map((source) => (
               <li key={source.id}>
-                <Link params={{ docId: source.id }} to="/$docId">
+                <ThemeScopedDocumentLink documentId={source.id}>
                   <span>
                     <strong>{source.orgTitle ?? source.name}</strong>
                     <small>{source.sourceFile}</small>
                   </span>
                   <i aria-hidden="true">→</i>
-                </Link>
+                </ThemeScopedDocumentLink>
               </li>
             ))}
           </ol>
@@ -72,13 +71,13 @@ const renderHome = (shell: ContentShellData): ReactNode => {
       <ol className="documents-document-list">
         {(shell.staticSite?.sources ?? []).map((source) => (
           <li key={source.id}>
-            <Link params={{ docId: source.id }} to="/$docId">
+            <ThemeScopedDocumentLink documentId={source.id}>
               <span>
                 <strong>{source.orgTitle ?? source.name}</strong>
                 <small>{source.sourceFile}</small>
               </span>
               <i aria-hidden="true">→</i>
-            </Link>
+            </ThemeScopedDocumentLink>
           </li>
         ))}
       </ol>

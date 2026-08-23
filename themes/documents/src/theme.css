@@ -8,9 +8,9 @@
   --docs-yellow: #f9e2af;
   --docs-red: #f38ba8;
   --docs-border: color-mix(in srgb, var(--face-normal) 13%, transparent);
-  --docs-code-surface: #f7f8fa;
-  --docs-code-header: #f0f3f6;
-  --docs-code-ink: #24292f;
+  --docs-code-surface: #1e1e2e;
+  --docs-code-header: #29293c;
+  --docs-code-ink: #cdd6f4;
   --docs-header-height: 56px;
   --docs-nav-width: 248px;
   --docs-toc-width: 192px;
@@ -32,6 +32,9 @@
   --docs-green: #40a02b;
   --docs-yellow: #df8e1d;
   --docs-red: #d20f39;
+  --docs-code-surface: #f7f8fa;
+  --docs-code-header: #f0f3f6;
+  --docs-code-ink: #24292f;
 }
 
 :root[data-theme="documents"][data-theme-variant="frappe"] {
@@ -43,6 +46,9 @@
   --docs-green: #a6d189;
   --docs-yellow: #e5c890;
   --docs-red: #e78284;
+  --docs-code-surface: #292c3c;
+  --docs-code-header: #303347;
+  --docs-code-ink: #c6d0f5;
 }
 
 :root[data-theme="documents"][data-theme-variant="macchiato"] {
@@ -54,6 +60,67 @@
   --docs-green: #a6da95;
   --docs-yellow: #eed49f;
   --docs-red: #ed8796;
+  --docs-code-surface: #1e2030;
+  --docs-code-header: #292b3f;
+  --docs-code-ink: #cad3f5;
+}
+
+/* Keep reading controls out of the document header: the compact launcher
+ * belongs to the page edge and inherits the active Documents variant. */
+:root[data-theme="documents"] body .documents-control-center {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 30;
+}
+
+:root[data-theme="documents"] body .documents-control-trigger {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--docs-overlay);
+  border-radius: 50%;
+  background: var(--docs-mantle);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.2);
+  color: var(--face-normal);
+}
+
+:root[data-theme="documents"] body .documents-control-trigger > span {
+  font-size: 0;
+}
+
+:root[data-theme="documents"] body .documents-control-trigger > span::before {
+  content: "☾";
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+:root[data-theme="documents"][data-theme-variant="latte"] body .documents-control-trigger > span::before {
+  content: "☀";
+}
+
+:root[data-theme="documents"] body .documents-control-trigger strong,
+:root[data-theme="documents"] body .documents-control-trigger small {
+  display: none;
+}
+
+:root[data-theme="documents"] body .documents-control-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.75rem);
+  width: min(20rem, calc(100vw - 2rem));
+  background: var(--docs-mantle);
+  color: var(--face-normal);
+  box-shadow: 0 1.5rem 3.5rem rgba(0, 0, 0, 0.28);
+}
+
+@media (max-width: 640px) {
+  :root[data-theme="documents"] body .documents-control-center {
+    right: 1rem;
+    bottom: 1rem;
+  }
 }
 
 :root[data-theme="documents"] body {
@@ -803,6 +870,15 @@
   display: block;
   min-width: max-content;
 }
+
+:root[data-theme="documents"]:not([data-theme-variant="latte"]) .org-code-highlight pre.shiki {
+  color: var(--shiki-dark, var(--docs-code-ink)) !important;
+  background-color: var(--shiki-dark-bg, var(--docs-code-surface)) !important;
+}
+
+:root[data-theme="documents"]:not([data-theme-variant="latte"]) .org-code-highlight pre.shiki code span {
+  color: var(--shiki-dark, var(--docs-code-ink)) !important;
+}
 :root[data-theme="documents"] .documents-document-body table {
   display: block;
   width: max-content;
@@ -875,6 +951,56 @@
 :root[data-theme="documents"] .org-keyword,
 :root[data-theme="documents"] .todo {
   color: var(--docs-red);
+}
+
+:root[data-theme="documents"] .org-heading-markers {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-right: 0.7rem;
+  vertical-align: middle;
+}
+
+:root[data-theme="documents"] :is(.org-heading-todo, .org-heading-priority) {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.12rem 0.48rem;
+  font: 700 0.66rem/1.2 var(--font-mono);
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+}
+
+:root[data-theme="documents"] .org-heading-todo--todo,
+:root[data-theme="documents"] .org-priority--b {
+  color: var(--docs-yellow);
+  background: color-mix(in srgb, var(--docs-yellow) 12%, transparent);
+}
+
+:root[data-theme="documents"] .org-heading-todo--focus {
+  color: var(--docs-blue);
+  background: color-mix(in srgb, var(--docs-blue) 12%, transparent);
+}
+
+:root[data-theme="documents"] .org-heading-todo--waiting {
+  color: var(--docs-red);
+  background: color-mix(in srgb, var(--docs-red) 12%, transparent);
+}
+
+:root[data-theme="documents"] .org-heading-todo--done {
+  color: var(--docs-green);
+  background: color-mix(in srgb, var(--docs-green) 12%, transparent);
+}
+
+:root[data-theme="documents"] .org-priority--a {
+  color: var(--docs-red);
+  background: color-mix(in srgb, var(--docs-red) 12%, transparent);
+}
+
+:root[data-theme="documents"] .org-priority--c {
+  color: var(--docs-overlay);
+  background: color-mix(in srgb, var(--docs-overlay) 12%, transparent);
 }
 
 :root[data-theme="documents"] .documents-context-rail {

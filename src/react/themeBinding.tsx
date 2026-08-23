@@ -1,4 +1,11 @@
-import { createElement, type ComponentType, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
+import {
+  createContext,
+  createElement,
+  useContext,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import type { FederatedContentRoutes } from "../../packages/theme-contract/src";
 import type { ZhixingTheme } from "../library";
 import type { ContentShellData } from "../services/contentServices";
@@ -36,6 +43,69 @@ export type ReactSpaContentRouteBinding = FederatedContentRoutes<
   ReactNode
 > & {
   showSiteHeroOnContentRoutes?: boolean;
+};
+
+const ThemeRouteScopeContext = createContext<string | null>(null);
+
+export const ThemeRouteScopeProvider = ({
+  children,
+  themeId,
+}: {
+  children: ReactNode;
+  themeId: string;
+}): ReactNode => (
+  <ThemeRouteScopeContext value={themeId}>{children}</ThemeRouteScopeContext>
+);
+
+export const ThemeScopedHomeLink = ({
+  activeOptions,
+  children,
+  className,
+}: {
+  activeOptions?: { exact?: boolean };
+  children: ReactNode;
+  className?: string;
+}): ReactNode => {
+  const themeId = useContext(ThemeRouteScopeContext);
+  return themeId ? (
+    <Link
+      activeOptions={activeOptions}
+      className={className}
+      params={{ themeId }}
+      to="/themes/$themeId"
+    >
+      {children}
+    </Link>
+  ) : (
+    <Link activeOptions={activeOptions} className={className} to="/">
+      {children}
+    </Link>
+  );
+};
+
+export const ThemeScopedDocumentLink = ({
+  children,
+  className,
+  documentId,
+}: {
+  children: ReactNode;
+  className?: string;
+  documentId: string;
+}): ReactNode => {
+  const themeId = useContext(ThemeRouteScopeContext);
+  return themeId ? (
+    <Link
+      className={className}
+      params={{ documentId, themeId }}
+      to="/themes/$themeId/$documentId"
+    >
+      {children}
+    </Link>
+  ) : (
+    <Link className={className} params={{ docId: documentId }} to="/$docId">
+      {children}
+    </Link>
+  );
 };
 
 export const defineReactSpaContentRoutes = <TData,>(binding: {

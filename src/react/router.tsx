@@ -27,7 +27,7 @@ import { orgZhixingBasePath } from "./deploymentBasePath";
 import { createAgendaSurfaceClickHandler } from "./agendaSurfaceNavigation";
 import { HtmlSurface } from "./HtmlSurface";
 import { RoutedHtmlSurface } from "./RoutedHtmlSurface";
-import { renderReactSpaThemeSlot } from "./themeBinding";
+import { renderReactSpaThemeSlot, ThemeRouteScopeProvider } from "./themeBinding";
 import { ThemeRootLayout } from "./ThemeRootLayout";
 import { contentRoutesForShell } from "./themeContentRouting";
 import {
@@ -37,6 +37,7 @@ import {
   loadGalleryQuery,
   loadNotesQuery,
   loadThemePreviewQuery,
+  loadThemePreviewDocumentQuery,
   loadThemeDocumentQuery,
   redirectToThemeContentRoot,
   type OrgZhixingRouterContext,
@@ -128,6 +129,14 @@ const themePreviewRoute = createRoute({
   loader: ({ context, params }) => loadThemePreviewQuery(context, params.themeId),
 });
 
+const themePreviewDocumentRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/themes/$themeId/$documentId",
+  component: ThemePreviewDocumentPage,
+  loader: ({ context, params }) =>
+    loadThemePreviewDocumentQuery(context, params.themeId, params.documentId),
+});
+
 const themeDocumentRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/$",
@@ -146,6 +155,7 @@ const routeTree = rootRoute.addChildren([
   agendaRoute,
   captureRoute,
   diagnosticsRoute,
+  themePreviewDocumentRoute,
   themePreviewRoute,
   themeDocumentRoute,
 ]);
@@ -184,7 +194,7 @@ function RootContent({ shell }: { shell: ContentShellData }): ReactNode {
 
 const isThemePreviewPath = (pathname: string): boolean => {
   const segments = pathname.split("/").filter(Boolean);
-  return segments.length === 2 && segments[0] === "themes";
+  return segments.length >= 2 && segments.length <= 3 && segments[0] === "themes";
 };
 
 function HomePage(): ReactNode {
@@ -203,28 +213,64 @@ function ThemeDocumentPage(): ReactNode {
     return data.routes.renderDocument(data.data);
   }
   if (data.kind === "layout") {
-    return <RoutedHtmlSurface html={data.html} />;
+    return <RoutedHtmlSurface documentView={data.document.document} html={data.html} />;
   }
-  return <RoutedHtmlSurface html={data.document.html} />;
+  return <RoutedHtmlSurface documentView={data.document.document} html={data.document.html} />;
 }
 
 function ThemePreviewPage(): ReactNode {
   const { runtime, shell } = themePreviewRoute.useLoaderData();
   const contentRoutes = contentRoutesForShell(shell, runtime.selectedTheme);
   return (
+    <ThemePreviewRuntimeLayout runtime={runtime} shell={shell}>
+      {contentRoutes ? (
+        contentRoutes.renderHome(shell)
+      ) : (
+        <ThemePreviewLayout runtime={runtime} shell={shell} />
+      )}
+    </ThemePreviewRuntimeLayout>
+  );
+}
+
+function ThemePreviewDocumentPage(): ReactNode {
+  const { document, runtime, shell } = themePreviewDocumentRoute.useLoaderData();
+  return (
+    <ThemePreviewRuntimeLayout runtime={runtime} shell={shell}>
+      {document.kind === "contentRoutes" ? (
+        document.routes.renderDocument(document.data)
+      ) : document.kind === "layout" ? (
+        <RoutedHtmlSurface documentView={document.document.document} html={document.html} />
+      ) : (
+        <RoutedHtmlSurface
+          documentView={document.document.document}
+          html={document.document.html}
+        />
+      )}
+    </ThemePreviewRuntimeLayout>
+  );
+}
+
+function ThemePreviewRuntimeLayout({
+  children,
+  runtime,
+  shell,
+}: {
+  children: ReactNode;
+  runtime: ThemeRuntime;
+  shell: ContentShellData;
+}): ReactNode {
+  return (
     <ThemeRuntimeProvider runtime={runtime}>
-      <ThemeRootLayout
-        key={runtime.selection.id}
-        defaultVariant={runtime.selection.defaultVariant}
-        shell={shell}
-        theme={runtime.selectedTheme}
-      >
-        {contentRoutes ? (
-          contentRoutes.renderHome(shell)
-        ) : (
-          <ThemePreviewLayout runtime={runtime} shell={shell} />
-        )}
-      </ThemeRootLayout>
+      <ThemeRouteScopeProvider themeId={runtime.selection.id}>
+        <ThemeRootLayout
+          key={runtime.selection.id}
+          defaultVariant={runtime.selection.defaultVariant}
+          shell={shell}
+          theme={runtime.selectedTheme}
+        >
+          {children}
+        </ThemeRootLayout>
+      </ThemeRouteScopeProvider>
     </ThemeRuntimeProvider>
   );
 }

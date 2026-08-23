@@ -1,11 +1,14 @@
 import type { LanguageInput } from "@shikijs/types";
 import { normalizeOrgCodeLanguage } from "../orgCodeLanguage";
-import { orgCodeHighlightTheme } from "../orgCodeHighlightTheme";
+import { orgCodeHighlightThemes } from "../orgCodeHighlightTheme";
 
 type Highlighter = {
   getLoadedLanguages: () => string[];
   loadLanguage: (...languages: LanguageInput[]) => Promise<void>;
-  codeToHtml: (code: string, options: { lang: string; theme: string }) => string;
+  codeToHtml: (
+    code: string,
+    options: { lang: string; themes: typeof orgCodeHighlightThemes },
+  ) => string;
 };
 
 type LanguageModule = { default: LanguageInput };
@@ -89,11 +92,17 @@ const loadHighlighter = (): Promise<Highlighter> => {
   highlighterPromise ??= Promise.all([
     import("shiki/core"),
     import("shiki/engine/javascript"),
+    import("@shikijs/themes/github-dark"),
     import("@shikijs/themes/github-light"),
   ]).then(
-    ([{ createHighlighterCore }, { createJavaScriptRegexEngine }, { default: theme }]) =>
+    ([
+      { createHighlighterCore },
+      { createJavaScriptRegexEngine },
+      { default: darkTheme },
+      { default: lightTheme },
+    ]) =>
       createHighlighterCore({
-        themes: [theme],
+        themes: [darkTheme, lightTheme],
         langs: [],
         engine: createJavaScriptRegexEngine(),
       }) as Promise<Highlighter>,
@@ -120,7 +129,7 @@ const renderCodeBlock = async (
   }
   const markup = highlighter.codeToHtml(record.code, {
     lang: record.language,
-    theme: orgCodeHighlightTheme,
+    themes: orgCodeHighlightThemes,
   });
   const template = document.createElement("template");
   template.innerHTML = markup.trim();

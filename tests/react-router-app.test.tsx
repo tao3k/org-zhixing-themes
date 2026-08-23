@@ -151,6 +151,17 @@ describe("Org Zhixing React Router app", () => {
     });
     expect(document.querySelector(".documents-header")).toBeTruthy();
 
+    await act(async () => {
+      await router.navigate({
+        to: "/themes/$themeId/$documentId",
+        params: { documentId: "wallpaper-gallery", themeId: "documents" },
+      });
+    });
+    await waitForText("Static rendered body");
+    expect(window.location.pathname).toBe("/themes/documents/wallpaper-gallery");
+    expect(document.documentElement.dataset.theme).toBe("documents");
+    expect(document.querySelector(".documents-header")).toBeTruthy();
+
     for (const themeId of ["elegant-blog", "minimal-notes"]) {
       await act(async () => {
         await router.navigate({ to: "/themes/$themeId", params: { themeId } });

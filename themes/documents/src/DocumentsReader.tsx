@@ -1,10 +1,10 @@
-import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { sectionRecords, sectionTitle } from "../../../src/orgHtmlMetadata";
 import { RoutedHtmlSurface } from "../../../src/react/RoutedHtmlSurface";
 import type { ContentShellData, StaticDocumentData } from "../../../src/services/contentServices";
 import type { SectionRecord } from "../../../src/orgHtmlMetadata";
 import { bindOrgSectionAnchors } from "../../../src/react/orgSectionAnchors";
+import { ThemeScopedDocumentLink, ThemeScopedHomeLink } from "../../../src/react/themeBinding";
 import { LinkedNoteWorkspace, useLinkedNoteWorkspace } from "./LinkedNoteWorkspace";
 
 export type DocumentsDocumentData = {
@@ -61,7 +61,7 @@ export function DocumentsReader({ document: data, shell }: DocumentsDocumentData
       <div className="documents-reader">
         <main className="documents-reader-main">
           <nav className="documents-breadcrumbs" aria-label="Breadcrumb">
-            <Link to="/">Docs</Link>
+            <ThemeScopedHomeLink>Docs</ThemeScopedHomeLink>
             {breadcrumbs.map((part, index) => (
               <span key={`${part}-${index}`}>
                 <i aria-hidden="true">/</i>
@@ -79,26 +79,29 @@ export function DocumentsReader({ document: data, shell }: DocumentsDocumentData
             </div>
           </header>
           <div ref={bodyRef} className="documents-document-body">
-            <RoutedHtmlSurface html={data.html} onInternalNavigation={linkedNotes.openLinkedNote} />
+            <RoutedHtmlSurface
+              documentView={data.document}
+              html={data.html}
+              onInternalNavigation={linkedNotes.openLinkedNote}
+            />
           </div>
           <nav className="documents-pagination" aria-label="Adjacent documentation">
             {previous ? (
-              <Link
-                params={{ docId: previous.id }}
-                to="/$docId"
+              <ThemeScopedDocumentLink
                 className="documents-page-previous"
+                documentId={previous.id}
               >
                 <small>Previous</small>
                 <strong>← {previous.orgTitle ?? previous.name}</strong>
-              </Link>
+              </ThemeScopedDocumentLink>
             ) : (
               <span />
             )}
             {next ? (
-              <Link params={{ docId: next.id }} to="/$docId" className="documents-page-next">
+              <ThemeScopedDocumentLink className="documents-page-next" documentId={next.id}>
                 <small>Next</small>
                 <strong>{next.orgTitle ?? next.name} →</strong>
-              </Link>
+              </ThemeScopedDocumentLink>
             ) : null}
           </nav>
         </main>

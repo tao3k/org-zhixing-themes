@@ -25,7 +25,11 @@ describe("React Router boundary", () => {
   it("routes registered theme previews before the document catch-all", () => {
     const router = readFileSync("src/react/router.tsx", "utf8");
     expect(router).toContain('path: "/themes/$themeId"');
+    expect(router).toContain('path: "/themes/$themeId/$documentId"');
     expect(router).toContain("loadThemePreviewQuery(context, params.themeId)");
+    expect(router).toContain(
+      "loadThemePreviewDocumentQuery(context, params.themeId, params.documentId)",
+    );
     expect(router.indexOf("themePreviewRoute,")).toBeLessThan(router.indexOf("themeDocumentRoute,"));
     expect(router).toContain('path: "/$"');
     expect(router).toContain("params._splat");
@@ -36,6 +40,7 @@ describe("React Router boundary", () => {
     expect(loaders).toContain("isolatedThemeCatalog.some");
     expect(loaders).toContain("throw notFound()");
     expect(loaders).toContain("loadThemeRuntimeById(themeId)");
+    expect(loaders).toContain("loadThemeDocumentForTheme");
   });
 
   it("leaves static theme navigation to the browser instead of intercepting it as a router route", () => {

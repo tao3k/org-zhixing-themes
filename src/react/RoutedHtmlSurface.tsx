@@ -7,6 +7,7 @@ import {
   type MouseEventHandler,
   type ReactNode,
 } from "react";
+import type { OrgizeDocumentView } from "../model";
 import { orgZhixingBasePath } from "./deploymentBasePath";
 import { HtmlSurface } from "./HtmlSurface";
 import { installOrgContentEnhancements } from "./orgContentEnhancements";
@@ -82,9 +83,11 @@ export const routedAnchorNavigationFromEvent = (
 };
 
 export function RoutedHtmlSurface({
+  documentView,
   html,
   onInternalNavigation,
 }: {
+  documentView?: OrgizeDocumentView;
   html: string;
   onInternalNavigation?: (navigation: RoutedHtmlInternalNavigation) => boolean;
 }): ReactNode {
@@ -96,8 +99,8 @@ export function RoutedHtmlSurface({
   }, [onInternalNavigation]);
   useEffect(() => {
     const root = surfaceRef.current;
-    return root ? installOrgContentEnhancements(root) : undefined;
-  }, [html]);
+    return root ? installOrgContentEnhancements(root, documentView) : undefined;
+  }, [documentView, html]);
   const onClick = useCallback<MouseEventHandler<HTMLDivElement>>(
     (event) => {
       const navigation = routedAnchorNavigationFromEvent(

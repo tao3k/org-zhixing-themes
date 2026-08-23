@@ -74,35 +74,7 @@ export async function loadNotesQuery(
 
 export async function loadThemeDocumentQuery(context: OrgZhixingRouterContext, docId: string) {
   const shell = await loadContentShellQuery(context);
-  const routes = contentRoutesForShell(shell, context.selectedTheme);
-
-  if (routes != null) {
-    return {
-      kind: "contentRoutes" as const,
-      routes,
-      data: await loadThemeDocumentBindingQuery(context, docId),
-    };
-  }
-
-  const document = await loadStaticDocumentById(shell, docId);
-  const selectedTheme = context.selectedTheme;
-  if (selectedTheme?.layouts?.page != null || selectedTheme?.layouts?.default != null) {
-    const rendered = await renderThemeLayout(selectedTheme, "page", {
-      site: shell.siteConfig,
-      route: {
-        kind: "page",
-        path: `/${docId}`,
-        sourceId: document.staticSource.id,
-      },
-      staticSite: shell.staticSite ?? null,
-      source: document.staticSource,
-      document: document.document,
-      renderedHtml: document.html,
-    });
-    return { kind: "layout" as const, html: rendered.html, document };
-  }
-
-  return { kind: "static" as const, document };
+  return loadThemeDocumentForTheme(context, shell, docId, context.selectedTheme, `/${docId}`);
 }
 
 export const loadThemePreviewQuery = async (
@@ -119,11 +91,57 @@ export const loadThemePreviewQuery = async (
   return { shell, runtime };
 };
 
-async function loadThemeDocumentBindingQuery(context: OrgZhixingRouterContext, docId: string) {
-  const shell = await loadContentShellQuery(context);
-  const routes = contentRoutesForShell(shell, context.selectedTheme);
-  if (!routes) throw redirect({ to: "/blogs" });
-  return loadThemeDocument(shell, docId, await context.getQueryClient(), context.selectedTheme);
+export const loadThemePreviewDocumentQuery = async (
+  context: OrgZhixingRouterContext,
+  themeId: string,
+  documentId: string,
+) => {
+  const { shell, runtime } = await loadThemePreviewQuery(context, themeId);
+  const document = await loadThemeDocumentForTheme(
+    context,
+    shell,
+    documentId,
+    runtime.selectedTheme,
+    `/themes/${themeId}/${documentId}`,
+  );
+  return { document, runtime, shell };
+};
+
+async function loadThemeDocumentForTheme(
+  context: OrgZhixingRouterContext,
+  shell: ContentShellData,
+  docId: string,
+  selectedTheme: ZhixingTheme | undefined,
+  routePath: string,
+) {
+  const routes = contentRoutesForShell(shell, selectedTheme);
+
+  if (routes != null) {
+    return {
+      kind: "contentRoutes" as const,
+      routes,
+      data: await loadThemeDocument(shell, docId, await context.getQueryClient(), selectedTheme),
+    };
+  }
+
+  const document = await loadStaticDocumentById(shell, docId);
+  if (selectedTheme?.layouts?.page != null || selectedTheme?.layouts?.default != null) {
+    const rendered = await renderThemeLayout(selectedTheme, "page", {
+      site: shell.siteConfig,
+      route: {
+        kind: "page",
+        path: routePath,
+        sourceId: document.staticSource.id,
+      },
+      staticSite: shell.staticSite ?? null,
+      source: document.staticSource,
+      document: document.document,
+      renderedHtml: document.html,
+    });
+    return { kind: "layout" as const, html: rendered.html, document };
+  }
+
+  return { kind: "static" as const, document };
 }
 
 export async function redirectToThemeContentRoot({

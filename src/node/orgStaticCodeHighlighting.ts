@@ -1,12 +1,15 @@
 import { Window } from "happy-dom";
 import type { LanguageInput } from "@shikijs/types";
 import { languageFromOrgCodeClasses } from "../orgCodeLanguage";
-import { orgCodeHighlightTheme } from "../orgCodeHighlightTheme";
+import { orgCodeHighlightThemes } from "../orgCodeHighlightTheme";
 
 type Highlighter = {
   loadLanguage: (...languages: LanguageInput[]) => Promise<void>;
   getLoadedLanguages: () => string[];
-  codeToHtml: (code: string, options: { lang: string; theme: string }) => string;
+  codeToHtml: (
+    code: string,
+    options: { lang: string; themes: typeof orgCodeHighlightThemes },
+  ) => string;
 };
 type LanguageModule = { default: LanguageInput };
 type LanguageLoader = () => Promise<LanguageModule>;
@@ -28,11 +31,17 @@ const loadHighlighter = (): Promise<Highlighter> => {
   highlighterPromise ??= Promise.all([
     import("shiki/core"),
     import("shiki/engine/javascript"),
+    import("@shikijs/themes/github-dark"),
     import("@shikijs/themes/github-light"),
   ]).then(
-    ([{ createHighlighterCore }, { createJavaScriptRegexEngine }, { default: theme }]) =>
+    ([
+      { createHighlighterCore },
+      { createJavaScriptRegexEngine },
+      { default: darkTheme },
+      { default: lightTheme },
+    ]) =>
       createHighlighterCore({
-        themes: [theme],
+        themes: [darkTheme, lightTheme],
         langs: [],
         engine: createJavaScriptRegexEngine(),
       }) as Promise<Highlighter>,
@@ -81,7 +90,7 @@ export const highlightOrgStaticHtml = async (html: string): Promise<string> => {
     const template = window.document.createElement("template");
     template.innerHTML = highlighter.codeToHtml(block.textContent ?? "", {
       lang: language,
-      theme: orgCodeHighlightTheme,
+      themes: orgCodeHighlightThemes,
     });
     const pre = template.content.firstElementChild;
     if (!pre) continue;
