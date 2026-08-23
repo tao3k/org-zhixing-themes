@@ -15,6 +15,7 @@ export const stableShellSlots = [
   "runtime-state",
   "blog-index",
   "theme-controls",
+  "reader-layout",
 ] as const;
 export type StableShellSlot = (typeof stableShellSlots)[number];
 

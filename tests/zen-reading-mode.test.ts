@@ -4,6 +4,7 @@ import {
   exitZenReadingMode,
   isZenReadingMode,
   resetZenReadingModeForTests,
+  toggleZenReadingMode,
 } from "../src/react/zenReadingMode";
 
 describe("Zen reading mode", () => {
@@ -15,5 +16,15 @@ describe("Zen reading mode", () => {
 
     exitZenReadingMode();
     expect(isZenReadingMode()).toBe(false);
+  });
+
+  it("toggles a route-default reader mode off and back on", () => {
+    expect(isZenReadingMode(true)).toBe(true);
+
+    toggleZenReadingMode(true);
+    expect(isZenReadingMode(true)).toBe(false);
+
+    toggleZenReadingMode(true);
+    expect(isZenReadingMode(true)).toBe(true);
   });
 });

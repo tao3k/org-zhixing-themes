@@ -51,11 +51,12 @@ describe("React Router boundary", () => {
     expect(shellChrome).toContain("if (\n        event.target instanceof Element");
   });
 
-  it("keeps explicit Zen mode outside route-local component state", () => {
+  it("keeps route-aware Zen preference outside route-local component state", () => {
     const layout = readFileSync("src/react/ThemeRootLayout.tsx", "utf8");
-    expect(layout).toContain("useZenReadingMode()");
+    expect(layout).toContain("useZenReadingMode(routeZen)");
     expect(layout).toContain("onEnterZen={enterZenReadingMode}");
     expect(layout).toContain("onExitZen={immersiveZen ? exitZenReadingMode : undefined}");
+    expect(layout).toContain("onToggleZen={() => toggleZenReadingMode(routeZen)}");
     expect(layout).not.toContain("useState(false);");
   });
 });

@@ -28,6 +28,7 @@ export type ShellChromeProps = {
   onVariantChange: (variantId: string) => void;
   onEnterZen: () => void;
   onExitZen?: () => void;
+  onToggleZen: () => void;
   readerMode: "library" | "zen";
   showSiteHero: boolean;
   shell: ContentShellData;
@@ -47,6 +48,7 @@ function ShellChromeView({
   onVariantChange,
   onEnterZen,
   onExitZen,
+  onToggleZen,
   showSiteHero,
 }: ShellChromeProps): ReactNode {
   const [orgSearchOpen, setOrgSearchOpen] = useState(false);
@@ -76,17 +78,17 @@ function ShellChromeView({
   useEffect(() => {
     const openSearch = (): void => setOrgSearchOpen(true);
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (isZenModeShortcut(event) && !isEditableKeyboardTarget(event.target)) {
+        event.preventDefault();
+        onToggleZen();
+        return;
+      }
       if (event.key === "Escape" && readerMode === "zen" && onExitZen) {
         event.preventDefault();
         onExitZen();
         return;
       }
       if (readerMode !== "library") return;
-      if (isZenModeShortcut(event) && !isEditableKeyboardTarget(event.target)) {
-        event.preventDefault();
-        onEnterZen();
-        return;
-      }
       if (searchEnabled && isOrgSearchShortcut(event)) {
         event.preventDefault();
         openSearch();
@@ -100,7 +102,7 @@ function ShellChromeView({
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener(ORG_SEARCH_REQUEST_EVENT, openSearch);
     };
-  }, [onEnterZen, onExitZen, readerMode, searchEnabled]);
+  }, [onExitZen, onToggleZen, readerMode, searchEnabled]);
 
   const themeControls = (
     <ThemeVariantNavigation
@@ -140,7 +142,12 @@ function ShellChromeView({
             <SiteHero title={shell.siteConfig.title} />,
           )
         : null}
-      <section className="viewer-pane">{children}</section>
+      {renderReactSpaThemeSlot(
+        theme,
+        "reader-layout",
+        { readerMode, theme },
+        <section className="viewer-pane">{children}</section>,
+      )}
       {readerMode === "library"
         ? renderReactSpaThemeSlot(theme, "runtime-state", { shell }, <RuntimeState shell={shell} />)
         : null}

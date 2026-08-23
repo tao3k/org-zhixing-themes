@@ -26,6 +26,7 @@ export default defineThemePackage({
       },
       { id: "site-hero", strategies: ["replace"], runtime: "universal", stability: "stable" },
       { id: "blog-index", strategies: ["wrap"], runtime: "client", stability: "stable" },
+      { id: "reader-layout", strategies: ["wrap"], runtime: "client", stability: "stable" },
     ],
     renderers: { "react-spa": { export: ".", serverComponents: false } },
     renderModes: ["static"],
@@ -71,6 +72,18 @@ export default defineThemePackage({
               {
                 className: "theme-blog-index theme-blog-index--minimal",
                 "data-theme-layout": "minimal-notes/blog-index",
+              },
+              children,
+            ),
+        },
+        "reader-layout": {
+          strategy: "wrap",
+          component: ({ children, readerMode }) =>
+            createElement(
+              "div",
+              {
+                className: "minimal-notes-reader-layout",
+                "data-reader-mode": readerMode,
               },
               children,
             ),

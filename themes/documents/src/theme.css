@@ -114,6 +114,10 @@
   background: var(--surface-canvas);
 }
 
+:root[data-theme="documents"] .documents-reader-layout {
+  display: contents;
+}
+
 :root[data-theme="documents"] .documents-header {
   position: sticky;
   z-index: 30;

@@ -74,7 +74,7 @@ export function DocumentsControlCenter({
                 <MagnifyingGlassIcon aria-hidden="true" />
                 Search Org
               </span>
-              <kbd>Ctrl F</kbd>
+              <kbd>Command F</kbd>
             </button>
             <button
               type="button"
@@ -87,7 +87,7 @@ export function DocumentsControlCenter({
                 <CornersOutIcon aria-hidden="true" />
                 Enter Zen mode
               </span>
-              <kbd>Ctrl Z</kbd>
+              <kbd>Command Z</kbd>
             </button>
           </div>
           <footer>

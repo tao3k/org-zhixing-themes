@@ -30,6 +30,7 @@ export const elegantBlogManifestFoundation = {
       stability: "stable",
     },
     { id: "blog-index", strategies: ["wrap"], runtime: "client", stability: "stable" },
+    { id: "reader-layout", strategies: ["wrap"], runtime: "client", stability: "stable" },
   ],
   renderers: { "react-spa": { export: ".", serverComponents: false } },
   renderModes: ["static"],
@@ -68,6 +69,18 @@ export const elegantBlogRendererBindings = {
             {
               className: "theme-blog-index theme-blog-index--elegant",
               "data-theme-layout": "elegant-blog/blog-index",
+            },
+            children,
+          ),
+      },
+      "reader-layout": {
+        strategy: "wrap",
+        component: ({ children, readerMode }) =>
+          createElement(
+            "div",
+            {
+              className: "elegant-blog-reader-layout",
+              "data-reader-mode": readerMode,
             },
             children,
           ),

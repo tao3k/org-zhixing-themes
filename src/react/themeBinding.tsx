@@ -22,6 +22,7 @@ export type ReactSpaSlotProps = {
     shell: ContentShellData;
     theme: ZhixingTheme;
   };
+  "reader-layout": { readerMode: "library" | "zen"; theme: ZhixingTheme };
 };
 
 type ReactSpaSlotOverride<K extends keyof ReactSpaSlotProps> =
@@ -53,9 +54,7 @@ export const ThemeRouteScopeProvider = ({
 }: {
   children: ReactNode;
   themeId: string;
-}): ReactNode => (
-  <ThemeRouteScopeContext value={themeId}>{children}</ThemeRouteScopeContext>
-);
+}): ReactNode => <ThemeRouteScopeContext value={themeId}>{children}</ThemeRouteScopeContext>;
 
 export const ThemeScopedHomeLink = ({
   activeOptions,
@@ -94,11 +93,7 @@ export const ThemeScopedDocumentLink = ({
 }): ReactNode => {
   const themeId = useContext(ThemeRouteScopeContext);
   return themeId ? (
-    <Link
-      className={className}
-      params={{ documentId, themeId }}
-      to="/themes/$themeId/$documentId"
-    >
+    <Link className={className} params={{ documentId, themeId }} to="/themes/$themeId/$documentId">
       {children}
     </Link>
   ) : (

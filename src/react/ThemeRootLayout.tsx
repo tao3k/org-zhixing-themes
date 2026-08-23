@@ -7,7 +7,12 @@ import { ShellChrome } from "./ShellChrome";
 import { loadThemeVariantPreference, storeThemeVariantPreference } from "./themeVariantPreference";
 import { viewForPath } from "./routeViewHelpers";
 import { themeShowsSiteHeroOnContentRoutes } from "./themeContentRouting";
-import { enterZenReadingMode, exitZenReadingMode, useZenReadingMode } from "./zenReadingMode";
+import {
+  enterZenReadingMode,
+  exitZenReadingMode,
+  toggleZenReadingMode,
+  useZenReadingMode,
+} from "./zenReadingMode";
 
 export const shouldShowSiteHero = (
   pathname: string,
@@ -31,8 +36,8 @@ export function ThemeRootLayout({
 }): ReactNode {
   const location = useLocation();
   const routeZen = location.pathname.startsWith("/blogs/");
-  const immersiveZen = useZenReadingMode();
-  const readerMode = routeZen || immersiveZen ? "zen" : "library";
+  const immersiveZen = useZenReadingMode(routeZen);
+  const readerMode = immersiveZen ? "zen" : "library";
   const view = viewForPath(location.pathname);
   const configuredTheme = useMemo(
     () => resolveConfiguredTheme(createDefaultThemeRegistry(), shell.siteConfig),
@@ -61,6 +66,7 @@ export function ThemeRootLayout({
       onVariantChange={setActiveVariantId}
       onEnterZen={enterZenReadingMode}
       onExitZen={immersiveZen ? exitZenReadingMode : undefined}
+      onToggleZen={() => toggleZenReadingMode(routeZen)}
       readerMode={readerMode}
       showSiteHero={showSiteHero}
       shell={shell}

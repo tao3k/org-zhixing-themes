@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from "react";
 
-let zenReadingMode = false;
+type ZenReadingPreference = "default" | "enabled" | "disabled";
+
+let zenReadingPreference: ZenReadingPreference = "default";
 const listeners = new Set<() => void>();
 
 const notify = (): void => {
@@ -12,25 +14,36 @@ const subscribe = (listener: () => void): (() => void) => {
   return () => listeners.delete(listener);
 };
 
-const snapshot = (): boolean => zenReadingMode;
+const snapshot = (routeDefault = false): boolean =>
+  zenReadingPreference === "default" ? routeDefault : zenReadingPreference === "enabled";
 
-export const isZenReadingMode = (): boolean => snapshot();
+export const isZenReadingMode = (routeDefault = false): boolean => snapshot(routeDefault);
 
 export const enterZenReadingMode = (): void => {
-  if (zenReadingMode) return;
-  zenReadingMode = true;
+  if (zenReadingPreference === "enabled") return;
+  zenReadingPreference = "enabled";
   notify();
 };
 
 export const exitZenReadingMode = (): void => {
-  if (!zenReadingMode) return;
-  zenReadingMode = false;
+  if (zenReadingPreference === "disabled") return;
+  zenReadingPreference = "disabled";
   notify();
 };
 
-export const useZenReadingMode = (): boolean => useSyncExternalStore(subscribe, snapshot, snapshot);
+export const toggleZenReadingMode = (routeDefault = false): void => {
+  if (snapshot(routeDefault)) exitZenReadingMode();
+  else enterZenReadingMode();
+};
+
+export const useZenReadingMode = (routeDefault = false): boolean =>
+  useSyncExternalStore(
+    subscribe,
+    () => snapshot(routeDefault),
+    () => snapshot(routeDefault),
+  );
 
 export const resetZenReadingModeForTests = (): void => {
-  zenReadingMode = false;
+  zenReadingPreference = "default";
   notify();
 };

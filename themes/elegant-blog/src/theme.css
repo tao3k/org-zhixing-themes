@@ -1,3 +1,13 @@
 :root[data-theme="elegant-blog"] .theme-blog-index--elegant {
   display: contents;
 }
+
+:root[data-theme="elegant-blog"] .elegant-blog-reader-layout[data-reader-mode="zen"] {
+  width: min(100% - 48px, 780px);
+  margin-inline: auto;
+}
+
+:root[data-theme="elegant-blog"] .elegant-blog-reader-layout[data-reader-mode="zen"] .viewer-pane {
+  width: 100%;
+  margin: 0;
+}

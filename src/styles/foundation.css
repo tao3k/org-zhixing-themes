@@ -403,10 +403,6 @@ h1 {
   width: min(1440px, calc(100% - 36px));
 }
 
-#app[data-reader-mode="zen"] .viewer-pane {
-  width: 100%;
-}
-
 .source-feed-heading {
   color: var(--face-faded);
   font-size: 0.72rem;
