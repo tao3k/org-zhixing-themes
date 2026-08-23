@@ -78,7 +78,7 @@
     "masonry-layout": "^4.2.2",
     "mermaid": "^11.17.0",
     "minisearch": "^7.2.0",
-    "orgize": "file:vendor/orgize-0.10.0-alpha.0.tgz",
+    "orgize": "git+https://github.com/tao3k/orgize-wasm.git#817132cc0565591faebcba2a1d4d556fbe7378d3",
     "photoswipe": "^5.4.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
