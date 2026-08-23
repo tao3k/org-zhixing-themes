@@ -11,6 +11,21 @@
   --docs-code-surface: #1e1e2e;
   --docs-code-header: #29293c;
   --docs-code-ink: #cdd6f4;
+  --org-semantic-neutral-fg: var(--docs-subtext);
+  --org-semantic-neutral-surface: color-mix(in srgb, var(--docs-mantle) 86%, var(--docs-subtext));
+  --org-semantic-neutral-border: color-mix(in srgb, var(--docs-subtext) 26%, transparent);
+  --org-semantic-accent-fg: var(--docs-blue);
+  --org-semantic-accent-surface: color-mix(in srgb, var(--docs-mantle) 84%, var(--docs-blue));
+  --org-semantic-accent-border: color-mix(in srgb, var(--docs-blue) 48%, transparent);
+  --org-semantic-attention-fg: var(--docs-yellow);
+  --org-semantic-attention-surface: color-mix(in srgb, var(--docs-mantle) 84%, var(--docs-yellow));
+  --org-semantic-attention-border: color-mix(in srgb, var(--docs-yellow) 48%, transparent);
+  --org-semantic-complete-fg: var(--docs-green);
+  --org-semantic-complete-surface: color-mix(in srgb, var(--docs-mantle) 84%, var(--docs-green));
+  --org-semantic-complete-border: color-mix(in srgb, var(--docs-green) 48%, transparent);
+  --org-semantic-critical-fg: var(--docs-red);
+  --org-semantic-critical-surface: color-mix(in srgb, var(--docs-mantle) 84%, var(--docs-red));
+  --org-semantic-critical-border: color-mix(in srgb, var(--docs-red) 48%, transparent);
   --docs-header-height: 56px;
   --docs-nav-width: 248px;
   --docs-toc-width: 192px;
@@ -970,37 +985,6 @@
   font: 700 0.66rem/1.2 var(--font-mono);
   letter-spacing: 0.03em;
   vertical-align: middle;
-}
-
-:root[data-theme="documents"] .org-heading-todo--todo,
-:root[data-theme="documents"] .org-priority--b {
-  color: var(--docs-yellow);
-  background: color-mix(in srgb, var(--docs-yellow) 12%, transparent);
-}
-
-:root[data-theme="documents"] .org-heading-todo--focus {
-  color: var(--docs-blue);
-  background: color-mix(in srgb, var(--docs-blue) 12%, transparent);
-}
-
-:root[data-theme="documents"] .org-heading-todo--waiting {
-  color: var(--docs-red);
-  background: color-mix(in srgb, var(--docs-red) 12%, transparent);
-}
-
-:root[data-theme="documents"] .org-heading-todo--done {
-  color: var(--docs-green);
-  background: color-mix(in srgb, var(--docs-green) 12%, transparent);
-}
-
-:root[data-theme="documents"] .org-priority--a {
-  color: var(--docs-red);
-  background: color-mix(in srgb, var(--docs-red) 12%, transparent);
-}
-
-:root[data-theme="documents"] .org-priority--c {
-  color: var(--docs-overlay);
-  background: color-mix(in srgb, var(--docs-overlay) 12%, transparent);
 }
 
 :root[data-theme="documents"] .documents-context-rail {
