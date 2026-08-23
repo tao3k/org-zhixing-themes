@@ -29,6 +29,9 @@ describe("React Router boundary", () => {
     expect(router.indexOf("themePreviewRoute,")).toBeLessThan(router.indexOf("themeDocumentRoute,"));
     expect(router).toContain('path: "/$"');
     expect(router).toContain("params._splat");
+    expect(router).toContain("isThemePreviewPath(location.pathname)");
+    expect(router).toContain("<ThemeRootLayout");
+    expect(router).toContain("theme={runtime.selectedTheme}");
     const loaders = readFileSync("src/react/routerLoaders.ts", "utf8");
     expect(loaders).toContain("isolatedThemeCatalog.some");
     expect(loaders).toContain("throw notFound()");

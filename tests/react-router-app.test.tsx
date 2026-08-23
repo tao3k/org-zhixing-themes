@@ -146,6 +146,10 @@ describe("Org Zhixing React Router app", () => {
 
     await waitForText("TECHNICAL KNOWLEDGE BASE");
     expect(document.body.textContent).not.toContain("ORG-ZHIXING-DOC-E001");
+    await vi.waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("documents");
+    });
+    expect(document.querySelector(".documents-header")).toBeTruthy();
 
     for (const themeId of ["elegant-blog", "minimal-notes"]) {
       await act(async () => {
@@ -153,6 +157,7 @@ describe("Org Zhixing React Router app", () => {
       });
       await vi.waitFor(() => {
         expect(document.body.textContent).not.toContain("ORG-ZHIXING-DOC-E001");
+        expect(document.documentElement.dataset.theme).toBe(themeId);
       });
       expect(window.location.pathname).toBe(`/themes/${themeId}`);
     }

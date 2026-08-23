@@ -4,6 +4,7 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  useLocation,
   useNavigate,
 } from "@tanstack/react-router";
 import type { MouseEventHandler, ReactNode } from "react";
@@ -165,11 +166,26 @@ export const router = createOrgZhixingRouter();
 
 function RootLayout(): ReactNode {
   return (
-    <ThemeRootLayout shell={rootRoute.useLoaderData()}>
+    <RootContent shell={rootRoute.useLoaderData()} />
+  );
+}
+
+function RootContent({ shell }: { shell: ContentShellData }): ReactNode {
+  const location = useLocation();
+  if (isThemePreviewPath(location.pathname)) {
+    return <Outlet />;
+  }
+  return (
+    <ThemeRootLayout shell={shell}>
       <Outlet />
     </ThemeRootLayout>
   );
 }
+
+const isThemePreviewPath = (pathname: string): boolean => {
+  const segments = pathname.split("/").filter(Boolean);
+  return segments.length === 2 && segments[0] === "themes";
+};
 
 function HomePage(): ReactNode {
   const shell = rootRoute.useLoaderData();
@@ -197,11 +213,18 @@ function ThemePreviewPage(): ReactNode {
   const contentRoutes = contentRoutesForShell(shell, runtime.selectedTheme);
   return (
     <ThemeRuntimeProvider runtime={runtime}>
-      {contentRoutes ? (
-        contentRoutes.renderHome(shell)
-      ) : (
-        <ThemePreviewLayout runtime={runtime} shell={shell} />
-      )}
+      <ThemeRootLayout
+        key={runtime.selection.id}
+        defaultVariant={runtime.selection.defaultVariant}
+        shell={shell}
+        theme={runtime.selectedTheme}
+      >
+        {contentRoutes ? (
+          contentRoutes.renderHome(shell)
+        ) : (
+          <ThemePreviewLayout runtime={runtime} shell={shell} />
+        )}
+      </ThemeRootLayout>
     </ThemeRuntimeProvider>
   );
 }
