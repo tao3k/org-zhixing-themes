@@ -7,6 +7,7 @@ import {
 
 afterEach(() => {
   document.body.replaceChildren();
+  delete document.documentElement.dataset.themeVariant;
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });
@@ -31,6 +32,43 @@ describe("Documents Mermaid projection", () => {
     expect(figure.getAttribute("aria-busy")).toBe("true");
     expect(figure.querySelector("details")?.open).toBe(true);
     expect(figure.textContent).toContain("flowchart TD; A --> B");
+  });
+
+  it("uses the matching build-time preview without loading Mermaid", () => {
+    document.documentElement.dataset.themeVariant = "mocha";
+    document.body.innerHTML = `
+      <template data-org-mermaid-static-preview="latte"><svg data-preview="latte"></svg></template>
+      <template data-org-mermaid-static-preview="mocha"><svg data-preview="mocha"></svg></template>
+      <pre class="src src-mermaid">flowchart TD; A --&gt; B</pre>
+    `;
+    const loader = vi.fn(async () => ({ initialize: vi.fn(), render: vi.fn() }) as never);
+
+    const stop = installMermaidDiagrams(document, loader);
+
+    expect(loader).not.toHaveBeenCalled();
+    expect(document.querySelector('svg[data-preview="mocha"]')).not.toBeNull();
+    expect(document.querySelector("details")?.open).toBe(false);
+    expect(document.querySelector("figure")?.dataset.mermaidStaticPreview).toBe("true");
+    stop();
+  });
+
+  it("swaps build-time previews when the active palette changes", async () => {
+    document.documentElement.dataset.themeVariant = "mocha";
+    document.body.innerHTML = `
+      <template data-org-mermaid-static-preview="latte"><svg data-preview="latte"></svg></template>
+      <template data-org-mermaid-static-preview="mocha"><svg data-preview="mocha"></svg></template>
+      <pre class="src src-mermaid">flowchart TD; A --&gt; B</pre>
+    `;
+    const loader = vi.fn(async () => ({ initialize: vi.fn(), render: vi.fn() }) as never);
+    const stop = installMermaidDiagrams(document, loader);
+
+    document.documentElement.dataset.themeVariant = "latte";
+    await vi.waitFor(() =>
+      expect(document.querySelector('svg[data-preview="latte"]')).not.toBeNull(),
+    );
+
+    expect(loader).not.toHaveBeenCalled();
+    stop();
   });
 
   it("renders a visible diagram through the injected lazy Mermaid boundary", async () => {

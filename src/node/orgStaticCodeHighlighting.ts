@@ -67,27 +67,23 @@ const blockLanguage = (block: HTMLPreElement): string | null =>
     ...(block.querySelector("code")?.classList ?? []),
   ]);
 
-export const highlightOrgStaticHtml = async (html: string): Promise<string> => {
-  const window = new Window();
-  window.document.body.innerHTML = html;
-  const blocks = [
-    ...(window.document.querySelectorAll("pre") as unknown as HTMLPreElement[]),
-  ].filter(
+export const highlightOrgStaticDocument = async (document: Document): Promise<void> => {
+  const blocks = [...(document.querySelectorAll("pre") as unknown as HTMLPreElement[])].filter(
     (block) =>
       !block.closest("[data-org-code-highlight]") && !block.classList.contains("src-mermaid"),
   );
   const highlighter = blocks.length > 0 ? await loadHighlighter() : null;
-  if (!highlighter) return window.document.body.innerHTML;
+  if (!highlighter) return;
 
   for (const block of blocks) {
     const language = blockLanguage(block);
     if (!language || !(await ensureLanguage(highlighter, language))) continue;
-    const figure = window.document.createElement("figure");
+    const figure = document.createElement("figure");
     figure.className = "org-code-highlight";
     figure.dataset.orgCodeHighlight = "ready";
-    const caption = window.document.createElement("figcaption");
+    const caption = document.createElement("figcaption");
     caption.textContent = language;
-    const template = window.document.createElement("template");
+    const template = document.createElement("template");
     template.innerHTML = highlighter.codeToHtml(block.textContent ?? "", {
       lang: language,
       themes: orgCodeHighlightThemes,
@@ -98,20 +94,16 @@ export const highlightOrgStaticHtml = async (html: string): Promise<string> => {
     figure.append(caption, pre);
     const parent = block.parentElement;
     if (parent?.tagName === "P" && parent.children.length === 1) {
-      parent.replaceWith(figure.outerHTML);
+      parent.replaceWith(figure);
     } else {
-      block.replaceWith(figure.outerHTML);
+      block.replaceWith(figure);
     }
   }
-  return restoreStaticFigureMarkup(window.document.body.innerHTML);
 };
 
-const restoreStaticFigureMarkup = (html: string): string =>
-  html.replace(/&lt;figure class="org-code-highlight"[\s\S]*?&lt;\/figure&gt;/g, (escapedFigure) =>
-    escapedFigure
-      .replaceAll("&lt;", "<")
-      .replaceAll("&gt;", ">")
-      .replaceAll("&quot;", '"')
-      .replaceAll("&#39;", "'")
-      .replaceAll("&amp;", "&"),
-  );
+export const highlightOrgStaticHtml = async (html: string): Promise<string> => {
+  const window = new Window();
+  window.document.body.innerHTML = html;
+  await highlightOrgStaticDocument(window.document as unknown as Document);
+  return window.document.body.innerHTML;
+};

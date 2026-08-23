@@ -36,13 +36,11 @@ const isStaticTypstBlock = (block: HTMLElement): boolean => {
  * Compiles source known at build time so static readers never need the browser
  * compiler WASM. `currentColor` keeps the preview native to every theme.
  */
-export const renderOrgStaticTypstHtml = async (
-  html: string,
+export const renderOrgStaticTypstDocument = async (
+  document: Document,
   render: StaticTypstRenderer = renderTypst,
-): Promise<string> => {
-  const window = new Window();
-  window.document.body.innerHTML = html;
-  const blocks = [...window.document.querySelectorAll("pre")] as unknown as HTMLElement[];
+): Promise<void> => {
+  const blocks = [...document.querySelectorAll("pre")] as unknown as HTMLElement[];
   const typstBlocks = blocks.filter(
     (block) =>
       isStaticTypstBlock(block) &&
@@ -51,10 +49,19 @@ export const renderOrgStaticTypstHtml = async (
   );
 
   for (const block of typstBlocks) {
-    const template = window.document.createElement("template");
+    const template = document.createElement("template");
     template.dataset.orgTypstStaticPreview = "ready";
     template.innerHTML = sanitizeTypstSvg(await render(block.textContent ?? ""), "currentColor");
-    block.insertAdjacentHTML("beforebegin", template.outerHTML);
+    block.before(template);
   }
+};
+
+export const renderOrgStaticTypstHtml = async (
+  html: string,
+  render: StaticTypstRenderer = renderTypst,
+): Promise<string> => {
+  const window = new Window();
+  window.document.body.innerHTML = html;
+  await renderOrgStaticTypstDocument(window.document as unknown as Document, render);
   return window.document.body.innerHTML;
 };

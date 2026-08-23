@@ -5,6 +5,7 @@ type MermaidFigure = HTMLElement & {
   dataset: DOMStringMap & {
     mermaidQueued?: string;
     mermaidSource?: string;
+    mermaidStaticPreview?: string;
     mermaidState?: string;
     mermaidVariant?: string;
   };
@@ -26,6 +27,8 @@ const initializedThemes = new WeakMap<object, string>();
 const preparedMark = "org-zhixing:mermaid-prepared";
 const firstReadyMark = "org-zhixing:mermaid-first-ready";
 
+const activeVariant = (): string => document.documentElement.dataset.themeVariant ?? "mocha";
+
 const markOnce = (name: string): void => {
   if (typeof performance === "undefined") return;
   if (performance.getEntriesByName(name).length === 0) performance.mark(name);
@@ -43,6 +46,32 @@ export const findMermaidSourceBlocks = (root: ParentNode): HTMLPreElement[] => {
     if (block) blocks.add(block);
   }
   return [...blocks];
+};
+
+const staticPreviewTemplates = (block: HTMLPreElement): HTMLTemplateElement[] => {
+  const templates: HTMLTemplateElement[] = [];
+  let sibling = block.previousElementSibling;
+  while (sibling instanceof HTMLTemplateElement && sibling.dataset.orgMermaidStaticPreview) {
+    templates.unshift(sibling);
+    sibling = sibling.previousElementSibling;
+  }
+  return templates;
+};
+
+const applyStaticPreview = (figure: MermaidFigure, variant: string): boolean => {
+  const template = [
+    ...figure.querySelectorAll<HTMLTemplateElement>("template[data-org-mermaid-static-preview]"),
+  ].find((candidate) => candidate.dataset.orgMermaidStaticPreview === variant);
+  const canvas = figure.querySelector<HTMLElement>(".org-mermaid-canvas");
+  if (!template || !canvas) return false;
+  canvas.replaceChildren(template.content.cloneNode(true));
+  figure.querySelector<HTMLDetailsElement>(".org-mermaid-source")?.removeAttribute("open");
+  figure.dataset.mermaidStaticPreview = "true";
+  figure.dataset.mermaidState = "ready";
+  figure.dataset.mermaidVariant = variant;
+  figure.removeAttribute("aria-busy");
+  markOnce(firstReadyMark);
+  return true;
 };
 
 export const prepareMermaidFigures = (root: ParentNode): MermaidFigure[] =>
@@ -65,10 +94,12 @@ export const prepareMermaidFigures = (root: ParentNode): MermaidFigure[] =>
     source.open = true;
     const summary = document.createElement("summary");
     summary.textContent = "Mermaid diagram source";
+    const previews = staticPreviewTemplates(block);
 
     block.replaceWith(figure);
     source.append(summary, block);
-    figure.append(canvas, source);
+    figure.append(canvas, ...previews, source);
+    applyStaticPreview(figure, activeVariant());
     markOnce(preparedMark);
     return figure;
   });
@@ -99,8 +130,6 @@ const mermaidTheme = (): Parameters<MermaidApi["initialize"]>[0] => {
     },
   };
 };
-
-const activeVariant = (): string => document.documentElement.dataset.themeVariant ?? "mocha";
 
 const initializeMermaid = (mermaid: MermaidApi): void => {
   const theme = mermaidTheme();
@@ -186,9 +215,11 @@ const installViewportRendering = (
   figures: MermaidFigure[],
   queue: (figure: MermaidFigure) => void,
 ): { observe: (figure: MermaidFigure) => void; stop: () => void } => {
+  const dynamicFigures = figures.filter((figure) => figure.dataset.mermaidStaticPreview !== "true");
+  if (dynamicFigures.length === 0) return { observe: () => undefined, stop: () => undefined };
   if (!("IntersectionObserver" in window)) {
     const observe = (figure: MermaidFigure) => scheduleRender(figure, queue);
-    for (const figure of figures) observe(figure);
+    for (const figure of dynamicFigures) observe(figure);
     return { observe, stop: () => undefined };
   }
   const observer = new IntersectionObserver(
@@ -203,7 +234,7 @@ const installViewportRendering = (
     { rootMargin: "240px 0px" },
   );
   const observe = (figure: MermaidFigure) => observer.observe(figure);
-  for (const figure of figures) {
+  for (const figure of dynamicFigures) {
     if (isNearViewport(figure)) queue(figure);
     else observe(figure);
   }
@@ -217,6 +248,10 @@ const installThemeRendering = (
 ): (() => void) => {
   const observer = new MutationObserver(() => {
     for (const figure of figures) {
+      if (figure.dataset.mermaidStaticPreview === "true") {
+        applyStaticPreview(figure, activeVariant());
+        continue;
+      }
       if (figure.dataset.mermaidState !== "ready") continue;
       if (isNearViewport(figure)) queue(figure);
       else observe(figure);
