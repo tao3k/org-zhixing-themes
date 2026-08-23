@@ -28,14 +28,12 @@ describe("Org Poo Flow rendering", () => {
   it("keeps source available and loads an injected runtime graph lazily", async () => {
     const root = fixture();
     const runner: PooFlowRunner = {
-      run: vi.fn(
-        async (): Promise<PooFlowRunResult> => ({
-          events: [
-            { id: "validate", label: "Validate", state: "completed" },
-            { id: "publish", label: "Publish", state: "completed" },
-          ],
-        }),
-      ),
+      run: vi.fn(async (): Promise<PooFlowRunResult> => ({
+        events: [
+          { id: "validate", label: "Validate", state: "completed" },
+          { id: "publish", label: "Publish", state: "completed" },
+        ],
+      })),
     };
     const loader = vi.fn(async () => ({
       PooFlowGraph: ({ result }: { result: { events: readonly unknown[] } }) =>
@@ -123,8 +121,9 @@ describe("Org Poo Flow rendering", () => {
     let hiddenDuringRender = true;
     const stop = installOrgPooFlowRendering(root, runner, async () => ({
       PooFlowGraph: () => {
-        hiddenDuringRender = (root.querySelector(".org-poo-flow__graph-host") as HTMLElement)
-          .hidden;
+        hiddenDuringRender = Boolean(
+          (root.querySelector(".org-poo-flow__graph-host") as HTMLElement).hidden,
+        );
         return createElement("output", null, "visible graph");
       },
     }));

@@ -1,5 +1,6 @@
 import type { TypstRenderRequest, TypstRenderResponse } from "./typstProtocol";
 import { BoundedLruCache } from "../core/boundedLruCache";
+import { sanitizeTypstSvg } from "../core/typstSvg";
 
 export type TypstRenderer = (source: string) => Promise<string>;
 
@@ -13,6 +14,7 @@ type TypstPreviewRecord = {
   frame: HTMLElement;
   ownsFrame: boolean;
   preview: HTMLElement;
+  staticPreview?: HTMLTemplateElement;
   toggle: HTMLButtonElement;
 };
 
@@ -77,19 +79,27 @@ const renderTypst = createCachedTypstRenderer(renderTypstUncached);
 
 const typstLanguagePattern = /^(?:src-|language-)(?:typst|typ)$/i;
 
-export const sanitizeTypstSvg = (svg: string, foreground?: string): string => {
-  const xmlSafe = svg.replace(/&(?!(?:#\d+|#x[0-9a-f]+|amp|lt|gt|quot|apos);)/gi, "&amp;");
-  return foreground ? xmlSafe.replace(/\b(fill|stroke)="#000"/g, `$1="${foreground}"`) : xmlSafe;
-};
+export { sanitizeTypstSvg } from "../core/typstSvg";
+
+const isTypstBlock = (block: HTMLElement): boolean =>
+  [...block.classList, ...(block.querySelector("code")?.classList ?? [])].some((className) =>
+    typstLanguagePattern.test(className),
+  ) ||
+  block
+    .closest("figure.org-code-highlight")
+    ?.querySelector(":scope > figcaption")
+    ?.textContent?.trim()
+    .toLowerCase() === "typst";
 
 export const findOrgTypstBlocks = (root: ParentNode): HTMLElement[] =>
-  [...root.querySelectorAll<HTMLElement>("pre")].filter((block) =>
-    [...block.classList, ...(block.querySelector("code")?.classList ?? [])].some((className) =>
-      typstLanguagePattern.test(className),
-    ),
-  );
+  [...root.querySelectorAll<HTMLElement>("pre")].filter(isTypstBlock);
 
 const createTypstPreview = (block: HTMLElement): TypstPreviewRecord => {
+  const staticPreview =
+    block.previousElementSibling instanceof HTMLTemplateElement &&
+    block.previousElementSibling.dataset.orgTypstStaticPreview === "ready"
+      ? block.previousElementSibling
+      : undefined;
   const existingFrame = block.parentElement?.classList.contains("org-code-highlight")
     ? block.parentElement
     : null;
@@ -137,17 +147,24 @@ const createTypstPreview = (block: HTMLElement): TypstPreviewRecord => {
     toggle.setAttribute("aria-pressed", String(showSource));
   });
 
-  return { block, frame, ownsFrame, preview, toggle };
+  return { block, frame, ownsFrame, preview, staticPreview, toggle };
 };
 
 const renderPreview = async (
   block: HTMLElement,
   preview: HTMLElement,
   render: TypstRenderer,
+  staticPreview?: HTMLTemplateElement,
 ): Promise<() => void> => {
   preview.dataset.orgTypstState = "loading";
-  const svg = await render(block.textContent ?? "");
   const output = preview.querySelector<HTMLElement>(".org-typst-preview-output");
+  if (staticPreview) {
+    output?.replaceChildren(staticPreview.content.cloneNode(true));
+    preview.dataset.orgTypstState = "ready";
+    preview.setAttribute("aria-busy", "false");
+    return () => undefined;
+  }
+  const svg = await render(block.textContent ?? "");
   if (!output || !preview.isConnected) return () => undefined;
   const objectUrl = URL.createObjectURL(
     new Blob([sanitizeTypstSvg(svg, getComputedStyle(preview).color)], {
@@ -189,7 +206,7 @@ const beginTypstPreview = (
   isActive: () => boolean,
   releaseUrls: Array<() => void>,
 ): void => {
-  void renderPreview(record.block, record.preview, render)
+  void renderPreview(record.block, record.preview, render, record.staticPreview)
     .then((release) => {
       if (isActive()) releaseUrls.push(release);
       else release();
@@ -218,10 +235,7 @@ const scheduleTypstPreviews = (
     for (const record of records) start(record);
     return null;
   }
-  const [firstRecord, ...deferredRecords] = records;
-  if (firstRecord) start(firstRecord);
-
-  const recordByPreview = new Map(deferredRecords.map((record) => [record.preview, record]));
+  const recordByPreview = new Map(records.map((record) => [record.preview, record]));
   const observer = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
@@ -231,7 +245,7 @@ const scheduleTypstPreviews = (
         if (record) start(record);
       }
     },
-    { rootMargin: "1200px 0px" },
+    { rootMargin: "320px 0px" },
   );
   for (const { preview } of records) observer.observe(preview);
   return observer;

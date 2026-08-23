@@ -5,6 +5,7 @@ import rendererWasmUrl from "@myriaddreamin/typst-ts-renderer/wasm?url";
 import type { TypstRenderRequest, TypstRenderResponse } from "./typstProtocol";
 import { prepareTypstPreviewSource } from "../core/typstSource";
 import { BoundedLruCache } from "../core/boundedLruCache";
+import { createTypstRenderCoordinator } from "../core/typstRenderCoordinator";
 
 type WorkerScope = {
   addEventListener: (
@@ -49,7 +50,6 @@ $typst.setRendererInitOptions({
   getWrapper: loadRendererWrapper,
 });
 
-let renderQueue = Promise.resolve();
 const renderedSvgCache = new BoundedLruCache<string, string>(64);
 const persistentCacheName = "org-zhixing-typst-svg-v1";
 const persistentCacheLimit = 64;
@@ -81,12 +81,16 @@ const writePersistentSvg = async (source: string, svg: string): Promise<void> =>
       await persistentCacheKey(source),
       new Response(svg, { headers: { "content-type": "image/svg+xml;charset=utf-8" } }),
     );
-    const keys = await cache.keys();
-    await Promise.all(
-      keys
-        .slice(0, Math.max(0, keys.length - persistentCacheLimit))
-        .map((key) => cache.delete(key)),
-    );
+    void cache
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .slice(0, Math.max(0, keys.length - persistentCacheLimit))
+            .map((key) => cache.delete(key)),
+        ),
+      )
+      .catch(() => undefined);
   } catch {
     // Cache Storage can be disabled or quota-limited; the in-memory LRU remains authoritative.
   }
@@ -107,19 +111,23 @@ const formatTypstError = (error: unknown): string => {
   return message && message !== "[object Object]" ? message : "Typst render failed";
 };
 
+const typstRenderer = createTypstRenderCoordinator({
+  cache: renderedSvgCache,
+  compile: (source) =>
+    $typst.svg({
+      mainContent: prepareTypstPreviewSource(source),
+    }),
+  persistentCache: {
+    read: readPersistentSvg,
+    write: writePersistentSvg,
+  },
+});
+
 workerScope.addEventListener("message", (event) => {
   const { id, source } = event.data;
-  renderQueue = renderQueue
-    .then(async () => {
-      let svg = renderedSvgCache.get(source);
-      if (svg === undefined) svg = await readPersistentSvg(source);
-      if (svg === undefined) {
-        svg = await $typst.svg({
-          mainContent: prepareTypstPreviewSource(source),
-        });
-        await writePersistentSvg(source, svg);
-      }
-      renderedSvgCache.set(source, svg);
+  void typstRenderer
+    .render(source)
+    .then((svg) => {
       workerScope.postMessage({ id, ok: true, svg });
     })
     .catch((error: unknown) => {

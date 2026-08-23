@@ -175,13 +175,21 @@ const scheduleRender = (figure: MermaidFigure, queue: (figure: MermaidFigure) =>
   schedule(() => queue(figure), { timeout: 300 });
 };
 
+const isNearViewport = (figure: MermaidFigure): boolean => {
+  // Layout-less test DOMs have no reliable viewport position, so retain observer-driven behavior there.
+  if (figure.getClientRects().length === 0) return false;
+  const bounds = figure.getBoundingClientRect();
+  return bounds.bottom >= -240 && bounds.top <= window.innerHeight + 240;
+};
+
 const installViewportRendering = (
   figures: MermaidFigure[],
   queue: (figure: MermaidFigure) => void,
-): (() => void) => {
+): { observe: (figure: MermaidFigure) => void; stop: () => void } => {
   if (!("IntersectionObserver" in window)) {
-    for (const figure of figures) scheduleRender(figure, queue);
-    return () => undefined;
+    const observe = (figure: MermaidFigure) => scheduleRender(figure, queue);
+    for (const figure of figures) observe(figure);
+    return { observe, stop: () => undefined };
   }
   const observer = new IntersectionObserver(
     (entries) => {
@@ -194,21 +202,24 @@ const installViewportRendering = (
     },
     { rootMargin: "240px 0px" },
   );
-  for (const figure of figures) observer.observe(figure);
-  return () => observer.disconnect();
+  const observe = (figure: MermaidFigure) => observer.observe(figure);
+  for (const figure of figures) {
+    if (isNearViewport(figure)) queue(figure);
+    else observe(figure);
+  }
+  return { observe, stop: () => observer.disconnect() };
 };
 
 const installThemeRendering = (
   figures: MermaidFigure[],
   queue: (figure: MermaidFigure) => void,
+  observe: (figure: MermaidFigure) => void,
 ): (() => void) => {
   const observer = new MutationObserver(() => {
     for (const figure of figures) {
       if (figure.dataset.mermaidState !== "ready") continue;
-      const bounds = figure.getBoundingClientRect();
-      const nearViewport = bounds.bottom >= -240 && bounds.top <= window.innerHeight + 240;
-      if (nearViewport) queue(figure);
-      else scheduleRender(figure, queue);
+      if (isNearViewport(figure)) queue(figure);
+      else observe(figure);
     }
   });
   observer.observe(document.documentElement, {
@@ -225,13 +236,16 @@ export const installMermaidDiagrams = (
   const figures = prepareMermaidFigures(root);
   if (figures.length === 0) return () => undefined;
 
-  if (loader === loadMermaid) void loadMermaid();
   const renderQueue = createRenderQueue(loader);
-  const stopViewportRendering = installViewportRendering(figures, renderQueue.queue);
-  const stopThemeRendering = installThemeRendering(figures, renderQueue.queue);
+  const viewportRendering = installViewportRendering(figures, renderQueue.queue);
+  const stopThemeRendering = installThemeRendering(
+    figures,
+    renderQueue.queue,
+    viewportRendering.observe,
+  );
   return () => {
     renderQueue.stop();
-    stopViewportRendering();
+    viewportRendering.stop();
     stopThemeRendering();
   };
 };

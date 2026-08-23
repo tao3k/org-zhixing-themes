@@ -83,6 +83,6 @@ describe("theme preview tooling", () => {
     expect(rsbuildConfig).toContain("__ORG_ZHIXING_CONFIG_SOURCE__");
     expect(rsbuildConfig).toContain("resolveThemeIsolation");
     expect(rsbuildConfig).toContain("themeIsolationPlugin.rsbuild(themeIsolation)");
-    expect(rsbuildConfig).toContain("strictPort: true");
+    expect(rsbuildConfig).toContain("strictPort: false");
   });
 });

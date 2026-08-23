@@ -67,13 +67,19 @@
   overflow: auto;
 }
 
-.org-typst-preview-output img {
+.org-typst-preview-output :is(img, svg) {
   display: block;
   width: auto;
   max-width: 100%;
   height: auto;
   margin: 0;
   border-radius: 0;
+}
+
+.org-typst-preview-output svg {
+  color: inherit;
+  fill: currentColor;
+  stroke: currentColor;
 }
 
 .org-typst-preview-error {

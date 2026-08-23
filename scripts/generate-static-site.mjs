@@ -16,6 +16,7 @@ import { projectOrgDocumentLinks } from "../src/node/orgDocumentLinks.mjs";
 import { orgFiles } from "../src/node/orgSources.ts";
 import { orgDocumentIdFromPath } from "../src/orgIdLinks.ts";
 import { highlightOrgStaticHtml } from "../src/node/orgStaticCodeHighlighting.ts";
+import { renderOrgStaticTypstHtml } from "../src/node/orgStaticTypstRendering.ts";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const publicRoot = resolve(projectRoot, "public");
@@ -127,12 +128,14 @@ const projectSource = async (source, config) => {
       sourceBytes: Buffer.byteLength(sourceText),
       viewIndex,
       sectionIndex: parseJson(org.sectionIndexJson(source.sourceFile)),
-      html: await highlightOrgStaticHtml(
-        projectOrgDocumentLinks(org.html(), {
-          currentFile: source.file,
-          document: htmlWindow.document,
-          sources: config.sources,
-        }),
+      html: await renderOrgStaticTypstHtml(
+        await highlightOrgStaticHtml(
+          projectOrgDocumentLinks(org.html(), {
+            currentFile: source.file,
+            document: htmlWindow.document,
+            sources: config.sources,
+          }),
+        ),
       ),
       attachmentInventory,
       memory: parseJson(org.memoryJson()),
