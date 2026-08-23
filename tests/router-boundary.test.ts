@@ -30,7 +30,9 @@ describe("React Router boundary", () => {
     expect(router).toContain(
       "loadThemePreviewDocumentQuery(context, params.themeId, params.documentId)",
     );
-    expect(router.indexOf("themePreviewRoute,")).toBeLessThan(router.indexOf("themeDocumentRoute,"));
+    expect(router.indexOf("themePreviewRoute,")).toBeLessThan(
+      router.indexOf("themeDocumentRoute,"),
+    );
     expect(router).toContain('path: "/$"');
     expect(router).toContain("params._splat");
     expect(router).toContain("isThemePreviewPath(location.pathname)");
@@ -47,5 +49,13 @@ describe("React Router boundary", () => {
     const shellChrome = readFileSync("src/react/ShellChrome.tsx", "utf8");
     expect(shellChrome).toContain('closest("a[data-theme-navigation-item]")');
     expect(shellChrome).toContain("if (\n        event.target instanceof Element");
+  });
+
+  it("keeps explicit Zen mode outside route-local component state", () => {
+    const layout = readFileSync("src/react/ThemeRootLayout.tsx", "utf8");
+    expect(layout).toContain("useZenReadingMode()");
+    expect(layout).toContain("onEnterZen={enterZenReadingMode}");
+    expect(layout).toContain("onExitZen={immersiveZen ? exitZenReadingMode : undefined}");
+    expect(layout).not.toContain("useState(false);");
   });
 });

@@ -1,10 +1,6 @@
 :root {
   --org-semantic-neutral-fg: color-mix(in srgb, var(--face-normal) 72%, var(--surface-paper));
-  --org-semantic-neutral-surface: color-mix(
-    in srgb,
-    var(--surface-paper) 88%,
-    var(--face-normal)
-  );
+  --org-semantic-neutral-surface: color-mix(in srgb, var(--surface-paper) 88%, var(--face-normal));
   --org-semantic-neutral-border: color-mix(in srgb, var(--face-normal) 20%, transparent);
   --org-semantic-accent-fg: var(--face-salient);
   --org-semantic-accent-surface: color-mix(in srgb, var(--surface-paper) 88%, var(--face-salient));
@@ -291,6 +287,15 @@ code {
   border-color: var(--org-semantic-neutral-border);
   color: var(--org-semantic-neutral-fg);
   background: var(--org-semantic-neutral-surface);
+}
+
+/* Planning timestamps remain part of their semantic chip. The generic active
+ * timestamp atom intentionally has a neutral surface outside planning rows. */
+.org-meta-chip--scheduled .org-timestamp,
+.org-meta-chip--deadline .org-timestamp,
+.org-meta-chip--closed .org-timestamp {
+  color: inherit;
+  background: color-mix(in srgb, currentcolor 12%, transparent);
 }
 
 .org-meta-tag {

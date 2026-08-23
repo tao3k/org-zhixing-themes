@@ -54,6 +54,7 @@ function ShellChromeView({
   const navigate = useNavigate();
   const onShellClick = useCallback<MouseEventHandler<HTMLElement>>(
     (event) => {
+      if (event.defaultPrevented) return;
       if (
         event.target instanceof Element &&
         event.target.closest("a[data-theme-navigation-item]")

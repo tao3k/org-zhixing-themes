@@ -8,24 +8,22 @@ const documentsThemeCss = readFileSync(
 );
 
 describe("Documents reading controls", () => {
-  it("keeps the appearance launcher at the viewport edge", () => {
-    expect(documentsThemeCss).toContain(
+  it("keeps the reading controls inside the lower sidebar dock", () => {
+    expect(documentsThemeCss).toContain(".documents-workspace-dock {");
+    expect(documentsThemeCss).toContain("margin-top: auto;");
+    expect(documentsThemeCss).toContain("padding: 7px 14px 10px;");
+    expect(documentsThemeCss).not.toContain(
       ':root[data-theme="documents"] body .documents-control-center',
     );
-    expect(documentsThemeCss).toContain("position: fixed;");
-    expect(documentsThemeCss).toContain("bottom: 1.5rem;");
-    expect(documentsThemeCss).toContain("right: 1.5rem;");
-    expect(documentsThemeCss).toContain("width: 3rem;");
-    expect(documentsThemeCss).toContain("height: 3rem;");
+    expect(documentsThemeCss).toMatch(/\.documents-control-trigger\s*\{[^}]*border-radius: 0;/s);
   });
 
-  it("uses the active Documents variant for the launcher and panel", () => {
-    expect(documentsThemeCss).toContain('content: "☾";');
+  it("keeps its popup constrained to the sidebar and themed by Documents tokens", () => {
+    expect(documentsThemeCss).toContain("bottom: calc(100% + 8px);");
+    expect(documentsThemeCss).toContain("width: 100%;");
     expect(documentsThemeCss).toContain(
-      ':root[data-theme="documents"][data-theme-variant="latte"] body .documents-control-trigger > span::before',
+      "background: color-mix(in srgb, var(--surface-canvas) 94%, transparent);",
     );
-    expect(documentsThemeCss).toContain('content: "☀";');
-    expect(documentsThemeCss).toContain("background: var(--docs-mantle);");
-    expect(documentsThemeCss).toContain("bottom: calc(100% + 0.75rem);");
+    expect(documentsThemeCss).toContain("border-color: var(--docs-blue);");
   });
 });
