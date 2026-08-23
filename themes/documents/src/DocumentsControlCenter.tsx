@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { SlidersHorizontalIcon } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
-import { CornersOutIcon } from "@phosphor-icons/react/dist/csr/CornersOut";
+import { ArrowsOutIcon } from "@phosphor-icons/react/dist/csr/ArrowsOut";
 import type { ReactSpaSlotProps } from "../../../src/react/themeBinding";
 import { requestOrgSearch } from "../../../src/react/orgSearchEvents";
 
@@ -84,7 +84,7 @@ export function DocumentsControlCenter({
               }}
             >
               <span>
-                <CornersOutIcon aria-hidden="true" />
+                <ArrowsOutIcon aria-hidden="true" />
                 Enter Zen mode
               </span>
               <kbd>Command Z</kbd>

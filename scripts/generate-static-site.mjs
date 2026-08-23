@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as Effect from "effect/Effect";
+import { Window } from "happy-dom";
 import init, { Org } from "orgize";
 import { parse } from "smol-toml";
 import {
@@ -649,7 +650,7 @@ const travelEmbedHtmlByRangeStart = (html, records) => {
   if (!html || records.length === 0) {
     return new Map();
   }
-  const document = htmlWindow.document.implementation.createHTMLDocument("");
+  const document = new Window().document;
   document.body.innerHTML = html;
   const root = document.querySelector("main") ?? document.body;
   const used = new Set();
