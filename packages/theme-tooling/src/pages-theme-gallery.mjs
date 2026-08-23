@@ -16,7 +16,13 @@ export const parsePagesThemeGalleryArgs = (args, workspaceRoot = process.cwd()) 
   workspaceRoot: resolve(workspaceRoot),
   configPath: resolve(workspaceRoot, requiredArgument(args, "--config")),
   outputDir: resolve(workspaceRoot, requiredArgument(args, "--out")),
-  basePath: requiredArgument(args, "--base").replace(/\/+$/, "/"),
+  basePath: (() => {
+    const pathname = new URL(
+      requiredArgument(args, "--base"),
+      "https://org-zhixing.invalid",
+    ).pathname;
+    return pathname.endsWith("/") ? pathname : `${pathname}/`;
+  })(),
 });
 
 export const themeConfigSource = (
@@ -63,6 +69,8 @@ export const generatePagesThemeGallery = async (options) => {
       capabilities: theme.capabilities,
       content: theme.content,
       config: relativeConfigPath,
+      // Publish a deployment-root path, never an origin. The browser resolves
+      // it on the current host in development and in the deployed site.
       preview: `${options.basePath}themes/${theme.id}/`,
     });
   }

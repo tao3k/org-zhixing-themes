@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { highlightOrgStaticHtml } from "../src/node/orgStaticCodeHighlighting";
+import { orgCodeHighlightTheme } from "../src/orgCodeHighlightTheme";
 
 describe("static Org code highlighting", () => {
   it("highlights TypeScript and Scheme while preserving Mermaid and unsupported blocks", async () => {
@@ -11,7 +12,8 @@ describe("static Org code highlighting", () => {
     `);
 
     expect(output).toContain('class="org-code-highlight" data-org-code-highlight="ready"');
-    expect(output).toContain('class="shiki ');
+    expect(output).toContain(`class="shiki ${orgCodeHighlightTheme} `);
+    expect(output).toContain('background-color:#fff');
     expect(output).toContain("const");
     expect(output).toContain("display");
     expect(output).toContain('class="src src-mermaid"');

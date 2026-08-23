@@ -1,6 +1,7 @@
 import { Window } from "happy-dom";
 import type { LanguageInput } from "@shikijs/types";
 import { languageFromOrgCodeClasses } from "../orgCodeLanguage";
+import { orgCodeHighlightTheme } from "../orgCodeHighlightTheme";
 
 type Highlighter = {
   loadLanguage: (...languages: LanguageInput[]) => Promise<void>;
@@ -27,7 +28,7 @@ const loadHighlighter = (): Promise<Highlighter> => {
   highlighterPromise ??= Promise.all([
     import("shiki/core"),
     import("shiki/engine/javascript"),
-    import("@shikijs/themes/tokyo-night"),
+    import("@shikijs/themes/github-light"),
   ]).then(
     ([{ createHighlighterCore }, { createJavaScriptRegexEngine }, { default: theme }]) =>
       createHighlighterCore({
@@ -80,7 +81,7 @@ export const highlightOrgStaticHtml = async (html: string): Promise<string> => {
     const template = window.document.createElement("template");
     template.innerHTML = highlighter.codeToHtml(block.textContent ?? "", {
       lang: language,
-      theme: "tokyo-night",
+      theme: orgCodeHighlightTheme,
     });
     const pre = template.content.firstElementChild;
     if (!pre) continue;

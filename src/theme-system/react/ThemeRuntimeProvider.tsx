@@ -1,9 +1,10 @@
 import { createContext, useContext, type ReactNode } from "react";
 import {
-  isolatedSelectedThemeId,
   isolatedSelectedThemeMetadata,
   isolatedSelectedVariant,
+  isolatedThemeCatalog,
   loadIsolatedSelectedTheme,
+  loadThemeById,
   themeIsolationId,
 } from "virtual:org-zhixing/theme-runtime";
 import { createThemeRegistry, type ThemeRegistry } from "../../library/themeRegistry";
@@ -18,34 +19,43 @@ export type ThemeRuntime = {
   readonly registry: ThemeRegistry;
 };
 
-const createIsolatedThemeRuntime = async (): Promise<ThemeRuntime> => {
-  const selectedTheme = await loadIsolatedSelectedTheme();
+const createThemeRuntime = async (
+  selection: ThemeCatalogEntry,
+  loadTheme: () => Promise<ZhixingTheme>,
+  variant = selection.defaultVariant,
+): Promise<ThemeRuntime> => {
+  const selectedTheme = await loadTheme();
   const registry = createThemeRegistry([selectedTheme]);
-  const catalogEntry = isolatedSelectedThemeMetadata;
   const manifest = themePackageManifestFor(selectedTheme);
   if (
-    catalogEntry.id !== isolatedSelectedThemeId ||
-    selectedTheme.name !== isolatedSelectedThemeId
+    selection.id !== selectedTheme.name
   ) {
     throw new Error(
-      `THEME-E032 theme module contract mismatch: expected "${isolatedSelectedThemeId}", received "${selectedTheme.name}"`,
+      `THEME-E032 theme module contract mismatch: expected "${selection.id}", received "${selectedTheme.name}"`,
     );
   }
   if (
-    !manifest.variants.includes(isolatedSelectedVariant) ||
-    !catalogEntry.variants.includes(isolatedSelectedVariant)
+    !manifest.variants.includes(variant) ||
+    !selection.variants.includes(variant)
   ) {
     throw new Error(
-      `THEME-E032 theme module "${isolatedSelectedThemeId}" does not provide variant "${isolatedSelectedVariant}"`,
+      `THEME-E032 theme module "${selection.id}" does not provide variant "${variant}"`,
     );
   }
   return Object.freeze({
     isolationId: themeIsolationId,
-    selection: isolatedSelectedThemeMetadata,
+    selection,
     selectedTheme,
     registry,
   });
 };
+
+const createIsolatedThemeRuntime = (): Promise<ThemeRuntime> =>
+  createThemeRuntime(
+    isolatedSelectedThemeMetadata,
+    loadIsolatedSelectedTheme,
+    isolatedSelectedVariant,
+  );
 
 let isolatedThemeRuntimePromise: Promise<ThemeRuntime> | undefined;
 
@@ -55,6 +65,24 @@ export const loadIsolatedThemeRuntime = (): Promise<ThemeRuntime> => {
     throw error;
   });
   return isolatedThemeRuntimePromise;
+};
+
+const themeRuntimePromises = new Map<string, Promise<ThemeRuntime>>();
+
+export const loadThemeRuntimeById = (themeId: string): Promise<ThemeRuntime> => {
+  const selection = isolatedThemeCatalog.find(({ id }) => id === themeId);
+  if (!selection) {
+    return Promise.reject(new Error(`THEME-E001 unknown theme "${themeId}"`));
+  }
+  let runtime = themeRuntimePromises.get(themeId);
+  if (!runtime) {
+    runtime = createThemeRuntime(selection, () => loadThemeById(themeId)).catch((error: unknown) => {
+      themeRuntimePromises.delete(themeId);
+      throw error;
+    });
+    themeRuntimePromises.set(themeId, runtime);
+  }
+  return runtime;
 };
 
 const ThemeRuntimeContext = createContext<ThemeRuntime | null>(null);

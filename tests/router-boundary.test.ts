@@ -22,13 +22,17 @@ describe("React Router boundary", () => {
     expect(normalizeOrgZhixingBasePath("/org-zhixing-themes/")).toBe("/org-zhixing-themes");
   });
 
-  it("owns arbitrarily nested theme routes at the root without routing them through Blog", () => {
+  it("routes registered theme previews before the document catch-all", () => {
     const router = readFileSync("src/react/router.tsx", "utf8");
+    expect(router).toContain('path: "/themes/$themeId"');
+    expect(router).toContain("loadThemePreviewQuery(context, params.themeId)");
+    expect(router.indexOf("themePreviewRoute,")).toBeLessThan(router.indexOf("themeDocumentRoute,"));
     expect(router).toContain('path: "/$"');
     expect(router).toContain("params._splat");
-    expect(router).toContain("component: HomePage");
-    expect(router).toContain("redirectToThemeContentRoot");
-    expect(router).toContain("function ThemeDocumentPage");
+    const loaders = readFileSync("src/react/routerLoaders.ts", "utf8");
+    expect(loaders).toContain("isolatedThemeCatalog.some");
+    expect(loaders).toContain("throw notFound()");
+    expect(loaders).toContain("loadThemeRuntimeById(themeId)");
   });
 
   it("leaves static theme navigation to the browser instead of intercepting it as a router route", () => {

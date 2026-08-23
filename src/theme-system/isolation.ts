@@ -70,74 +70,110 @@ export const renderThemeRuntimeModule = (snapshot: ThemeIsolationSnapshot): stri
   if (!selected) {
     throw new Error(`THEME-E001 isolation snapshot "${snapshot.instanceId}" is inconsistent`);
   }
-  const moduleBinding =
-    selected.transport.kind === "workspace"
-      ? [
-          `import isolatedWorkspaceTheme from ${JSON.stringify(selected.transport.module)};`,
-          "const getIsolatedSelectedTheme = () => isolatedWorkspaceTheme;",
-          "const loadIsolatedSelectedTheme = () => Promise.resolve(isolatedWorkspaceTheme);",
-        ]
-      : [
-          'import { createInstance } from "@module-federation/enhanced/runtime";',
-          'import * as orgZhixingReact from "react";',
-          'import * as orgZhixingReactDom from "react-dom";',
-          "const orgZhixingThemeFederation = createInstance({",
-          `  name: ${JSON.stringify(`org_zhixing_host_${snapshot.instanceId.replace(/[^a-zA-Z0-9_]/g, "_")}`)},`,
-          "  remotes: [",
+  const workspaceThemes = snapshot.catalog.filter(
+    (entry): entry is ThemeCatalogEntry & { transport: WorkspaceThemeTransport } =>
+      entry.transport.kind === "workspace",
+  );
+  const federatedThemes = snapshot.catalog.filter(
+    (entry): entry is ThemeCatalogEntry & { transport: FederatedThemeTransport } =>
+      entry.transport.kind === "federated",
+  );
+  const workspaceImports = workspaceThemes.map(
+    (entry, index) =>
+      `import workspaceTheme${index} from ${JSON.stringify(entry.transport.module)};`,
+  );
+  const workspaceBindings = workspaceThemes.map(
+    (entry, index) => `[${JSON.stringify(entry.id)}, workspaceTheme${index}]`,
+  );
+  const federationImports = federatedThemes.length
+    ? [
+        'import { createInstance } from "@module-federation/enhanced/runtime";',
+        'import * as orgZhixingReact from "react";',
+        'import * as orgZhixingReactDom from "react-dom";',
+      ]
+    : [];
+  const remotes = [...new Map(federatedThemes.map((entry) => [entry.transport.remoteName, entry])).values()];
+  const federationBinding = federatedThemes.length
+    ? [
+        "const orgZhixingThemeFederation = createInstance({",
+        `  name: ${JSON.stringify(`org_zhixing_host_${snapshot.instanceId.replace(/[^a-zA-Z0-9_]/g, "_")}`)},`,
+        "  remotes: [",
+        ...remotes.flatMap((entry) => [
           "    {",
-          `      name: ${JSON.stringify(selected.transport.remoteName)},`,
-          `      entry: ${JSON.stringify(selected.transport.entry)},`,
+          `      name: ${JSON.stringify(entry.transport.remoteName)},`,
+          `      entry: ${JSON.stringify(entry.transport.entry)},`,
           "    },",
-          "  ],",
-          "  shared: {",
-          "    react: {",
-          "      version: orgZhixingReact.version,",
-          '      scope: "default",',
-          "      lib: () => orgZhixingReact,",
-          "      shareConfig: { singleton: true, requiredVersion: false },",
-          "    },",
-          '    "react-dom": {',
-          "      version: orgZhixingReactDom.version,",
-          '      scope: "default",',
-          "      lib: () => orgZhixingReactDom,",
-          "      shareConfig: { singleton: true, requiredVersion: false },",
-          "    },",
-          "  },",
-          "});",
-          "let isolatedSelectedTheme;",
-          "let isolatedSelectedThemePromise;",
-          "const loadIsolatedSelectedTheme = () => {",
-          "  if (!isolatedSelectedThemePromise) {",
-          `    isolatedSelectedThemePromise = orgZhixingThemeFederation.loadRemote(${JSON.stringify(selected.transport.module)}).then((federatedThemeExports) => {`,
-          "      const federatedThemeModule = federatedThemeExports?.default ?? federatedThemeExports;",
-          `      if (federatedThemeModule?.protocol !== ${JSON.stringify(themeModuleProtocol)}) {`,
-          `        throw new Error(${JSON.stringify(`THEME-E033 federated theme "${selected.id}" uses an unsupported module protocol`)});`,
-          "      }",
-          "      isolatedSelectedTheme = federatedThemeModule.theme;",
-          "      return isolatedSelectedTheme;",
-          "    }).catch((error) => {",
-          "      isolatedSelectedTheme = undefined;",
-          "      isolatedSelectedThemePromise = undefined;",
-          "      throw error;",
-          "    });",
-          "  }",
-          "  return isolatedSelectedThemePromise;",
-          "};",
-          "const getIsolatedSelectedTheme = () => {",
-          "  if (!isolatedSelectedTheme) {",
-          `    throw new Error(${JSON.stringify(`THEME-E035 federated theme "${selected.id}" has not finished loading`)});`,
-          "  }",
-          "  return isolatedSelectedTheme;",
-          "};",
-        ];
+        ]),
+        "  ],",
+        "  shared: {",
+        "    react: {",
+        "      version: orgZhixingReact.version,",
+        '      scope: "default",',
+        "      lib: () => orgZhixingReact,",
+        "      shareConfig: { singleton: true, requiredVersion: false },",
+        "    },",
+        '    "react-dom": {',
+        "      version: orgZhixingReactDom.version,",
+        '      scope: "default",',
+        "      lib: () => orgZhixingReactDom,",
+        "      shareConfig: { singleton: true, requiredVersion: false },",
+        "    },",
+        "  },",
+        "});",
+      ]
+    : [];
+  const federatedBindings = federatedThemes.map((entry) => [
+    entry.id,
+    entry.transport.module,
+  ]);
   return [
-    ...moduleBinding,
+    ...workspaceImports,
+    ...federationImports,
+    ...federationBinding,
     `export const themeIsolationId = ${JSON.stringify(snapshot.instanceId)};`,
     `export const isolatedSelectedThemeId = ${JSON.stringify(snapshot.selectedThemeId)};`,
     `export const isolatedSelectedVariant = ${JSON.stringify(snapshot.selectedVariant)};`,
     `export const isolatedSelectedThemeMetadata = ${JSON.stringify(selected)};`,
     `export const isolatedThemeCatalog = ${JSON.stringify(snapshot.catalog)};`,
-    "export { getIsolatedSelectedTheme, loadIsolatedSelectedTheme };",
+    `const workspaceThemesById = new Map([${workspaceBindings.join(", ")}]);`,
+    `const federatedThemeModulesById = new Map(${JSON.stringify(federatedBindings)});`,
+    "const loadedThemesById = new Map();",
+    "const loadingThemesById = new Map();",
+    "const loadFederatedThemeById = (id, module) => {",
+    "  const loaded = loadedThemesById.get(id);",
+    "  if (loaded) return Promise.resolve(loaded);",
+    "  const pending = loadingThemesById.get(id);",
+    "  if (pending) return pending;",
+    "  const loading = orgZhixingThemeFederation.loadRemote(module).then((federatedThemeExports) => {",
+    "    const federatedThemeModule = federatedThemeExports?.default ?? federatedThemeExports;",
+    `    if (federatedThemeModule?.protocol !== ${JSON.stringify(themeModuleProtocol)}) {`,
+    '      throw new Error(`THEME-E033 federated theme "${id}" uses an unsupported module protocol`);',
+    "    }",
+    "    const theme = federatedThemeModule.theme;",
+    "    loadedThemesById.set(id, theme);",
+    "    return theme;",
+    "  }).catch((error) => {",
+    "    loadingThemesById.delete(id);",
+    "    throw error;",
+    "  });",
+    "  loadingThemesById.set(id, loading);",
+    "  return loading;",
+    "};",
+    "export const loadThemeById = (id) => {",
+    "  const workspaceTheme = workspaceThemesById.get(id);",
+    "  if (workspaceTheme) return Promise.resolve(workspaceTheme);",
+    "  const federatedModule = federatedThemeModulesById.get(id);",
+    "  if (federatedModule) return loadFederatedThemeById(id, federatedModule);",
+    '  return Promise.reject(new Error(`THEME-E001 unknown theme "${id}"`));',
+    "};",
+    "export const getIsolatedSelectedTheme = () => {",
+    "  const workspaceTheme = workspaceThemesById.get(isolatedSelectedThemeId);",
+    "  if (workspaceTheme) return workspaceTheme;",
+    "  const loaded = loadedThemesById.get(isolatedSelectedThemeId);",
+    "  if (loaded) return loaded;",
+    '  throw new Error(`THEME-E035 federated theme "${isolatedSelectedThemeId}" has not finished loading`);',
+    "};",
+    "export const loadIsolatedSelectedTheme = () => loadThemeById(isolatedSelectedThemeId);",
   ].join("\n");
 };
 import { themeModuleProtocol } from "@org-zhixing/theme-contract";

@@ -141,6 +141,23 @@ describe("Org Zhixing React Router app", () => {
     expect(document.body.textContent).toContain("Static Gallery");
   });
 
+  it("loads every registered theme through the dedicated theme route", async () => {
+    const router = await mountStaticRouter("/themes/documents");
+
+    await waitForText("TECHNICAL KNOWLEDGE BASE");
+    expect(document.body.textContent).not.toContain("ORG-ZHIXING-DOC-E001");
+
+    for (const themeId of ["elegant-blog", "minimal-notes"]) {
+      await act(async () => {
+        await router.navigate({ to: "/themes/$themeId", params: { themeId } });
+      });
+      await vi.waitFor(() => {
+        expect(document.body.textContent).not.toContain("ORG-ZHIXING-DOC-E001");
+      });
+      expect(window.location.pathname).toBe(`/themes/${themeId}`);
+    }
+  });
+
   it("keeps Zen reading chrome-free and handles keyboard article navigation", async () => {
     const fetch = fetchBlogStaticFixture();
     await mountStaticRouter("/blogs", fetch);

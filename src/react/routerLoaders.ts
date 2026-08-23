@@ -1,8 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { redirect } from "@tanstack/react-router";
+import { notFound, redirect } from "@tanstack/react-router";
 import { renderThemeLayout, type ZhixingTheme } from "../library/theme";
 import type { ViewKey } from "../model";
 import type { ContentShellData } from "../services/contentServices";
+import { isolatedThemeCatalog } from "virtual:org-zhixing/theme-runtime";
+import { loadThemeRuntimeById } from "../theme-system/react/ThemeRuntimeProvider";
 import { loadStaticDocumentById } from "../services/staticDocumentById";
 import {
   contentRoutesForShell,
@@ -102,6 +104,20 @@ export async function loadThemeDocumentQuery(context: OrgZhixingRouterContext, d
 
   return { kind: "static" as const, document };
 }
+
+export const loadThemePreviewQuery = async (
+  context: OrgZhixingRouterContext,
+  themeId: string,
+) => {
+  if (!isolatedThemeCatalog.some(({ id }) => id === themeId)) {
+    throw notFound();
+  }
+  const [shell, runtime] = await Promise.all([
+    loadContentShellQuery(context),
+    loadThemeRuntimeById(themeId),
+  ]);
+  return { shell, runtime };
+};
 
 async function loadThemeDocumentBindingQuery(context: OrgZhixingRouterContext, docId: string) {
   const shell = await loadContentShellQuery(context);

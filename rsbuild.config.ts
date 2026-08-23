@@ -199,7 +199,7 @@ export default defineConfig({
     base: deploymentBasePath,
     host: "127.0.0.1",
     port: 5173,
-    strictPort: true,
+    strictPort: false,
     historyApiFallback: true,
     publicDir: {
       name: publicRoot,

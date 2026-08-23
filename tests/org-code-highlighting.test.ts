@@ -6,6 +6,7 @@ import {
   installOrgCodeHighlighting,
   prepareOrgCodeBlocks,
 } from "../src/react/orgCodeHighlighting";
+import { orgCodeHighlightTheme } from "../src/orgCodeHighlightTheme";
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -66,7 +67,7 @@ describe("Org Babel syntax highlighting", () => {
       "const answer = 42",
       expect.objectContaining({
         lang: "typescript",
-        theme: "tokyo-night",
+        theme: orgCodeHighlightTheme,
       }),
     );
     expect(document.querySelector(".org-code-highlight-pre")).not.toBeNull();
@@ -121,7 +122,9 @@ describe("Org Babel syntax highlighting", () => {
       expect(languageLoader).toHaveBeenCalledTimes(4);
       expect(codeToHtml).toHaveBeenCalledTimes(4);
       for (const [, options] of codeToHtml.mock.calls) {
-        expect(options).toEqual(expect.objectContaining({ lang: "scheme", theme: "tokyo-night" }));
+        expect(options).toEqual(
+          expect.objectContaining({ lang: "scheme", theme: orgCodeHighlightTheme }),
+        );
       }
     } finally {
       stop();
@@ -197,5 +200,8 @@ describe("Org Babel syntax highlighting", () => {
     expect(css).toContain(".documents-document-body pre code span");
     expect(css).toContain("background: transparent !important");
     expect(css).toContain("background: var(--docs-crust) !important");
+    expect(css).toContain("--docs-code-surface: #f7f8fa");
+    expect(css).toContain("--docs-code-header: #f0f3f6");
+    expect(css).toContain("background: var(--docs-code-surface) !important");
   });
 });

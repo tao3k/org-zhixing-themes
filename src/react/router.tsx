@@ -13,7 +13,12 @@ import type { AgendaPanelKey } from "../agendaTypes";
 import { isAgendaMode, isAgendaPanel } from "../agendaState";
 import { renderAppView as renderView } from "../appViewRender";
 import { renderThemeLayout } from "../library/theme";
-import { useThemeRuntime } from "../theme-system/react/ThemeRuntimeProvider";
+import type { ContentShellData } from "../services/contentServices";
+import {
+  ThemeRuntimeProvider,
+  useThemeRuntime,
+  type ThemeRuntime,
+} from "../theme-system/react/ThemeRuntimeProvider";
 import { travelViewFromStaticSite } from "../travelSiteProjection";
 import { isEditableTarget, viewDomNodes } from "./routeViewHelpers";
 import { getReactQueryClient } from "./queryClient";
@@ -30,6 +35,7 @@ import {
   loadDocumentQuery,
   loadGalleryQuery,
   loadNotesQuery,
+  loadThemePreviewQuery,
   loadThemeDocumentQuery,
   redirectToThemeContentRoot,
   type OrgZhixingRouterContext,
@@ -114,6 +120,13 @@ const diagnosticsRoute = createRoute({
   loader: ({ context }) => loadDocumentQuery(context, "diagnostics", {}),
 });
 
+const themePreviewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/themes/$themeId",
+  component: ThemePreviewPage,
+  loader: ({ context, params }) => loadThemePreviewQuery(context, params.themeId),
+});
+
 const themeDocumentRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/$",
@@ -132,6 +145,7 @@ const routeTree = rootRoute.addChildren([
   agendaRoute,
   captureRoute,
   diagnosticsRoute,
+  themePreviewRoute,
   themeDocumentRoute,
 ]);
 
@@ -176,6 +190,43 @@ function ThemeDocumentPage(): ReactNode {
     return <RoutedHtmlSurface html={data.html} />;
   }
   return <RoutedHtmlSurface html={data.document.html} />;
+}
+
+function ThemePreviewPage(): ReactNode {
+  const { runtime, shell } = themePreviewRoute.useLoaderData();
+  const contentRoutes = contentRoutesForShell(shell, runtime.selectedTheme);
+  return (
+    <ThemeRuntimeProvider runtime={runtime}>
+      {contentRoutes ? (
+        contentRoutes.renderHome(shell)
+      ) : (
+        <ThemePreviewLayout runtime={runtime} shell={shell} />
+      )}
+    </ThemeRuntimeProvider>
+  );
+}
+
+function ThemePreviewLayout({
+  runtime,
+  shell,
+}: {
+  runtime: ThemeRuntime;
+  shell: ContentShellData;
+}): ReactNode {
+  const [html, setHtml] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    void renderThemeLayout(runtime.selectedTheme, "index", {
+      site: shell.siteConfig,
+      route: { kind: "index", path: `/themes/${runtime.selection.id}` },
+      staticSite: shell.staticSite ?? null,
+      document: null,
+    }).then(({ html: renderedHtml }) => {
+      if (!controller.signal.aborted) setHtml(renderedHtml);
+    });
+    return () => controller.abort();
+  }, [runtime, shell]);
+  return html ? <RoutedHtmlSurface html={html} /> : null;
 }
 
 function BlogIndexPage(): ReactNode {
