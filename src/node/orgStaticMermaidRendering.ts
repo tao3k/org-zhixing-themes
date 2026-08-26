@@ -1,4 +1,4 @@
-import { Window } from "happy-dom";
+import { fileURLToPath } from "node:url";
 
 import { findMermaidSourceBlocks } from "../react/mermaidDiagrams";
 
@@ -8,8 +8,6 @@ export type StaticMermaidRenderer = (
   source: string,
   variant: StaticMermaidVariant,
 ) => Promise<string>;
-
-type MermaidApi = (typeof import("mermaid"))["default"];
 
 const mermaidPalette: Readonly<Record<StaticMermaidVariant, Record<string, string>>> = {
   latte: {
@@ -50,74 +48,113 @@ const mermaidPalette: Readonly<Record<StaticMermaidVariant, Record<string, strin
   },
 };
 
-let mermaidModule: Promise<MermaidApi> | null = null;
 let diagramSequence = 0;
+type MermaidRenderRequest = {
+  id: string;
+  source: string;
+  variant: StaticMermaidVariant;
+};
 
-const mermaidWindow = new Window();
-const domGlobals = {
-  window: mermaidWindow,
-  document: mermaidWindow.document,
-  Element: mermaidWindow.Element,
-  HTMLElement: mermaidWindow.HTMLElement,
-  Node: mermaidWindow.Node,
-  SVGElement: mermaidWindow.SVGElement,
-  DOMParser: mermaidWindow.DOMParser,
-  XMLSerializer: mermaidWindow.XMLSerializer,
-  getComputedStyle: mermaidWindow.getComputedStyle.bind(mermaidWindow),
-  requestAnimationFrame: mermaidWindow.requestAnimationFrame.bind(mermaidWindow),
-  cancelAnimationFrame: mermaidWindow.cancelAnimationFrame.bind(mermaidWindow),
-} as const;
+const mermaidConfig = (variant: StaticMermaidVariant) => {
+  const palette = mermaidPalette[variant];
+  return {
+    startOnLoad: false,
+    securityLevel: "strict",
+    suppressErrorRendering: true,
+    maxEdges: 1_000,
+    maxTextSize: 50_000,
+    theme: "base",
+    darkMode: variant !== "latte",
+    fontFamily: "inherit",
+    themeVariables: {
+      background: palette.background,
+      primaryColor: palette.primary,
+      primaryTextColor: palette.text,
+      primaryBorderColor: palette.border,
+      lineColor: palette.line,
+      secondaryColor: palette.secondary,
+      tertiaryColor: palette.tertiary,
+    },
+  } as const;
+};
 
-const withMermaidDom = async <Value>(operation: () => Promise<Value>): Promise<Value> => {
-  const previous = new Map<string, PropertyDescriptor | undefined>();
-  for (const [name, value] of Object.entries(domGlobals)) {
-    previous.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
-    Object.defineProperty(globalThis, name, {
-      configurable: true,
-      value,
-      writable: true,
-    });
-  }
+const renderMermaidBatch = async (requests: readonly MermaidRenderRequest[]): Promise<string[]> => {
+  if (requests.length === 0) return [];
+  const { chromium } = await import("@playwright/test");
+  const browser = await chromium.launch({ headless: true });
   try {
-    return await operation();
+    const page = await browser.newPage();
+    await page.setContent("<!doctype html><html><body></body></html>");
+    const mermaidEntry = import.meta.resolve("mermaid");
+    await page.addScriptTag({
+      path: fileURLToPath(new URL("./mermaid.min.js", mermaidEntry)),
+    });
+    const rendered: string[] = [];
+    for (const request of requests) {
+      rendered.push(
+        await page.evaluate(
+          async ({ config, id, source }) => {
+            const mermaid = (
+              window as unknown as {
+                mermaid: {
+                  initialize: (value: object) => void;
+                  render: (renderId: string, text: string) => Promise<{ svg: string }>;
+                };
+              }
+            ).mermaid;
+            mermaid.initialize(config);
+            return (await mermaid.render(id, source)).svg;
+          },
+          { config: mermaidConfig(request.variant), id: request.id, source: request.source },
+        ),
+      );
+    }
+    return rendered;
   } finally {
-    for (const [name, descriptor] of previous) {
-      if (descriptor) Object.defineProperty(globalThis, name, descriptor);
-      else Reflect.deleteProperty(globalThis, name);
+    await browser.close();
+  }
+};
+
+const appendPreview = (
+  document: Document,
+  block: HTMLPreElement,
+  variant: StaticMermaidVariant,
+  svg: string,
+): void => {
+  const template = document.createElement("template");
+  template.dataset.orgMermaidStaticPreview = variant;
+  template.innerHTML = svg;
+  block.before(template);
+};
+
+const renderWithInjectedRenderer = async (
+  document: Document,
+  blocks: readonly HTMLPreElement[],
+  render: StaticMermaidRenderer,
+): Promise<void> => {
+  for (const block of blocks) {
+    const source = block.textContent ?? "";
+    for (const variant of staticMermaidVariants) {
+      appendPreview(document, block, variant, await render(source, variant));
     }
   }
 };
 
-const loadMermaid = (): Promise<MermaidApi> => {
-  mermaidModule ??= withMermaidDom(async () => (await import("mermaid")).default);
-  return mermaidModule;
-};
-
-const renderMermaid: StaticMermaidRenderer = async (source, variant) => {
-  const palette = mermaidPalette[variant];
-  return withMermaidDom(async () => {
-    const mermaid = await loadMermaid();
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: "strict",
-      suppressErrorRendering: true,
-      maxEdges: 1_000,
-      maxTextSize: 50_000,
-      theme: "base",
-      darkMode: variant !== "latte",
-      fontFamily: "inherit",
-      themeVariables: {
-        background: palette.background,
-        primaryColor: palette.primary,
-        primaryTextColor: palette.text,
-        primaryBorderColor: palette.border,
-        lineColor: palette.line,
-        secondaryColor: palette.secondary,
-        tertiaryColor: palette.tertiary,
-      },
-    });
-    const { svg } = await mermaid.render(`org-zhixing-static-${++diagramSequence}`, source);
-    return svg;
+const renderWithBrowser = async (
+  document: Document,
+  blocks: readonly HTMLPreElement[],
+): Promise<void> => {
+  const requests = blocks.flatMap((block) =>
+    staticMermaidVariants.map((variant) => ({
+      id: `org-zhixing-static-${++diagramSequence}`,
+      source: block.textContent ?? "",
+      variant,
+    })),
+  );
+  const rendered = await renderMermaidBatch(requests);
+  requests.forEach((request, index) => {
+    const block = blocks[Math.floor(index / staticMermaidVariants.length)];
+    if (block) appendPreview(document, block, request.variant, rendered[index] ?? "");
   });
 };
 
@@ -127,20 +164,13 @@ const renderMermaid: StaticMermaidRenderer = async (source, variant) => {
  */
 export const renderOrgStaticMermaidDocument = async (
   document: Document,
-  render: StaticMermaidRenderer = renderMermaid,
+  render?: StaticMermaidRenderer,
 ): Promise<void> => {
   const blocks = findMermaidSourceBlocks(document).filter(
     (block) =>
       block.previousElementSibling?.matches("template[data-org-mermaid-static-preview]") !== true,
   );
 
-  for (const block of blocks) {
-    const source = block.textContent ?? "";
-    for (const variant of staticMermaidVariants) {
-      const template = document.createElement("template");
-      template.dataset.orgMermaidStaticPreview = variant;
-      template.innerHTML = await render(source, variant);
-      block.before(template);
-    }
-  }
+  if (render) await renderWithInjectedRenderer(document, blocks, render);
+  else await renderWithBrowser(document, blocks);
 };

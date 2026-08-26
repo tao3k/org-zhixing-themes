@@ -2,6 +2,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Window } from "happy-dom";
 import { describe, expect, it } from "vitest";
 
 describe("external documents preview", () => {
@@ -48,12 +49,16 @@ $ integral_0^1 x dif x $
       const source = manifest.sources[0];
       expect(source?.sourceFile).toBe("docs/latex-typst.org");
       const shard = readFileSync(join(outputDir, source!.shardPath), "utf8");
+      const projection = JSON.parse(shard) as { html: string };
+      const window = new Window();
+      window.document.body.innerHTML = projection.html;
+      const figures = [...window.document.querySelectorAll("figure.org-code-highlight")];
       expect(shard).toContain('class=\\"org-code-highlight\\" data-org-code-highlight=\\"ready\\"');
       expect(shard).toContain("<figcaption>latex</figcaption>");
       expect(shard).toContain("<figcaption>typst</figcaption>");
-      expect(shard).toContain(
-        'class=\\"shiki shiki-themes github-light github-dark org-code-highlight-pre\\"',
-      );
+      expect(figures).toHaveLength(2);
+      expect(projection.html).toContain("org-code-highlight-pre src src-latex");
+      expect(projection.html).toContain("org-code-highlight-pre src src-typst");
       expect(shard).toContain("\\\\(E = mc^2\\\\)");
     } finally {
       rmSync(root, { force: true, recursive: true });

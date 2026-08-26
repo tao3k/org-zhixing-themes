@@ -81,6 +81,7 @@ export const highlightOrgStaticDocument = async (document: Document): Promise<vo
     const figure = document.createElement("figure");
     figure.className = "org-code-highlight";
     figure.dataset.orgCodeHighlight = "ready";
+    if (block.dataset.pooFlow !== undefined) figure.dataset.pooFlow = block.dataset.pooFlow;
     const caption = document.createElement("figcaption");
     caption.textContent = language;
     const template = document.createElement("template");
@@ -88,9 +89,11 @@ export const highlightOrgStaticDocument = async (document: Document): Promise<vo
       lang: language,
       themes: orgCodeHighlightThemes,
     });
-    const pre = template.content.firstElementChild;
+    const pre = template.content.firstElementChild as HTMLElement | null;
     if (!pre) continue;
     pre.classList.add("org-code-highlight-pre");
+    for (const className of block.classList) pre.classList.add(className);
+    for (const [name, value] of Object.entries(block.dataset)) pre.dataset[name] = value;
     figure.append(caption, pre);
     const parent = block.parentElement;
     if (parent?.tagName === "P" && parent.children.length === 1) {

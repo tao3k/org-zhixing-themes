@@ -23,6 +23,21 @@ describe("Documents Mermaid projection", () => {
     expect(findMermaidSourceBlocks(document)).toHaveLength(2);
   });
 
+  it("discovers source blocks without browser constructor globals", () => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, "HTMLPreElement");
+    Reflect.deleteProperty(globalThis, "HTMLPreElement");
+    try {
+      document.body.innerHTML = `
+        <pre class="src src-mermaid">flowchart LR; A --&gt; B</pre>
+        <pre><code class="language-mermaid">flowchart TD; A --&gt; B</code></pre>
+      `;
+
+      expect(findMermaidSourceBlocks(document)).toHaveLength(2);
+    } finally {
+      if (descriptor) Object.defineProperty(globalThis, "HTMLPreElement", descriptor);
+    }
+  });
+
   it("preserves source as an accessible fallback before the lazy renderer loads", () => {
     document.body.innerHTML = `<pre class="src src-mermaid">flowchart TD; A --&gt; B</pre>`;
 

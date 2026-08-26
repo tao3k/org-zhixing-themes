@@ -42,7 +42,10 @@ const loadMermaid: MermaidLoader = () => {
 export const findMermaidSourceBlocks = (root: ParentNode): HTMLPreElement[] => {
   const blocks = new Set<HTMLPreElement>();
   for (const candidate of root.querySelectorAll<HTMLElement>(mermaidSourceSelector)) {
-    const block = candidate instanceof HTMLPreElement ? candidate : candidate.closest("pre");
+    const block =
+      candidate.localName === "pre"
+        ? (candidate as HTMLPreElement)
+        : candidate.closest<HTMLPreElement>("pre");
     if (block) blocks.add(block);
   }
   return [...blocks];
@@ -51,8 +54,10 @@ export const findMermaidSourceBlocks = (root: ParentNode): HTMLPreElement[] => {
 const staticPreviewTemplates = (block: HTMLPreElement): HTMLTemplateElement[] => {
   const templates: HTMLTemplateElement[] = [];
   let sibling = block.previousElementSibling;
-  while (sibling instanceof HTMLTemplateElement && sibling.dataset.orgMermaidStaticPreview) {
-    templates.unshift(sibling);
+  while (sibling?.localName === "template") {
+    const template = sibling as HTMLTemplateElement;
+    if (!template.dataset.orgMermaidStaticPreview) break;
+    templates.unshift(template);
     sibling = sibling.previousElementSibling;
   }
   return templates;

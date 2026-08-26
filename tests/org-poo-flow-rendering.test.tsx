@@ -25,6 +25,24 @@ describe("Org Poo Flow rendering", () => {
     expect(findOrgPooFlowBlocks(root)).toHaveLength(2);
   });
 
+  it("treats a statically highlighted Scheme figure as the semantic workflow block", () => {
+    document.body.innerHTML = `
+      <main>
+        <figure class="org-code-highlight" data-poo-flow="browser-profile">
+          <figcaption>scheme</figcaption>
+          <pre class="org-code-highlight-pre src src-scheme" data-poo-flow="browser-profile">
+            <code>(workflow (step publish))</code>
+          </pre>
+        </figure>
+      </main>
+    `;
+    const root = document.querySelector("main") as HTMLElement;
+
+    expect(findOrgPooFlowBlocks(root)).toEqual([
+      document.querySelector("figure.org-code-highlight"),
+    ]);
+  });
+
   it("keeps source available and loads an injected runtime graph lazily", async () => {
     const root = fixture();
     const runner: PooFlowRunner = {

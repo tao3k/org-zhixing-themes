@@ -35,17 +35,23 @@ export function configureOrgPooFlowWorkflow(workflowId: string, runner: PooFlowR
 }
 
 export function findOrgPooFlowBlocks(root: ParentNode): HTMLElement[] {
-  const matches = new Set(root.querySelectorAll<HTMLElement>("pre[data-poo-flow]"));
+  const semanticContainer = (block: HTMLElement): HTMLElement =>
+    block.closest<HTMLElement>("figure.org-code-highlight") ?? block;
+  const matches = new Set(
+    [...root.querySelectorAll<HTMLElement>("pre[data-poo-flow]")].map(semanticContainer),
+  );
   root
     .querySelectorAll<HTMLElement>("pre.src-scheme, pre > code.language-scheme")
     .forEach((candidate) => {
       const block = candidate.matches("pre") ? candidate : candidate.closest<HTMLElement>("pre");
-      if (block && (block.dataset.pooFlow !== undefined || readPooFlowProjection(block)))
-        matches.add(block);
+      if (!block) return;
+      const container = semanticContainer(block);
+      if (container.dataset.pooFlow !== undefined || readPooFlowProjection(container))
+        matches.add(container);
     });
   root.querySelectorAll<HTMLElement>("pre[data-poo-flow] > code").forEach((code) => {
     const block = code.closest<HTMLElement>("pre");
-    if (block) matches.add(block);
+    if (block) matches.add(semanticContainer(block));
   });
   return [...matches];
 }
