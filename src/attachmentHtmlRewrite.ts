@@ -21,6 +21,9 @@ export const rewriteAttachmentLinks = (
       continue;
     }
     element.setAttribute(attribute, rewritten);
+    if (element instanceof HTMLImageElement) {
+      element.classList.add("org-attachment-image");
+    }
     if (element instanceof HTMLAnchorElement) {
       element.target = "_blank";
       element.rel = "noreferrer";

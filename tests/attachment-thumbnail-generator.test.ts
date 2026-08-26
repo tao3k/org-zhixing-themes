@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -7,6 +7,8 @@ import {
   attachmentThumbnailPublicDir,
   attachmentThumbnailSize,
   generateAttachmentThumbnail,
+  prepareAttachmentThumbnailOutput,
+  pruneAttachmentThumbnailOutput,
 } from "../src/node/attachmentThumbnailGenerator.mjs";
 
 describe("attachment thumbnail generator", () => {
@@ -41,5 +43,22 @@ describe("attachment thumbnail generator", () => {
     await writeFile(sourcePath, "not an image", "utf8");
 
     await expect(generateAttachmentThumbnail({ sourcePath, outputRoot: root })).resolves.toBeNull();
+  });
+
+  it("preserves referenced content-addressed thumbnails and prunes stale files", async () => {
+    const root = await mkdtemp(resolve(tmpdir(), "org-zhixing-thumbnail-"));
+    const thumbnailRoot = resolve(root, attachmentThumbnailPublicDir);
+    const referenced = `${attachmentThumbnailPublicDir}/referenced.webp`;
+    await mkdir(thumbnailRoot, { recursive: true });
+    await writeFile(resolve(root, referenced), "referenced", "utf8");
+    await writeFile(resolve(thumbnailRoot, "stale.webp"), "stale", "utf8");
+
+    prepareAttachmentThumbnailOutput();
+    await pruneAttachmentThumbnailOutput(root, [referenced]);
+
+    await expect(access(resolve(root, referenced))).resolves.toBeUndefined();
+    await expect(access(resolve(thumbnailRoot, "stale.webp"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
   });
 });

@@ -142,7 +142,14 @@ describe("Org Zhixing React Router app", () => {
   });
 
   it("loads every registered theme through the dedicated theme route", async () => {
-    const router = await mountStaticRouter("/themes/documents");
+    const wallpaper = staticProjection();
+    wallpaper.html =
+      '<main><h1>Static Gallery</h1><p>Static rendered body</p><img src="attachment:static.jpg"></main>';
+    const staticSite: StaticSiteData = {
+      ...staticSiteFixture(),
+      sources: [wallpaper, demoProjection(), travelProjection()],
+    };
+    const router = await mountStaticRouter("/themes/documents", fetchStaticFixture(staticSite));
 
     await waitForText("TECHNICAL KNOWLEDGE BASE");
     expect(document.body.textContent).not.toContain("ORG-ZHIXING-DOC-E001");
@@ -161,6 +168,11 @@ describe("Org Zhixing React Router app", () => {
     expect(window.location.pathname).toBe("/themes/documents/wallpaper-gallery");
     expect(document.documentElement.dataset.theme).toBe("documents");
     expect(document.querySelector(".documents-header")).toBeTruthy();
+    await vi.waitFor(() => {
+      const image = document.querySelector<HTMLImageElement>("img");
+      expect(image?.src).toBe("http://localhost:3000/org-zhixing.media/blog/attach/id/static.jpg");
+      expect(image?.classList.contains("org-attachment-image")).toBe(true);
+    });
 
     for (const themeId of ["elegant-blog", "minimal-notes"]) {
       await act(async () => {
@@ -392,8 +404,7 @@ const testQueryClientFactory = (): (() => Promise<import("@tanstack/react-query"
   return () => queryClient;
 };
 
-const fetchStaticFixture = () => {
-  const staticSite = staticSiteFixture();
+const fetchStaticFixture = (staticSite = staticSiteFixture()) => {
   const gallery = staticGalleryFixture();
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = input instanceof URL ? input : new URL(String(input), window.location.href);

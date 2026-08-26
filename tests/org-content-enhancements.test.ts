@@ -1,9 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { createDocumentView } from "../src/model";
+import { createDocumentView, withAttachmentInventory } from "../src/model";
 import { applyOrgSemanticEnhancements } from "../src/react/orgContentEnhancements";
 import { sectionRecord, sourceRange } from "./modelFixtures";
+import { staticProjection } from "./staticProjection.fixture";
 
 describe("Org semantic content enhancements", () => {
+  it("rewrites attachment protocol images for every themed Org surface", () => {
+    const projection = staticProjection();
+    const root = document.createElement("div");
+    root.innerHTML = '<img src="attachment:static.jpg">';
+    const documentView = withAttachmentInventory(
+      createDocumentView(
+        projection.viewIndex.records,
+        projection.lint.findings,
+        projection.sectionIndex?.records ?? [],
+      ),
+      projection.attachmentInventory!,
+    );
+
+    applyOrgSemanticEnhancements(root, documentView, projection.sourceFile);
+
+    const image = root.querySelector("img");
+    expect(image?.src).toBe("http://localhost:3000/org-zhixing.media/blog/attach/id/static.jpg");
+    expect(image?.classList.contains("org-attachment-image")).toBe(true);
+  });
+
   it("leaves source-block frame ownership to the specialized renderer", () => {
     const root = document.createElement("div");
     root.innerHTML = `
