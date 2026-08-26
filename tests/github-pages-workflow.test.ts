@@ -13,6 +13,10 @@ const downstreamGuidePath = resolve(
 describe("GitHub Pages workflow", () => {
   it("deploys the build artifact only after the complete CI gates pass", () => {
     const workflow = readFileSync(ciWorkflowPath, "utf8");
+    const pagesArtifact = workflow.slice(
+      workflow.indexOf("  pages-artifact:"),
+      workflow.indexOf("  deploy-pages:"),
+    );
 
     expect(workflow).toContain("actions/checkout@v7");
     expect(workflow).toContain("actions/setup-node@v6");
@@ -22,9 +26,14 @@ describe("GitHub Pages workflow", () => {
     expect(workflow).toContain("actions/upload-pages-artifact@v5");
     expect(workflow).toContain("actions/deploy-pages@v5");
     expect(workflow).toContain("workflow_dispatch:");
-    expect(workflow).toMatch(
-      /pages-artifact:[\s\S]*github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/,
-    );
+    expect(pagesArtifact).not.toMatch(/^    if:/m);
+    expect(pagesArtifact).toContain("name: Install static rendering browser");
+    expect(pagesArtifact).toContain("npx playwright install --with-deps chromium");
+    expect(
+      pagesArtifact.match(
+        /github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/g,
+      ),
+    ).toHaveLength(2);
     expect(workflow).toMatch(
       /deploy-pages:[\s\S]*github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/,
     );
