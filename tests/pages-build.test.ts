@@ -1,4 +1,12 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -49,6 +57,12 @@ it("emits Typst Wasm assets under the Pages base path", async () => {
   );
   expect(readFileSync(join(outputDir, compiler[0]!)).byteLength).toBeGreaterThan(0);
   expect(readFileSync(join(outputDir, renderer[0]!)).byteLength).toBeGreaterThan(0);
+
+  const staticSourceHtml = readdirSync(join(outputDir, "org-zhixing.sources"))
+    .map((file) => readFileSync(join(outputDir, "org-zhixing.sources", file), "utf8"))
+    .join("\n");
+  expect(staticSourceHtml).toContain('class=\\"org-code-highlight\\"');
+  expect(staticSourceHtml).toContain('class=\\"shiki ');
 }, 30_000);
 
 afterEach(() => {

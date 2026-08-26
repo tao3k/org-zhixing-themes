@@ -9,4 +9,5 @@ declare module "virtual:org-zhixing/theme-runtime" {
   export const isolatedThemeCatalog: readonly ThemeCatalogEntry[];
   export const getIsolatedSelectedTheme: () => ZhixingTheme;
   export const loadIsolatedSelectedTheme: () => Promise<ZhixingTheme>;
+  export const loadThemeById: (id: string) => Promise<ZhixingTheme>;
 }

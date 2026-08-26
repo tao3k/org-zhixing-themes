@@ -1,5 +1,12 @@
 // Shared by registry generation and theme authoring commands.
-export const stableShellSlots = new Set(["site-header", "site-hero", "runtime-state"]);
+export const stableShellSlots = new Set([
+  "site-header",
+  "site-hero",
+  "runtime-state",
+  "blog-index",
+  "theme-controls",
+  "reader-layout",
+]);
 const strategies = new Set(["wrap", "replace"]);
 const runtimes = new Set(["server", "client", "universal"]);
 const stabilities = new Set(["stable", "experimental", "internal"]);

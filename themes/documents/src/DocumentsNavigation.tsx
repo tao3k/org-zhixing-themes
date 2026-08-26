@@ -1,7 +1,7 @@
-import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { ContentShellData } from "../../../src/services/contentServices";
 import type { StaticSourceSummary } from "../../../src/staticSite/model";
+import { ThemeScopedDocumentLink, ThemeScopedHomeLink } from "../../../src/react/themeBinding";
 
 type DocumentGroup = {
   id: string;
@@ -87,10 +87,10 @@ export function DocumentsNavigation({
         </label>
         <nav className="documents-tree" aria-label="Documentation tree">
           {shell ? (
-            <Link className="documents-tree-home" to="/" activeOptions={{ exact: true }}>
+            <ThemeScopedHomeLink className="documents-tree-home" activeOptions={{ exact: true }}>
               <span aria-hidden="true">⌂</span>
               Documentation home
-            </Link>
+            </ThemeScopedHomeLink>
           ) : (
             <span className="documents-tree-home">
               <span aria-hidden="true">⌂</span>
@@ -111,10 +111,10 @@ export function DocumentsNavigation({
                 <ul>
                   {visibleSources.map((source) => (
                     <li key={source.id}>
-                      <Link params={{ docId: source.id }} to="/$docId">
+                      <ThemeScopedDocumentLink documentId={source.id}>
                         <span>{source.orgTitle ?? source.name}</span>
                         <small>{source.file.replace(/\.org$/i, "")}</small>
-                      </Link>
+                      </ThemeScopedDocumentLink>
                     </li>
                   ))}
                 </ul>

@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   generatePagesThemeGallery,
+  parsePagesThemeGalleryArgs,
   themeConfigSource,
 } from "../packages/theme-tooling/src/pages-theme-gallery.mjs";
 
@@ -45,5 +46,17 @@ describe("GitHub Pages theme gallery", () => {
     expect(await readFile(join(outputDir, "theme-configs/documents.toml"), "utf8")).toContain(
       'theme = "documents"',
     );
+  });
+
+  it("publishes pathname-only theme navigation for both local and Pages bases", () => {
+    const args = [
+      "--config",
+      "public/org-zhixing.toml",
+      "--out",
+      "dist",
+      "--base",
+      "https://tao3k.github.io/org-zhixing-themes/",
+    ];
+    expect(parsePagesThemeGalleryArgs(args).basePath).toBe("/org-zhixing-themes/");
   });
 });

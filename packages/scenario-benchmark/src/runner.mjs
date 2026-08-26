@@ -134,7 +134,7 @@ async function collectBuildMetrics() {
     .filter(([id]) => id !== selectedTheme)
     .map(([, theme]) => theme.package);
   let unselectedThemeMarkers = 0;
-  for (const file of js) {
+  for (const file of initialJs) {
     const source = await readFile(file, "utf8");
     for (const marker of unselectedPackages) {
       const count = occurrences(source, marker);

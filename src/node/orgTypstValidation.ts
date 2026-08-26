@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-import { $typst } from "@myriaddreamin/typst.ts";
+import { NodeCompiler } from "@myriaddreamin/typst-ts-node-compiler";
 
 import { prepareTypstPreviewSource } from "../core/typstSource";
 
@@ -18,6 +18,7 @@ export interface OrgTypstValidationResult {
 
 const typstBlockPattern =
   /^[\t ]*#\+begin_src[\t ]+(?:typst|typ)\b[^\n]*\r?\n([\s\S]*?)^[\t ]*#\+end_src\b/gim;
+const compiler = NodeCompiler.create();
 
 export const formatTypstDiagnostic = (error: unknown): string => {
   if (error instanceof Error) return error.message;
@@ -67,7 +68,8 @@ export const validateOrgTypst = async (roots: string[]): Promise<OrgTypstValidat
 
   for (const block of blocks) {
     try {
-      await $typst.svg({ mainContent: prepareTypstPreviewSource(block.source) });
+      compiler.svg({ mainFileContent: prepareTypstPreviewSource(block.source) });
+      compiler.evictCache(10);
     } catch (error) {
       failures.push(`${block.filePath}:${block.line}: ${formatTypstDiagnostic(error)}`);
     }

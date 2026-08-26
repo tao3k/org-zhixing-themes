@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { normalizeOrgZhixingBasePath } from "../src/react/deploymentBasePath";
+import {
+  assetBasePathFromUrls,
+  normalizeOrgZhixingBasePath,
+} from "../src/react/deploymentBasePath";
 import { routePathForView } from "../src/react/routeViewHelpers";
 
 describe("React Router boundary", () => {
@@ -22,12 +25,48 @@ describe("React Router boundary", () => {
     expect(normalizeOrgZhixingBasePath("/org-zhixing-themes/")).toBe("/org-zhixing-themes");
   });
 
-  it("owns arbitrarily nested theme routes at the root without routing them through Blog", () => {
+  it("derives a nested deployment base from Rsbuild asset URLs", () => {
+    expect(
+      assetBasePathFromUrls(["http://127.0.0.1:5173/org-zhixing-themes/assets/app.12345678.js"]),
+    ).toBe("/org-zhixing-themes");
+    expect(assetBasePathFromUrls(["http://127.0.0.1:5173/assets/app.12345678.js"])).toBe(null);
+  });
+
+  it("routes registered theme previews before the document catch-all", () => {
     const router = readFileSync("src/react/router.tsx", "utf8");
+    expect(router).toContain('path: "/themes/$themeId"');
+    expect(router).toContain('path: "/themes/$themeId/$documentId"');
+    expect(router).toContain("loadThemePreviewQuery(context, params.themeId)");
+    expect(router).toContain(
+      "loadThemePreviewDocumentQuery(context, params.themeId, params.documentId)",
+    );
+    expect(router.indexOf("themePreviewRoute,")).toBeLessThan(
+      router.indexOf("themeDocumentRoute,"),
+    );
     expect(router).toContain('path: "/$"');
     expect(router).toContain("params._splat");
-    expect(router).toContain("component: HomePage");
-    expect(router).toContain("redirectToThemeContentRoot");
-    expect(router).toContain("function ThemeDocumentPage");
+    expect(router).toContain("isThemePreviewPath(location.pathname)");
+    expect(router).toContain("<ThemeRootLayout");
+    expect(router).toContain("theme={runtime.selectedTheme}");
+    const loaders = readFileSync("src/react/routerLoaders.ts", "utf8");
+    expect(loaders).toContain("isolatedThemeCatalog.some");
+    expect(loaders).toContain("throw notFound()");
+    expect(loaders).toContain("loadThemeRuntimeById(themeId)");
+    expect(loaders).toContain("loadThemeDocumentForTheme");
+  });
+
+  it("leaves static theme navigation to the browser instead of intercepting it as a router route", () => {
+    const shellChrome = readFileSync("src/react/ShellChrome.tsx", "utf8");
+    expect(shellChrome).toContain('closest("a[data-theme-navigation-item]")');
+    expect(shellChrome).toContain("if (\n        event.target instanceof Element");
+  });
+
+  it("keeps route-aware Zen preference outside route-local component state", () => {
+    const layout = readFileSync("src/react/ThemeRootLayout.tsx", "utf8");
+    expect(layout).toContain("useZenReadingMode(routeZen)");
+    expect(layout).toContain("onEnterZen={enterZenReadingMode}");
+    expect(layout).toContain("onExitZen={immersiveZen ? exitZenReadingMode : undefined}");
+    expect(layout).toContain("onToggleZen={() => toggleZenReadingMode(routeZen)}");
+    expect(layout).not.toContain("useState(false);");
   });
 });

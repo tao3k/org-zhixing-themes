@@ -74,7 +74,9 @@ describe("route shell writer", () => {
       [nestedHtml, "https://tao3k.github.io/org-zhixing-themes/themes/fixture-theme/"],
     ]) {
       const href = html.match(/<link[^>]+rel="icon"[^>]+href="([^"]+)"/)?.[1];
-      expect(new URL(href!, base).pathname).toBe("/org-zhixing-themes/favicon.svg");
+      expect(new URL(href!, base).pathname).toBe("/org-zhixing-themes/zhixing-mark.svg");
+      const maskHref = html.match(/<link[^>]+rel="mask-icon"[^>]+href="([^"]+)"/)?.[1];
+      expect(new URL(maskHref!, base).pathname).toBe("/org-zhixing-themes/zhixing-mark.svg");
     }
     expect(galleryHtml).toContain('data-static-route="gallery"');
     expect(galleryHtml).toContain('aria-label="Attachment gallery"');

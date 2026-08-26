@@ -3,15 +3,7 @@ import { describe, expect, it } from "vitest";
 import { isEditableKeyboardTarget, isZenModeShortcut } from "../src/react/readerShortcuts";
 
 describe("reader keyboard shortcuts", () => {
-  it("reserves Ctrl+Z for Zen without claiming Command+Z or Alt+Z", () => {
-    expect(
-      isZenModeShortcut({
-        altKey: false,
-        ctrlKey: true,
-        key: "z",
-        metaKey: false,
-      }),
-    ).toBe(true);
+  it("reserves Command+Z for Zen without claiming undo or modified variants", () => {
     expect(
       isZenModeShortcut({
         altKey: false,
@@ -19,13 +11,21 @@ describe("reader keyboard shortcuts", () => {
         key: "z",
         metaKey: true,
       }),
+    ).toBe(true);
+    expect(
+      isZenModeShortcut({
+        altKey: false,
+        ctrlKey: true,
+        key: "z",
+        metaKey: false,
+      }),
     ).toBe(false);
     expect(
       isZenModeShortcut({
         altKey: true,
-        ctrlKey: true,
+        ctrlKey: false,
         key: "z",
-        metaKey: false,
+        metaKey: true,
       }),
     ).toBe(false);
   });

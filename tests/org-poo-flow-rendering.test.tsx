@@ -25,17 +25,33 @@ describe("Org Poo Flow rendering", () => {
     expect(findOrgPooFlowBlocks(root)).toHaveLength(2);
   });
 
+  it("treats a statically highlighted Scheme figure as the semantic workflow block", () => {
+    document.body.innerHTML = `
+      <main>
+        <figure class="org-code-highlight" data-poo-flow="browser-profile">
+          <figcaption>scheme</figcaption>
+          <pre class="org-code-highlight-pre src src-scheme" data-poo-flow="browser-profile">
+            <code>(workflow (step publish))</code>
+          </pre>
+        </figure>
+      </main>
+    `;
+    const root = document.querySelector("main") as HTMLElement;
+
+    expect(findOrgPooFlowBlocks(root)).toEqual([
+      document.querySelector("figure.org-code-highlight"),
+    ]);
+  });
+
   it("keeps source available and loads an injected runtime graph lazily", async () => {
     const root = fixture();
     const runner: PooFlowRunner = {
-      run: vi.fn(
-        async (): Promise<PooFlowRunResult> => ({
-          events: [
-            { id: "validate", label: "Validate", state: "completed" },
-            { id: "publish", label: "Publish", state: "completed" },
-          ],
-        }),
-      ),
+      run: vi.fn(async (): Promise<PooFlowRunResult> => ({
+        events: [
+          { id: "validate", label: "Validate", state: "completed" },
+          { id: "publish", label: "Publish", state: "completed" },
+        ],
+      })),
     };
     const loader = vi.fn(async () => ({
       PooFlowGraph: ({ result }: { result: { events: readonly unknown[] } }) =>
@@ -123,8 +139,9 @@ describe("Org Poo Flow rendering", () => {
     let hiddenDuringRender = true;
     const stop = installOrgPooFlowRendering(root, runner, async () => ({
       PooFlowGraph: () => {
-        hiddenDuringRender = (root.querySelector(".org-poo-flow__graph-host") as HTMLElement)
-          .hidden;
+        hiddenDuringRender = Boolean(
+          (root.querySelector(".org-poo-flow__graph-host") as HTMLElement).hidden,
+        );
         return createElement("output", null, "visible graph");
       },
     }));

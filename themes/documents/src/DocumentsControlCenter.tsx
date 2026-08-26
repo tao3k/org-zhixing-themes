@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { SlidersHorizontalIcon } from "@phosphor-icons/react/dist/csr/SlidersHorizontal";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/dist/csr/MagnifyingGlass";
+import { ArrowsOutIcon } from "@phosphor-icons/react/dist/csr/ArrowsOut";
 import type { ReactSpaSlotProps } from "../../../src/react/themeBinding";
 import { requestOrgSearch } from "../../../src/react/orgSearchEvents";
 
@@ -44,8 +47,7 @@ export function DocumentsControlCenter({
             <strong>{sources.length} indexed Org</strong>
           </header>
           <div className="documents-control-section">
-            <h2>Appearance</h2>
-            <div className="documents-control-variants">
+            <div className="documents-control-variants" aria-label="Theme appearance">
               {(theme.variants ?? []).map((variant) => (
                 <button
                   key={variant.id}
@@ -68,8 +70,11 @@ export function DocumentsControlCenter({
                 requestOrgSearch();
               }}
             >
-              <span>Search Org</span>
-              <kbd>Ctrl F</kbd>
+              <span>
+                <MagnifyingGlassIcon aria-hidden="true" />
+                Search Org
+              </span>
+              <kbd>Command F</kbd>
             </button>
             <button
               type="button"
@@ -78,8 +83,11 @@ export function DocumentsControlCenter({
                 onEnterZen();
               }}
             >
-              <span>Enter Zen mode</span>
-              <kbd>Ctrl Z</kbd>
+              <span>
+                <ArrowsOutIcon aria-hidden="true" />
+                Enter Zen mode
+              </span>
+              <kbd>Command Z</kbd>
             </button>
           </div>
           <footer>
@@ -95,9 +103,11 @@ export function DocumentsControlCenter({
         aria-haspopup="dialog"
         onClick={() => setOpen((value) => !value)}
       >
-        <span aria-hidden="true">◐</span>
-        <strong>Workspace</strong>
-        <small>{sources.length} Org</small>
+        <span aria-hidden="true">
+          <SlidersHorizontalIcon weight="bold" />
+        </span>
+        <strong>Reading</strong>
+        <small>{sources.length}</small>
       </button>
     </div>
   );

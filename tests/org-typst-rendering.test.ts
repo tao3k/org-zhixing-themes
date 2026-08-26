@@ -83,6 +83,70 @@ describe("Org Typst rendering", () => {
     expect(render).toHaveBeenCalledOnce();
   });
 
+  it("starts each preview once when IntersectionObserver is available", async () => {
+    let callback: IntersectionObserverCallback | undefined;
+    const observed = new Set<Element>();
+    const unobserveSpy = vi.fn((target: Element) => observed.delete(target));
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(next: IntersectionObserverCallback) {
+          callback = next;
+        }
+        disconnect = vi.fn();
+        observe = (target: Element) => observed.add(target);
+        unobserve = (target: Element) => unobserveSpy(target);
+      },
+    );
+    document.body.innerHTML = `
+      <pre class="src src-typst">= First</pre>
+      <pre class="src src-typst">= Second</pre>
+    `;
+    vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:typst"), revokeObjectURL: vi.fn() });
+    const render = vi.fn(async (source: string) => `<svg>${source}</svg>`);
+
+    const stop = installOrgTypstRendering(document, render);
+    expect(observed.size).toBe(2);
+    callback?.(
+      [...observed].map(
+        (target) => ({ isIntersecting: true, target }) as IntersectionObserverEntry,
+      ),
+      {} as IntersectionObserver,
+    );
+
+    expect(render).toHaveBeenCalledTimes(2);
+    expect(unobserveSpy).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() =>
+      expect(document.querySelectorAll('[data-org-typst-state="ready"]')).toHaveLength(2),
+    );
+    stop();
+  });
+
+  it("uses a build-time Typst preview without starting the browser renderer", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    document.body.innerHTML = `
+      <figure class="org-code-highlight">
+        <figcaption>typst</figcaption>
+        <template data-org-typst-static-preview="ready"><svg><path fill="currentColor" /></svg></template>
+        <pre><code>= Static</code></pre>
+      </figure>
+    `;
+    const render = vi.fn(async () => "<svg>unexpected</svg>");
+
+    const stop = installOrgTypstRendering(document, render);
+    await vi.waitFor(() =>
+      expect(document.querySelector<HTMLElement>(".org-typst-preview")?.dataset.orgTypstState).toBe(
+        "ready",
+      ),
+    );
+
+    expect(render).not.toHaveBeenCalled();
+    expect(document.querySelector(".org-typst-preview svg path")?.getAttribute("fill")).toBe(
+      "currentColor",
+    );
+    stop();
+  });
+
   it("surfaces an error when compilation fails", async () => {
     vi.stubGlobal("IntersectionObserver", undefined);
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);

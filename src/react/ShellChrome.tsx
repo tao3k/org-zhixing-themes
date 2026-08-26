@@ -21,6 +21,9 @@ import { isEditableKeyboardTarget, isZenModeShortcut } from "./readerShortcuts";
 
 const MobileNavigationDrawer = lazy(() => import("./MobileNavigationDrawer"));
 const OrgSearchPalette = lazy(() => import("./OrgSearchPalette"));
+const OrgWorldTreePanel = lazy(() =>
+  import("./OrgWorldTreePanel").then(({ OrgWorldTreePanel }) => ({ default: OrgWorldTreePanel })),
+);
 
 export type ShellChromeProps = {
   activeVariantId: string;
@@ -28,6 +31,7 @@ export type ShellChromeProps = {
   onVariantChange: (variantId: string) => void;
   onEnterZen: () => void;
   onExitZen?: () => void;
+  onToggleZen: () => void;
   readerMode: "library" | "zen";
   showSiteHero: boolean;
   shell: ContentShellData;
@@ -47,6 +51,7 @@ function ShellChromeView({
   onVariantChange,
   onEnterZen,
   onExitZen,
+  onToggleZen,
   showSiteHero,
 }: ShellChromeProps): ReactNode {
   const [orgSearchOpen, setOrgSearchOpen] = useState(false);
@@ -54,6 +59,13 @@ function ShellChromeView({
   const navigate = useNavigate();
   const onShellClick = useCallback<MouseEventHandler<HTMLElement>>(
     (event) => {
+      if (event.defaultPrevented) return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest("a[data-theme-navigation-item]")
+      ) {
+        return;
+      }
       const navigation = routedAnchorNavigationFromEvent(
         event,
         window.location.href,
@@ -69,17 +81,18 @@ function ShellChromeView({
   useEffect(() => {
     const openSearch = (): void => setOrgSearchOpen(true);
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented) return;
+      if (isZenModeShortcut(event) && !isEditableKeyboardTarget(event.target)) {
+        event.preventDefault();
+        onToggleZen();
+        return;
+      }
       if (event.key === "Escape" && readerMode === "zen" && onExitZen) {
         event.preventDefault();
         onExitZen();
         return;
       }
       if (readerMode !== "library") return;
-      if (isZenModeShortcut(event) && !isEditableKeyboardTarget(event.target)) {
-        event.preventDefault();
-        onEnterZen();
-        return;
-      }
       if (searchEnabled && isOrgSearchShortcut(event)) {
         event.preventDefault();
         openSearch();
@@ -93,7 +106,7 @@ function ShellChromeView({
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener(ORG_SEARCH_REQUEST_EVENT, openSearch);
     };
-  }, [onEnterZen, onExitZen, readerMode, searchEnabled]);
+  }, [onExitZen, onToggleZen, readerMode, searchEnabled]);
 
   const themeControls = (
     <ThemeVariantNavigation
@@ -133,19 +146,19 @@ function ShellChromeView({
             <SiteHero title={shell.siteConfig.title} />,
           )
         : null}
-      <section className="viewer-pane">{children}</section>
+      {renderReactSpaThemeSlot(
+        theme,
+        "reader-layout",
+        { readerMode, theme },
+        <section className="viewer-pane">{children}</section>,
+      )}
       {readerMode === "library"
         ? renderReactSpaThemeSlot(theme, "runtime-state", { shell }, <RuntimeState shell={shell} />)
         : null}
-      {onExitZen ? (
-        <button
-          type="button"
-          className="zen-mode-exit"
-          onClick={onExitZen}
-          aria-label="Exit Zen mode"
-        >
-          Exit Zen
-        </button>
+      {readerMode === "zen" ? (
+        <Suspense fallback={null}>
+          <OrgWorldTreePanel staticSite={shell.staticSite} />
+        </Suspense>
       ) : null}
       {searchEnabled ? (
         <Suspense fallback={null}>

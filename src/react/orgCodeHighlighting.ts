@@ -1,9 +1,14 @@
 import type { LanguageInput } from "@shikijs/types";
+import { normalizeOrgCodeLanguage } from "../orgCodeLanguage";
+import { orgCodeHighlightThemes } from "../orgCodeHighlightTheme";
 
 type Highlighter = {
   getLoadedLanguages: () => string[];
   loadLanguage: (...languages: LanguageInput[]) => Promise<void>;
-  codeToHtml: (code: string, options: { lang: string; theme: string }) => string;
+  codeToHtml: (
+    code: string,
+    options: { lang: string; themes: typeof orgCodeHighlightThemes },
+  ) => string;
 };
 
 type LanguageModule = { default: LanguageInput };
@@ -17,23 +22,6 @@ type CodeBlockRecord = {
 
 const records = new WeakMap<HTMLElement, CodeBlockRecord>();
 let highlighterPromise: Promise<Highlighter> | null = null;
-
-const languageAliases: Record<string, string> = {
-  gerbil: "scheme",
-  lisp: "scheme",
-  racket: "scheme",
-  js: "javascript",
-  md: "markdown",
-  py: "python",
-  sh: "bash",
-  shell: "bash",
-  tex: "latex",
-  ts: "typescript",
-  typ: "typst",
-  yml: "yaml",
-};
-
-const codeTheme = "tokyo-night";
 
 const builtinLanguageLoaders: Readonly<Record<string, OrgCodeLanguageLoader>> = {
   bash: () => import("@shikijs/langs/bash"),
@@ -52,7 +40,7 @@ export const configureOrgCodeLanguage = (
   language: string,
   loader: OrgCodeLanguageLoader,
 ): (() => void) => {
-  const canonicalLanguage = languageAliases[language.toLowerCase()] ?? language.toLowerCase();
+  const canonicalLanguage = normalizeOrgCodeLanguage(language);
   const previous = languageLoaders.get(canonicalLanguage);
   languageLoaders.set(canonicalLanguage, loader);
   return () => {
@@ -68,7 +56,7 @@ const languageFromBlock = (block: HTMLElement): string | null => {
     if (!match) continue;
     const declaredLanguage = match[1]?.toLowerCase();
     if (!declaredLanguage || declaredLanguage === "mermaid") continue;
-    return languageAliases[declaredLanguage] ?? declaredLanguage;
+    return normalizeOrgCodeLanguage(declaredLanguage);
   }
   return null;
 };
@@ -104,11 +92,17 @@ const loadHighlighter = (): Promise<Highlighter> => {
   highlighterPromise ??= Promise.all([
     import("shiki/core"),
     import("shiki/engine/javascript"),
-    import("@shikijs/themes/tokyo-night"),
+    import("@shikijs/themes/github-dark"),
+    import("@shikijs/themes/github-light"),
   ]).then(
-    ([{ createHighlighterCore }, { createJavaScriptRegexEngine }, { default: theme }]) =>
+    ([
+      { createHighlighterCore },
+      { createJavaScriptRegexEngine },
+      { default: darkTheme },
+      { default: lightTheme },
+    ]) =>
       createHighlighterCore({
-        themes: [theme],
+        themes: [darkTheme, lightTheme],
         langs: [],
         engine: createJavaScriptRegexEngine(),
       }) as Promise<Highlighter>,
@@ -135,7 +129,7 @@ const renderCodeBlock = async (
   }
   const markup = highlighter.codeToHtml(record.code, {
     lang: record.language,
-    theme: codeTheme,
+    themes: orgCodeHighlightThemes,
   });
   const template = document.createElement("template");
   template.innerHTML = markup.trim();

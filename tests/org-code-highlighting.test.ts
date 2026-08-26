@@ -6,6 +6,7 @@ import {
   installOrgCodeHighlighting,
   prepareOrgCodeBlocks,
 } from "../src/react/orgCodeHighlighting";
+import { orgCodeHighlightThemes } from "../src/orgCodeHighlightTheme";
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -66,7 +67,7 @@ describe("Org Babel syntax highlighting", () => {
       "const answer = 42",
       expect.objectContaining({
         lang: "typescript",
-        theme: "tokyo-night",
+        themes: orgCodeHighlightThemes,
       }),
     );
     expect(document.querySelector(".org-code-highlight-pre")).not.toBeNull();
@@ -100,7 +101,7 @@ describe("Org Babel syntax highlighting", () => {
     const languageLoader = vi.fn(async () => ({ id: "scheme" }) as never);
     const disposeLanguage = configureOrgCodeLanguage("scheme", languageLoader);
     const codeToHtml = vi.fn(
-      (_code: string, _options: { lang: string; theme: string }) =>
+      (_code: string, _options: { lang: string; themes: typeof orgCodeHighlightThemes }) =>
         "<pre><code><span>define</span></code></pre>",
     );
     const stop = installOrgCodeHighlighting(document, async () => ({
@@ -121,7 +122,9 @@ describe("Org Babel syntax highlighting", () => {
       expect(languageLoader).toHaveBeenCalledTimes(4);
       expect(codeToHtml).toHaveBeenCalledTimes(4);
       for (const [, options] of codeToHtml.mock.calls) {
-        expect(options).toEqual(expect.objectContaining({ lang: "scheme", theme: "tokyo-night" }));
+        expect(options).toEqual(
+          expect.objectContaining({ lang: "scheme", themes: orgCodeHighlightThemes }),
+        );
       }
     } finally {
       stop();
@@ -197,5 +200,10 @@ describe("Org Babel syntax highlighting", () => {
     expect(css).toContain(".documents-document-body pre code span");
     expect(css).toContain("background: transparent !important");
     expect(css).toContain("background: var(--docs-crust) !important");
+    expect(css).toContain("--docs-code-surface: #1e1e2e");
+    expect(css).toContain('[data-theme-variant="latte"]');
+    expect(css).toContain("--shiki-dark-bg");
+    expect(css).toContain(':not([data-theme-variant="latte"])');
+    expect(css).toContain("background: var(--docs-code-surface) !important");
   });
 });

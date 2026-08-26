@@ -66,6 +66,18 @@
   box-shadow: none;
 }
 
+:root[data-theme="minimal-notes"] .minimal-notes-reader-layout[data-reader-mode="zen"] {
+  width: min(100%, var(--reader-wide-width));
+  margin-inline: auto;
+}
+
+:root[data-theme="minimal-notes"]
+  .minimal-notes-reader-layout[data-reader-mode="zen"]
+  .viewer-pane {
+  width: 100%;
+  margin: 0;
+}
+
 :root[data-theme="minimal-notes"] .theme-blog-index--minimal {
   border-top: 1px solid var(--hairline);
 }

@@ -18,4 +18,10 @@ describe("Typst SVG image compatibility", () => {
       sanitizeTypstSvg('<svg><path fill="#000" stroke="#000" /></svg>', "rgb(205, 214, 244)"),
     ).toBe('<svg><path fill="rgb(205, 214, 244)" stroke="rgb(205, 214, 244)" /></svg>');
   });
+
+  it("normalizes every explicit black representation emitted by the renderer", () => {
+    expect(
+      sanitizeTypstSvg('<svg><path fill="#000000" stroke="black" /></svg>', "currentColor"),
+    ).toBe('<svg><path fill="currentColor" stroke="currentColor" /></svg>');
+  });
 });

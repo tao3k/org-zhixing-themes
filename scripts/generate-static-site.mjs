@@ -12,15 +12,17 @@ import {
   generateAttachmentThumbnail,
   resetAttachmentThumbnailOutput,
 } from "../src/node/attachmentThumbnailGenerator.mjs";
-import { projectOrgDocumentLinks } from "../src/node/orgDocumentLinks.mjs";
 import { orgFiles } from "../src/node/orgSources.ts";
 import { orgDocumentIdFromPath } from "../src/orgIdLinks.ts";
+import { globalHeadingNodesForSource, globalOrgLinkRelations } from "../src/react/orgWorldTree.ts";
+import { renderOrgStaticHtml } from "../src/node/orgStaticRendering.ts";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const publicRoot = resolve(projectRoot, "public");
 const outputRoot = resolve(projectRoot, process.env.ORG_ZHIXING_CACHE_ROOT ?? ".cache/org-zhixing");
 const outputPath = resolve(outputRoot, "static-site.json");
 const galleryOutputPath = resolve(outputRoot, "org-zhixing.gallery.json");
+const knowledgeGraphOutputPath = resolve(outputRoot, "org-zhixing.knowledge-graph.json");
 const sourceShardPublicDir = "org-zhixing.sources";
 const sourceShardRoot = resolve(outputRoot, sourceShardPublicDir);
 const sourceMemoryShardPublicDir = "org-zhixing.memory";
@@ -31,6 +33,7 @@ const sourceAttachmentShardPublicDir = "org-zhixing.attachments";
 const sourceAttachmentShardRoot = resolve(outputRoot, sourceAttachmentShardPublicDir);
 const sourceAgendaShardPublicDir = "org-zhixing.agenda";
 const sourceAgendaShardRoot = resolve(outputRoot, sourceAgendaShardPublicDir);
+const renderCacheRoot = resolve(outputRoot, "org-zhixing.render-cache");
 const configFilePath = process.env.ORG_ZHIXING_CONFIG
   ? resolve(projectRoot, process.env.ORG_ZHIXING_CONFIG)
   : resolve(publicRoot, "org-zhixing.toml");
@@ -38,14 +41,7 @@ const configPath = basename(configFilePath);
 const externalContentDiskRoot = process.env.ORG_ZHIXING_CONTENT_DIR
   ? resolve(process.env.ORG_ZHIXING_CONTENT_DIR)
   : null;
-const htmlWindow = new Window({
-  settings: {
-    navigation: {
-      disableChildFrameNavigation: true,
-      disableFallbackToSetURL: true,
-    },
-  },
-});
+const staticRendererVersion = "org-static-render-v2";
 
 const main = async () => {
   const configText = await readFile(configFilePath, "utf8");
@@ -84,6 +80,17 @@ const main = async () => {
     `${JSON.stringify({ schemaVersion: 1, ...attachmentGallery })}\n`,
     "utf8",
   );
+  const knowledgeGraph = {
+    schemaVersion: 1,
+    nodes: sources.flatMap((source) =>
+      globalHeadingNodesForSource(source, source.sectionIndex.records),
+    ),
+    relations: globalOrgLinkRelations(
+      sources,
+      sources.map((source) => source.sectionIndex.records),
+    ),
+  };
+  await writeFile(knowledgeGraphOutputPath, `${JSON.stringify(knowledgeGraph)}\n`, "utf8");
   const manifest = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -101,6 +108,11 @@ const main = async () => {
       label: attachmentGallery.label,
       siteWide: attachmentGallery.siteWide,
       firstThumbnailPath: attachmentGallery.records[0]?.record?.thumbnailPath ?? null,
+    },
+    knowledgeGraph: {
+      shardPath: "org-zhixing.knowledge-graph.json",
+      nodeCount: knowledgeGraph.nodes.length,
+      relationCount: knowledgeGraph.relations.length,
     },
     blog: projectBlogIndex(sources),
     travel: projectTravelView(sources),
@@ -126,11 +138,7 @@ const projectSource = async (source, config) => {
       sourceBytes: Buffer.byteLength(sourceText),
       viewIndex,
       sectionIndex: parseJson(org.sectionIndexJson(source.sourceFile)),
-      html: projectOrgDocumentLinks(org.html(), {
-        currentFile: source.file,
-        document: htmlWindow.document,
-        sources: config.sources,
-      }),
+      html: await readOrRenderStaticHtml(org.html(), source.file, config.sources),
       attachmentInventory,
       memory: parseJson(org.memoryJson()),
       agendaRange: agendaProjection.range,
@@ -140,6 +148,30 @@ const projectSource = async (source, config) => {
   } finally {
     org.free();
   }
+};
+
+const readOrRenderStaticHtml = async (html, currentFile, sources) => {
+  const sourceId = orgDocumentIdFromPath(currentFile);
+  const key = sha256(
+    JSON.stringify({
+      currentFile,
+      html,
+      sources: sources.map((source) => ({ file: source.file, id: source.id ?? null })),
+      version: staticRendererVersion,
+    }),
+  );
+  const cachePath = resolve(renderCacheRoot, `${sourceId}.json`);
+  try {
+    const cached = JSON.parse(await readFile(cachePath, "utf8"));
+    if (cached.key === key && typeof cached.html === "string") return cached.html;
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+
+  const rendered = await renderOrgStaticHtml(html, { currentFile, sources });
+  await mkdir(renderCacheRoot, { recursive: true });
+  await writeFile(cachePath, `${JSON.stringify({ key, html: rendered })}\n`, "utf8");
+  return rendered;
 };
 
 const writeSourceShards = async (sources) => {
@@ -153,34 +185,45 @@ const writeSourceShards = async (sources) => {
   await mkdir(sourceSectionShardRoot, { recursive: true });
   await mkdir(sourceAttachmentShardRoot, { recursive: true });
   await mkdir(sourceAgendaShardRoot, { recursive: true });
+  await writeWithConcurrency(sources, 16, async (source) => {
+    await writeFile(
+      sourceShardPath(source),
+      `${JSON.stringify(sourceProjectionShard(source))}\n`,
+      "utf8",
+    );
+    await writeFile(
+      sourceMemoryShardPath(source),
+      `${JSON.stringify(sourceMemoryShard(source))}\n`,
+      "utf8",
+    );
+    await writeFile(
+      sourceSectionShardPath(source),
+      `${JSON.stringify(sourceSectionShard(source))}\n`,
+      "utf8",
+    );
+    await writeFile(
+      sourceAttachmentShardPath(source),
+      `${JSON.stringify(sourceAttachmentShard(source))}\n`,
+      "utf8",
+    );
+    await writeFile(
+      sourceAgendaShardPath(source),
+      `${JSON.stringify(sourceAgendaShard(source))}\n`,
+      "utf8",
+    );
+  });
+};
+
+const writeWithConcurrency = async (items, maximumConcurrency, write) => {
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const item = items[next++];
+      await write(item);
+    }
+  };
   await Promise.all(
-    sources.flatMap((source) => [
-      writeFile(
-        sourceShardPath(source),
-        `${JSON.stringify(sourceProjectionShard(source))}\n`,
-        "utf8",
-      ),
-      writeFile(
-        sourceMemoryShardPath(source),
-        `${JSON.stringify(sourceMemoryShard(source))}\n`,
-        "utf8",
-      ),
-      writeFile(
-        sourceSectionShardPath(source),
-        `${JSON.stringify(sourceSectionShard(source))}\n`,
-        "utf8",
-      ),
-      writeFile(
-        sourceAttachmentShardPath(source),
-        `${JSON.stringify(sourceAttachmentShard(source))}\n`,
-        "utf8",
-      ),
-      writeFile(
-        sourceAgendaShardPath(source),
-        `${JSON.stringify(sourceAgendaShard(source))}\n`,
-        "utf8",
-      ),
-    ]),
+    Array.from({ length: Math.min(maximumConcurrency, items.length) }, () => worker()),
   );
 };
 
@@ -625,7 +668,7 @@ const travelEmbedHtmlByRangeStart = (html, records) => {
   if (!html || records.length === 0) {
     return new Map();
   }
-  const document = htmlWindow.document.implementation.createHTMLDocument("");
+  const document = new Window().document;
   document.body.innerHTML = html;
   const root = document.querySelector("main") ?? document.body;
   const used = new Set();

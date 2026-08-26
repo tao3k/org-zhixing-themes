@@ -11,6 +11,7 @@ describe("style module boundaries", () => {
 
     expect(entry).toEqual([
       '@import "photoswipe/style.css";',
+      '@import "@xyflow/react/dist/style.css";',
       '@import "./styles/theme.css";',
       '@import "@org-zhixing-cache/tailwind.css";',
       '@import "./styles/foundation.css";',
@@ -29,6 +30,13 @@ describe("style module boundaries", () => {
       '@import "./styles/responsive.css";',
       '@import "./styles/theme-startup-failure.css";',
     ]);
+  });
+
+  it("loads the world tree styles with the lazy graph surface", () => {
+    const panel = readFileSync("src/react/OrgWorldTreePanel.tsx", "utf8");
+
+    expect(panel).toContain('import "../styles/org-world-tree.css";');
+    expect(readFileSync("src/styles.css", "utf8")).not.toContain("org-world-tree.css");
   });
 
   it("keeps product CSS modules below the monolith threshold", () => {

@@ -1,4 +1,5 @@
 @import "photoswipe/style.css";
+@import "@xyflow/react/dist/style.css";
 @import "./styles/theme.css";
 @import "@org-zhixing-cache/tailwind.css";
 @import "./styles/foundation.css";

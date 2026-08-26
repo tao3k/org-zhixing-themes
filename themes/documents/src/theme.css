@@ -8,12 +8,46 @@
   --docs-yellow: #f9e2af;
   --docs-red: #f38ba8;
   --docs-border: color-mix(in srgb, var(--face-normal) 13%, transparent);
+  --docs-code-surface: #1e1e2e;
+  --docs-code-header: #29293c;
+  --docs-code-ink: #cdd6f4;
+  --org-semantic-neutral-fg: var(--docs-subtext);
+  --org-semantic-neutral-surface: color-mix(in srgb, var(--docs-mantle) 86%, var(--docs-subtext));
+  --org-semantic-neutral-border: color-mix(in srgb, var(--docs-subtext) 26%, transparent);
+  --org-semantic-accent-fg: var(--docs-blue);
+  --org-semantic-accent-surface: color-mix(in srgb, var(--docs-mantle) 84%, var(--docs-blue));
+  --org-semantic-accent-border: color-mix(in srgb, var(--docs-blue) 48%, transparent);
+  --org-semantic-attention-fg: var(--docs-yellow);
+  --org-semantic-attention-surface: color-mix(in srgb, var(--docs-mantle) 84%, var(--docs-yellow));
+  --org-semantic-attention-border: color-mix(in srgb, var(--docs-yellow) 48%, transparent);
+  --org-semantic-complete-fg: var(--docs-green);
+  --org-semantic-complete-surface: color-mix(in srgb, var(--docs-mantle) 84%, var(--docs-green));
+  --org-semantic-complete-border: color-mix(in srgb, var(--docs-green) 48%, transparent);
+  --org-semantic-critical-fg: var(--docs-red);
+  --org-semantic-critical-surface: color-mix(in srgb, var(--docs-mantle) 84%, var(--docs-red));
+  --org-semantic-critical-border: color-mix(in srgb, var(--docs-red) 48%, transparent);
   --docs-header-height: 56px;
   --docs-nav-width: 248px;
   --docs-toc-width: 192px;
   --docs-linked-width: clamp(320px, 34vw, 480px);
   --radius-panel: 10px;
   --radius-label: 6px;
+
+  /* The shared Org renderer consumes these primitives. Documents owns their
+   * values so native tables, timestamps, links, and metadata follow a variant
+   * without per-element theme exceptions. */
+  --surface-canvas: var(--docs-crust);
+  --surface-paper: var(--docs-mantle);
+  --surface-subtle: color-mix(in srgb, var(--docs-mantle) 86%, var(--docs-subtext));
+  --surface-quiet: color-mix(in srgb, var(--docs-mantle) 78%, var(--docs-subtext));
+  --surface-salient: color-mix(in srgb, var(--docs-mantle) 82%, var(--docs-blue));
+  --face-normal: var(--docs-subtext);
+  --face-strong: var(--docs-code-ink);
+  --face-faded: var(--docs-overlay);
+  --face-salient: var(--docs-blue);
+  --hairline: var(--docs-border);
+  --hairline-soft: color-mix(in srgb, var(--docs-border) 72%, transparent);
+  --hairline-strong: color-mix(in srgb, var(--docs-subtext) 40%, transparent);
 }
 
 :root[data-theme="documents"] .documents-document-body :is(h1, h2, h3, h4, h5, h6)[id] {
@@ -29,6 +63,9 @@
   --docs-green: #40a02b;
   --docs-yellow: #df8e1d;
   --docs-red: #d20f39;
+  --docs-code-surface: #f7f8fa;
+  --docs-code-header: #f0f3f6;
+  --docs-code-ink: #24292f;
 }
 
 :root[data-theme="documents"][data-theme-variant="frappe"] {
@@ -40,6 +77,9 @@
   --docs-green: #a6d189;
   --docs-yellow: #e5c890;
   --docs-red: #e78284;
+  --docs-code-surface: #292c3c;
+  --docs-code-header: #303347;
+  --docs-code-ink: #c6d0f5;
 }
 
 :root[data-theme="documents"][data-theme-variant="macchiato"] {
@@ -51,6 +91,9 @@
   --docs-green: #a6da95;
   --docs-yellow: #eed49f;
   --docs-red: #ed8796;
+  --docs-code-surface: #1e2030;
+  --docs-code-header: #292b3f;
+  --docs-code-ink: #cad3f5;
 }
 
 :root[data-theme="documents"] body {
@@ -69,6 +112,10 @@
   margin: 0;
   padding: 0;
   background: var(--surface-canvas);
+}
+
+:root[data-theme="documents"] .documents-reader-layout {
+  display: contents;
 }
 
 :root[data-theme="documents"] .documents-header {
@@ -171,8 +218,7 @@
 :root[data-theme="documents"] .documents-control-center {
   position: relative;
   z-index: 70;
-  display: grid;
-  gap: 8px;
+  display: block;
   width: 100%;
 }
 
@@ -188,13 +234,13 @@
   appearance: none;
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 9px;
+  gap: 8px;
   align-items: center;
   width: 100%;
-  min-height: 42px;
+  min-height: 38px;
   border: 0;
-  border-radius: 7px;
-  padding: 7px 8px;
+  border-radius: 0;
+  padding: 8px 2px;
   color: var(--face-normal);
   background: transparent;
   box-shadow: none;
@@ -203,16 +249,28 @@
 
 :root[data-theme="documents"] .documents-control-trigger:hover,
 :root[data-theme="documents"] .documents-control-trigger[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--face-salient) 10%, transparent);
+  color: var(--docs-blue);
 }
 
 :root[data-theme="documents"] .documents-control-trigger > span {
   color: var(--docs-blue);
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border: 1px solid color-mix(in srgb, var(--docs-blue) 48%, var(--docs-border));
+  border-radius: 4px;
+}
+
+:root[data-theme="documents"] .documents-control-trigger > span svg {
+  width: 0.8rem;
+  height: 0.8rem;
 }
 
 :root[data-theme="documents"] .documents-control-trigger strong {
-  font-size: 0.72rem;
+  font-size: 0.69rem;
+  font-weight: 650;
   text-align: left;
 }
 
@@ -227,9 +285,12 @@
   bottom: calc(100% + 8px);
   left: 0;
   overflow: auto;
-  width: min(320px, calc(100vw - 28px));
+  box-sizing: border-box;
+  width: 100%;
+  min-width: min(18rem, calc(100vw - 28px));
+  max-width: calc(100vw - 28px);
   max-height: calc(100vh - var(--docs-header-height) - 24px);
-  border-radius: 11px;
+  border-radius: 6px;
 }
 
 :root[data-theme="documents"] .documents-control-panel > header,
@@ -255,13 +316,6 @@
 
 :root[data-theme="documents"] .documents-control-section {
   padding: 13px;
-}
-
-:root[data-theme="documents"] .documents-control-section h2 {
-  margin: 0 0 9px;
-  color: var(--docs-overlay);
-  font: 600 0.61rem var(--font-mono);
-  text-transform: uppercase;
 }
 
 :root[data-theme="documents"] .documents-control-variants {
@@ -313,6 +367,17 @@
   padding: 9px 10px;
   text-align: left;
   font-size: 0.72rem;
+}
+
+:root[data-theme="documents"] .documents-control-actions button > span {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+
+:root[data-theme="documents"] .documents-control-actions button svg {
+  width: 0.86rem;
+  height: 0.86rem;
 }
 
 :root[data-theme="documents"] .documents-control-panel button:hover {
@@ -466,9 +531,10 @@
   flex: 0 0 auto;
   align-self: stretch;
   width: 100%;
-  margin-top: 10px;
+  margin-top: auto;
   border-top: 1px solid var(--docs-border);
-  padding-top: 8px;
+  padding: 7px 14px 10px;
+  box-sizing: border-box;
 }
 
 :root[data-theme="documents"] .documents-status-dot {
@@ -769,16 +835,16 @@
 :root[data-theme="documents"] .org-code-highlight {
   overflow: hidden;
   margin: 26px 0;
-  border: 1px solid var(--docs-border);
+  border: 1px solid color-mix(in srgb, var(--docs-code-ink) 14%, transparent);
   border-radius: 10px;
-  background: var(--docs-crust);
+  background: var(--docs-code-surface);
 }
 
 :root[data-theme="documents"] .org-code-highlight figcaption {
-  border-bottom: 1px solid var(--docs-border);
+  border-bottom: 1px solid color-mix(in srgb, var(--docs-code-ink) 11%, transparent);
   padding: 8px 13px;
-  color: var(--docs-overlay);
-  background: color-mix(in srgb, var(--docs-mantle) 88%, transparent);
+  color: color-mix(in srgb, var(--docs-code-ink) 58%, transparent);
+  background: var(--docs-code-header);
   font: 600 0.62rem var(--font-mono);
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -792,13 +858,26 @@
   border-radius: 0;
   padding: 18px 20px;
   box-sizing: border-box;
-  background: var(--docs-crust) !important;
+  background: var(--docs-code-surface) !important;
   font: 0.82rem/1.65 var(--font-mono);
 }
 
 :root[data-theme="documents"] .org-code-highlight code {
   display: block;
   min-width: max-content;
+}
+
+:root[data-theme="documents"]:not([data-theme-variant="latte"]) .org-code-highlight pre.shiki {
+  color: var(--shiki-dark, var(--docs-code-ink)) !important;
+  background-color: var(--shiki-dark-bg, var(--docs-code-surface)) !important;
+}
+
+:root[data-theme="documents"]:not([data-theme-variant="latte"])
+  .org-code-highlight
+  pre.shiki
+  code
+  span {
+  color: var(--shiki-dark, var(--docs-code-ink)) !important;
 }
 :root[data-theme="documents"] .documents-document-body table {
   display: block;
@@ -872,6 +951,25 @@
 :root[data-theme="documents"] .org-keyword,
 :root[data-theme="documents"] .todo {
   color: var(--docs-red);
+}
+
+:root[data-theme="documents"] .org-heading-markers {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-right: 0.7rem;
+  vertical-align: middle;
+}
+
+:root[data-theme="documents"] :is(.org-heading-todo, .org-heading-priority) {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.12rem 0.48rem;
+  font: 700 0.66rem/1.2 var(--font-mono);
+  letter-spacing: 0.03em;
+  vertical-align: middle;
 }
 
 :root[data-theme="documents"] .documents-context-rail {
@@ -1226,29 +1324,6 @@
     .documents-linked-workspace
   ) {
   display: none;
-}
-
-:root[data-theme="documents"] .zen-mode-exit {
-  position: fixed;
-  z-index: 80;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 1px solid var(--docs-border);
-  border-radius: 8px;
-  padding: 9px 12px;
-  color: var(--docs-subtext);
-  background: color-mix(in srgb, var(--surface-canvas) 90%, transparent);
-  box-shadow: 0 12px 34px color-mix(in srgb, var(--docs-crust) 40%, transparent);
-  backdrop-filter: blur(18px);
-  opacity: 0.38;
-  cursor: pointer;
-  transition: opacity 140ms ease;
-}
-
-:root[data-theme="documents"] .zen-mode-exit:hover,
-:root[data-theme="documents"] .zen-mode-exit:focus-visible {
-  opacity: 1;
 }
 
 @media (max-width: 1180px) {

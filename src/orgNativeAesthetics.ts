@@ -40,6 +40,7 @@ const decorateHeadings = (root: ParentNode, documentView: OrgizeDocumentView): v
 };
 
 const decorateHeading = (heading: HTMLHeadingElement, record: SectionRecord): void => {
+  heading.dataset.orgRangeStart = String(record.source.rangeStart);
   if (heading.querySelector(":scope > .org-heading-markers")) {
     return;
   }

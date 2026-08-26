@@ -29,6 +29,11 @@ export const augmentOrgHtmlMetadata = (root: ParentNode, document: OrgizeDocumen
       continue;
     }
     used.add(record);
+    const existingMetadata = adjacentSectionMetadata(heading);
+    if (existingMetadata.length > 0) {
+      for (const duplicate of existingMetadata.slice(1)) duplicate.remove();
+      continue;
+    }
     removeRawPlanningParagraph(heading);
     heading.insertAdjacentElement("afterend", renderSectionMetadata(record));
   }
@@ -42,6 +47,11 @@ export const matchHeadingRecord = (
   records: SectionRecord[],
   used: Set<SectionRecord>,
 ): SectionRecord | null => {
+  const rangeStart = Number(heading.dataset.orgRangeStart);
+  const rangeMatched = Number.isSafeInteger(rangeStart)
+    ? (records.find((record) => !used.has(record) && record.source.rangeStart === rangeStart) ??
+      null)
+    : null;
   const headingText = normalizeDisplayText(heading.textContent ?? "");
   const level = headingLevel(heading);
   const textMatched =
@@ -58,10 +68,21 @@ export const matchHeadingRecord = (
         ))
       : null;
   return (
+    rangeMatched ??
     textMatched ??
     records.find((record) => !used.has(record) && level >= Math.min(record.level, 6)) ??
     null
   );
+};
+
+const adjacentSectionMetadata = (heading: HTMLHeadingElement): HTMLElement[] => {
+  const metadata: HTMLElement[] = [];
+  let sibling = heading.nextElementSibling;
+  while (sibling instanceof HTMLElement && sibling.classList.contains("org-section-meta")) {
+    metadata.push(sibling);
+    sibling = sibling.nextElementSibling;
+  }
+  return metadata;
 };
 
 const renderSectionMetadata = (record: SectionRecord): HTMLElement => {

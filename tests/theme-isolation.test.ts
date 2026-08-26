@@ -15,7 +15,7 @@ import { resolveThemeIsolation } from "../src/theme-system/build/resolveThemeIso
 
 const workspaceSnapshot = (
   instanceId: string,
-  selectedThemeId: "documents" | "elegant-blog",
+  selectedThemeId: "documents" | "elegant-blog" | "minimal-notes",
 ): ThemeIsolationSnapshot =>
   defineThemeIsolationSnapshot({
     instanceId,
@@ -37,6 +37,13 @@ const workspaceSnapshot = (
         variants: ["default"],
         transport: { kind: "workspace", module: "@org-zhixing/theme-elegant-blog" },
       },
+      {
+        id: "minimal-notes",
+        package: "@org-zhixing/theme-minimal-notes",
+        defaultVariant: "paper",
+        variants: ["paper", "midnight"],
+        transport: { kind: "workspace", module: "@org-zhixing/theme-minimal-notes" },
+      },
     ],
   });
 
@@ -48,13 +55,19 @@ describe("theme isolation framework", () => {
     expect(documents).toContain('from "@org-zhixing/theme-documents"');
     expect(documents).toContain('"preview-5199"');
     expect(documents.match(/^import .+$/gmu)).toEqual([
-      'import isolatedWorkspaceTheme from "@org-zhixing/theme-documents";',
+      'import selectedWorkspaceTheme from "@org-zhixing/theme-documents";',
     ]);
+    expect(documents).toContain("export const loadThemeById = (id) => {");
+    expect(documents).toContain(
+      '["minimal-notes", () => import("@org-zhixing/theme-minimal-notes")',
+    );
+    expect(documents).toContain('"module":"theme:minimal-notes"');
     expect(blog).toContain('from "@org-zhixing/theme-elegant-blog"');
     expect(blog).toContain('"preview-5200"');
     expect(blog.match(/^import .+$/gmu)).toEqual([
-      'import isolatedWorkspaceTheme from "@org-zhixing/theme-elegant-blog";',
+      'import selectedWorkspaceTheme from "@org-zhixing/theme-elegant-blog";',
     ]);
+    expect(blog).toContain('["documents", () => import("@org-zhixing/theme-documents")');
   });
 
   it("fails before bundling when the selected theme is outside the instance catalog", () => {
@@ -108,9 +121,12 @@ describe("theme isolation framework", () => {
     expect(renderThemeRuntimeModule(remote)).toContain(
       'from "@module-federation/enhanced/runtime"',
     );
-    expect(renderThemeRuntimeModule(remote)).toContain('loadRemote("documents_pro/theme")');
+    expect(renderThemeRuntimeModule(remote)).toContain(
+      'const federatedThemeModulesById = new Map([["documents-pro","documents_pro/theme"]',
+    );
+    expect(renderThemeRuntimeModule(remote)).toContain("loadRemote(module)");
     expect(renderThemeRuntimeModule(remote)).toContain("org-zhixing/theme-module/v1");
-    expect(renderThemeRuntimeModule(remote)).toContain("isolatedSelectedThemePromise = undefined");
+    expect(renderThemeRuntimeModule(remote)).toContain("loadingThemesById.delete(id)");
     expect(createThemeFederationPlugin(remote)?.name).toBe("rsbuild:module-federation-enhanced");
     expect(selectedThemeFederationRemotes(remote)).toEqual({
       documents_pro: "documents_pro@https://themes.example.com/mf-manifest.json",

@@ -1,3 +1,21 @@
+:root {
+  --org-semantic-neutral-fg: color-mix(in srgb, var(--face-normal) 72%, var(--surface-paper));
+  --org-semantic-neutral-surface: color-mix(in srgb, var(--surface-paper) 88%, var(--face-normal));
+  --org-semantic-neutral-border: color-mix(in srgb, var(--face-normal) 20%, transparent);
+  --org-semantic-accent-fg: var(--face-salient);
+  --org-semantic-accent-surface: color-mix(in srgb, var(--surface-paper) 88%, var(--face-salient));
+  --org-semantic-accent-border: color-mix(in srgb, var(--face-salient) 42%, transparent);
+  --org-semantic-attention-fg: var(--org-semantic-accent-fg);
+  --org-semantic-attention-surface: var(--org-semantic-accent-surface);
+  --org-semantic-attention-border: var(--org-semantic-accent-border);
+  --org-semantic-complete-fg: var(--org-semantic-neutral-fg);
+  --org-semantic-complete-surface: var(--org-semantic-neutral-surface);
+  --org-semantic-complete-border: var(--org-semantic-neutral-border);
+  --org-semantic-critical-fg: var(--org-semantic-neutral-fg);
+  --org-semantic-critical-surface: var(--org-semantic-neutral-surface);
+  --org-semantic-critical-border: var(--org-semantic-neutral-border);
+}
+
 code {
   border-radius: var(--radius-tight);
   padding: 2px 5px;
@@ -108,45 +126,45 @@ code {
 }
 
 .org-heading-todo--todo {
-  border-color: var(--amber-6);
-  color: var(--face-popout);
-  background: var(--surface-popout);
+  border-color: var(--org-semantic-attention-border);
+  color: var(--org-semantic-attention-fg);
+  background: var(--org-semantic-attention-surface);
 }
 
 .org-heading-todo--focus {
-  border-color: var(--blue-6);
-  color: var(--face-salient);
-  background: var(--surface-salient);
+  border-color: var(--org-semantic-accent-border);
+  color: var(--org-semantic-accent-fg);
+  background: var(--org-semantic-accent-surface);
 }
 
 .org-heading-todo--waiting {
-  border-color: var(--violet-6);
-  color: var(--face-structural);
-  background: var(--surface-structural);
+  border-color: var(--org-semantic-critical-border);
+  color: var(--org-semantic-critical-fg);
+  background: var(--org-semantic-critical-surface);
 }
 
 .org-heading-todo--done {
-  border-color: var(--green-6);
-  color: var(--face-success);
-  background: var(--surface-success);
+  border-color: var(--org-semantic-complete-border);
+  color: var(--org-semantic-complete-fg);
+  background: var(--org-semantic-complete-surface);
 }
 
 .org-priority--a {
-  border-color: var(--red-6);
-  color: var(--face-critical);
-  background: var(--surface-critical);
+  border-color: var(--org-semantic-critical-border);
+  color: var(--org-semantic-critical-fg);
+  background: var(--org-semantic-critical-surface);
 }
 
 .org-priority--b {
-  border-color: var(--amber-6);
-  color: var(--face-popout);
-  background: var(--surface-popout);
+  border-color: var(--org-semantic-attention-border);
+  color: var(--org-semantic-attention-fg);
+  background: var(--org-semantic-attention-surface);
 }
 
 .org-priority--c {
-  border-color: var(--hairline-soft);
-  color: var(--face-faded);
-  background: var(--surface-subtle);
+  border-color: var(--org-semantic-neutral-border);
+  color: var(--org-semantic-neutral-fg);
+  background: var(--org-semantic-neutral-surface);
 }
 
 .rendered-html p,
@@ -234,14 +252,14 @@ code {
 }
 
 .org-meta-chip {
-  border-color: var(--hairline-soft);
-  color: var(--face-faded);
-  background: var(--surface-subtle);
+  border-color: var(--org-semantic-neutral-border);
+  color: var(--org-semantic-neutral-fg);
+  background: var(--org-semantic-neutral-surface);
 }
 
 .org-meta-chip b {
   margin-right: 5px;
-  color: var(--face-strong);
+  color: var(--org-semantic-neutral-fg);
   font-weight: var(--weight-medium);
 }
 
@@ -254,38 +272,48 @@ code {
 }
 
 .org-meta-chip--scheduled {
-  border-color: var(--green-6);
-  color: var(--face-success);
-  background: var(--surface-success);
+  border-color: var(--org-semantic-complete-border);
+  color: var(--org-semantic-complete-fg);
+  background: var(--org-semantic-complete-surface);
 }
 
 .org-meta-chip--deadline {
-  border-color: var(--amber-6);
-  color: var(--face-popout);
-  background: var(--surface-popout);
+  border-color: var(--org-semantic-attention-border);
+  color: var(--org-semantic-attention-fg);
+  background: var(--org-semantic-attention-surface);
 }
 
 .org-meta-chip--closed {
-  color: var(--face-faded);
-  background: var(--surface-quiet);
+  border-color: var(--org-semantic-neutral-border);
+  color: var(--org-semantic-neutral-fg);
+  background: var(--org-semantic-neutral-surface);
+}
+
+/* Planning timestamps remain part of their semantic chip. The generic active
+ * timestamp atom intentionally has a neutral surface outside planning rows. */
+.org-meta-chip--scheduled .org-timestamp,
+.org-meta-chip--deadline .org-timestamp,
+.org-meta-chip--closed .org-timestamp {
+  color: inherit;
+  background: color-mix(in srgb, currentcolor 12%, transparent);
 }
 
 .org-meta-tag {
-  border-color: var(--blue-6);
-  color: var(--face-salient);
-  background: var(--surface-salient);
+  border-color: var(--org-semantic-accent-border);
+  color: var(--org-semantic-accent-fg);
+  background: var(--org-semantic-accent-surface);
   font-weight: var(--weight-medium);
 }
 
 .org-meta-row--properties div {
   gap: 6px;
-  border-color: var(--violet-6);
-  color: var(--face-structural);
-  background: var(--surface-structural);
+  border-color: var(--org-semantic-neutral-border);
+  color: var(--org-semantic-neutral-fg);
+  background: var(--org-semantic-neutral-surface);
 }
 
 .org-meta-row--properties dt {
-  color: var(--face-faded);
+  color: var(--org-semantic-neutral-fg);
   font-weight: var(--weight-medium);
   text-transform: uppercase;
 }

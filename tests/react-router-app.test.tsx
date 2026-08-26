@@ -141,6 +141,39 @@ describe("Org Zhixing React Router app", () => {
     expect(document.body.textContent).toContain("Static Gallery");
   });
 
+  it("loads every registered theme through the dedicated theme route", async () => {
+    const router = await mountStaticRouter("/themes/documents");
+
+    await waitForText("TECHNICAL KNOWLEDGE BASE");
+    expect(document.body.textContent).not.toContain("ORG-ZHIXING-DOC-E001");
+    await vi.waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe("documents");
+    });
+    expect(document.querySelector(".documents-header")).toBeTruthy();
+
+    await act(async () => {
+      await router.navigate({
+        to: "/themes/$themeId/$documentId",
+        params: { documentId: "wallpaper-gallery", themeId: "documents" },
+      });
+    });
+    await waitForText("Static rendered body");
+    expect(window.location.pathname).toBe("/themes/documents/wallpaper-gallery");
+    expect(document.documentElement.dataset.theme).toBe("documents");
+    expect(document.querySelector(".documents-header")).toBeTruthy();
+
+    for (const themeId of ["elegant-blog", "minimal-notes"]) {
+      await act(async () => {
+        await router.navigate({ to: "/themes/$themeId", params: { themeId } });
+      });
+      await vi.waitFor(() => {
+        expect(document.body.textContent).not.toContain("ORG-ZHIXING-DOC-E001");
+        expect(document.documentElement.dataset.theme).toBe(themeId);
+      });
+      expect(window.location.pathname).toBe(`/themes/${themeId}`);
+    }
+  });
+
   it("keeps Zen reading chrome-free and handles keyboard article navigation", async () => {
     const fetch = fetchBlogStaticFixture();
     await mountStaticRouter("/blogs", fetch);
@@ -235,22 +268,23 @@ describe("Org Zhixing React Router app", () => {
     expect(trigger?.getAttribute("aria-expanded")).toBe("false");
     await act(async () => {
       trigger?.click();
-      await new Promise((resolve) => window.setTimeout(resolve, 50));
     });
-    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
-    expect(trigger?.getAttribute("aria-expanded")).toBe("true");
+    await vi.waitFor(() => {
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(trigger?.getAttribute("aria-expanded")).toBe("true");
+    });
     expect(document.body.textContent).toContain("Choose a view from the life archive.");
     const notes = document.querySelector<HTMLAnchorElement>('.mobile-nav-list a[href="/notes"]');
     expect(notes).toBeTruthy();
     await act(async () => {
       notes?.click();
-      await new Promise((resolve) => window.setTimeout(resolve, 50));
     });
-
-    expect(document.body.textContent).toContain("2 indexed notes from 2 Org sources");
-    expect(window.location.pathname).toBe("/notes");
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain("2 indexed notes from 2 Org sources");
+      expect(window.location.pathname).toBe("/notes");
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+      expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+    });
   });
 
   it("handles static agenda program and inspector clicks through router search", async () => {

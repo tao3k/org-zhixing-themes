@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ContentShellData } from "../services/contentServices";
 import { routePathForView } from "./routeViewHelpers";
 import { orgZhixingBasePath } from "../deploymentBasePath";
@@ -11,18 +11,42 @@ import type { ThemeNavigationItem } from "../themeNavigation";
 
 function renderThemeNavigation(
   items: readonly ThemeNavigationItem[],
+  openGroup: string | null,
+  onGroupToggle: (name: string) => void,
+  groupTriggers: Map<string, HTMLElement>,
   onNavigate?: () => void,
 ): ReactNode[] {
   return items.flatMap((item) => {
     if (item.children?.length) {
       return (
-        <details key={item.name} className="site-nav-group" data-theme-navigation-group={item.name}>
-          <summary className="site-nav-group-label">
+        <details
+          key={item.name}
+          className="site-nav-group"
+          data-theme-navigation-group={item.name}
+          open={openGroup === item.name}
+        >
+          <summary
+            className="site-nav-group-label"
+            ref={(node) => {
+              if (node) groupTriggers.set(item.name, node);
+              else groupTriggers.delete(item.name);
+            }}
+            aria-expanded={openGroup === item.name}
+            onClick={(event) => {
+              event.preventDefault();
+              onGroupToggle(item.name);
+            }}
+          >
             <span>{item.name}</span>
-            {item.description ? <small>{item.description}</small> : null}
           </summary>
           <div className="site-nav-group-items">
-            {renderThemeNavigation(item.children, onNavigate)}
+            {renderThemeNavigation(
+              item.children,
+              openGroup,
+              onGroupToggle,
+              groupTriggers,
+              onNavigate,
+            )}
           </div>
         </details>
       );
@@ -54,6 +78,34 @@ export function NavigationItems({
 }): ReactNode {
   const { selectedTheme } = useThemeRuntime();
   const themeNavigation = themeNavigationItemsFrom(selectedTheme.rendererBindings);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const groupTriggers = useRef(new Map<string, HTMLElement>());
+
+  useEffect(() => {
+    if (!openGroup) return undefined;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if ((event.target as HTMLElement | null)?.closest("[data-theme-navigation-group]")) return;
+      setOpenGroup(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      const trigger = groupTriggers.current.get(openGroup);
+      setOpenGroup(null);
+      trigger?.focus();
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [openGroup]);
+
+  const closeNavigation = () => {
+    setOpenGroup(null);
+    onNavigate?.();
+  };
 
   return (
     <>
@@ -68,7 +120,13 @@ export function NavigationItems({
           <span>{item.name}</span>
         </Link>
       ))}
-      {renderThemeNavigation(themeNavigation, onNavigate)}
+      {renderThemeNavigation(
+        themeNavigation,
+        openGroup,
+        (name) => setOpenGroup((current) => (current === name ? null : name)),
+        groupTriggers.current,
+        closeNavigation,
+      )}
     </>
   );
 }

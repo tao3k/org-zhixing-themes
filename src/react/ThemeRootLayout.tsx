@@ -7,6 +7,12 @@ import { ShellChrome } from "./ShellChrome";
 import { loadThemeVariantPreference, storeThemeVariantPreference } from "./themeVariantPreference";
 import { viewForPath } from "./routeViewHelpers";
 import { themeShowsSiteHeroOnContentRoutes } from "./themeContentRouting";
+import {
+  enterZenReadingMode,
+  exitZenReadingMode,
+  toggleZenReadingMode,
+  useZenReadingMode,
+} from "./zenReadingMode";
 
 export const shouldShowSiteHero = (
   pathname: string,
@@ -20,22 +26,28 @@ export const shouldShowSiteHero = (
 export function ThemeRootLayout({
   children,
   shell,
+  theme,
+  defaultVariant,
 }: {
   children: ReactNode;
   shell: ContentShellData;
+  theme?: ZhixingTheme;
+  defaultVariant?: string;
 }): ReactNode {
   const location = useLocation();
   const routeZen = location.pathname.startsWith("/blogs/");
-  const [immersiveZen, setImmersiveZen] = useState(false);
-  const readerMode = routeZen || immersiveZen ? "zen" : "library";
+  const immersiveZen = useZenReadingMode(routeZen);
+  const readerMode = immersiveZen ? "zen" : "library";
   const view = viewForPath(location.pathname);
-  const selectedTheme = useMemo(
+  const configuredTheme = useMemo(
     () => resolveConfiguredTheme(createDefaultThemeRegistry(), shell.siteConfig),
     [shell.siteConfig],
   );
+  const selectedTheme = theme ?? configuredTheme;
+  const selectedDefaultVariant = defaultVariant ?? shell.siteConfig.theme.variant;
   const showSiteHero = shouldShowSiteHero(location.pathname, shell, selectedTheme);
   const [activeVariantId, setActiveVariantId] = useState(() =>
-    loadThemeVariantPreference(selectedTheme, shell.siteConfig.theme.variant),
+    loadThemeVariantPreference(selectedTheme, selectedDefaultVariant),
   );
   useEffect(() => {
     applyThemeVariant(selectedTheme, activeVariantId);
@@ -52,8 +64,9 @@ export function ThemeRootLayout({
     <ShellChrome
       activeVariantId={activeVariantId}
       onVariantChange={setActiveVariantId}
-      onEnterZen={() => setImmersiveZen(true)}
-      onExitZen={immersiveZen ? () => setImmersiveZen(false) : undefined}
+      onEnterZen={enterZenReadingMode}
+      onExitZen={immersiveZen ? exitZenReadingMode : undefined}
+      onToggleZen={() => toggleZenReadingMode(routeZen)}
       readerMode={readerMode}
       showSiteHero={showSiteHero}
       shell={shell}
