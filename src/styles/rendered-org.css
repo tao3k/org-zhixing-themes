@@ -193,7 +193,8 @@ code {
   text-underline-offset: 0.18em;
 }
 
-.rendered-html img {
+.rendered-html img,
+.org-attachment-image {
   display: block;
   max-width: 100%;
   height: auto;

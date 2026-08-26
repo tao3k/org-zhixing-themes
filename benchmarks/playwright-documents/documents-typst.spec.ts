@@ -25,7 +25,13 @@ test("Documents renders Typst inside one bounded semantic frame", async ({ page 
   const bounds = await frame.evaluate((element) => {
     const frameRect = element.getBoundingClientRect();
     const contentRect = element.parentElement?.getBoundingClientRect();
+    const artworkRect = element.querySelector(".org-typst-preview svg")?.getBoundingClientRect();
     return {
+      artworkCount:
+        element.querySelector(".org-typst-preview svg")?.querySelectorAll("path,use,g,image,text")
+          .length ?? 0,
+      artworkHeight: artworkRect?.height ?? 0,
+      artworkWidth: artworkRect?.width ?? 0,
       contentRight: contentRect?.right ?? document.documentElement.clientWidth,
       frameLeft: frameRect.left,
       frameRight: frameRect.right,
@@ -36,5 +42,8 @@ test("Documents renders Typst inside one bounded semantic frame", async ({ page 
   expect(bounds.frameLeft).toBeGreaterThanOrEqual(-1);
   expect(bounds.frameRight).toBeLessThanOrEqual(bounds.contentRight + 1);
   expect(bounds.frameWidth).toBeLessThanOrEqual(bounds.viewportWidth + 1);
+  expect(bounds.artworkCount).toBeGreaterThan(0);
+  expect(bounds.artworkWidth).toBeGreaterThan(0);
+  expect(bounds.artworkHeight).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });

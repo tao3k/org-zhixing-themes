@@ -119,6 +119,10 @@ describe("Org Zhixing performance regression gates", () => {
     expect(staticSiteShards).not.toContain('from "@tanstack/query-core"');
     expect(staticSiteShards).not.toContain("effect/Effect");
     expect(generator).toContain('from "effect/Effect"');
+    expect(generator).toContain('from "es-module-lexer"');
+    expect(generator).toContain("parseModuleImports(source)");
+    expect(generator).toContain("rendererFingerprint");
+    expect(generator).not.toContain("staticRendererVersion");
     expect(generator).toContain("StaticGenerationError");
     expect(generator).toContain('const sourceMemoryShardPublicDir = "org-zhixing.memory";');
     expect(generator).toContain('const sourceSectionShardPublicDir = "org-zhixing.sections";');

@@ -8,6 +8,7 @@ import { languageFromOrgCodeClasses } from "../orgCodeLanguage";
 export type StaticTypstRenderer = (source: string) => Promise<string>;
 
 const compiler = NodeCompiler.create();
+const svgParserWindow = new Window();
 
 const renderTypst: StaticTypstRenderer = async (source) => {
   try {
@@ -32,6 +33,18 @@ const isStaticTypstBlock = (block: HTMLElement): boolean => {
   );
 };
 
+const appendStaticTypstSvg = (template: HTMLTemplateElement, svg: string): void => {
+  const parsed = new svgParserWindow.DOMParser().parseFromString(svg, "image/svg+xml");
+  const root = parsed.documentElement;
+  const renderable = root.querySelector(
+    "path,use,g,image,text,foreignObject,rect,circle,line,polyline,polygon,ellipse",
+  );
+  if (root.localName !== "svg" || !renderable) {
+    throw new Error("Static Typst renderer emitted an empty SVG");
+  }
+  template.content.append(template.ownerDocument.importNode(root as unknown as Node, true));
+};
+
 /**
  * Compiles source known at build time so static readers never need the browser
  * compiler WASM. `currentColor` keeps the preview native to every theme.
@@ -51,7 +64,10 @@ export const renderOrgStaticTypstDocument = async (
   for (const block of typstBlocks) {
     const template = document.createElement("template");
     template.dataset.orgTypstStaticPreview = "ready";
-    template.innerHTML = sanitizeTypstSvg(await render(block.textContent ?? ""), "currentColor");
+    appendStaticTypstSvg(
+      template,
+      sanitizeTypstSvg(await render(block.textContent ?? ""), "currentColor"),
+    );
     block.before(template);
   }
 };

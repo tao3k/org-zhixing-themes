@@ -2,15 +2,17 @@ import { createHash } from "node:crypto";
 import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { basename, dirname, resolve } from "node:path";
+import { basename, dirname, extname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as Effect from "effect/Effect";
+import { init as initModuleLexer, parse as parseModuleImports } from "es-module-lexer";
 import { Window } from "happy-dom";
 import init, { Org } from "orgize";
 import { parse } from "smol-toml";
 import {
   generateAttachmentThumbnail,
-  resetAttachmentThumbnailOutput,
+  prepareAttachmentThumbnailOutput,
+  pruneAttachmentThumbnailOutput,
 } from "../src/node/attachmentThumbnailGenerator.mjs";
 import { orgFiles } from "../src/node/orgSources.ts";
 import { orgDocumentIdFromPath } from "../src/orgIdLinks.ts";
@@ -41,9 +43,62 @@ const configPath = basename(configFilePath);
 const externalContentDiskRoot = process.env.ORG_ZHIXING_CONTENT_DIR
   ? resolve(process.env.ORG_ZHIXING_CONTENT_DIR)
   : null;
-const staticRendererVersion = "org-static-render-v2";
+
+const staticRendererSourceFingerprint = async () => {
+  await initModuleLexer;
+  const pending = [resolve(projectRoot, "src/node/orgStaticRendering.ts")];
+  const visited = new Set();
+  const sources = [];
+
+  while (pending.length > 0) {
+    const file = pending.pop();
+    if (!file || visited.has(file)) continue;
+    visited.add(file);
+    const source = await readFile(file, "utf8");
+    sources.push([relative(projectRoot, file), source]);
+    const [imports] = parseModuleImports(source);
+    for (const imported of imports) {
+      if (!imported.n?.startsWith(".")) continue;
+      const dependency = await resolveLocalModule(file, imported.n);
+      if (dependency && !visited.has(dependency)) pending.push(dependency);
+    }
+  }
+
+  sources.sort(([left], [right]) => left.localeCompare(right));
+  const digest = createHash("sha256");
+  for (const [path, source] of sources) {
+    digest.update(path).update("\0").update(source).update("\0");
+  }
+  return digest.digest("hex");
+};
+
+const resolveLocalModule = async (importer, specifier) => {
+  const base = resolve(dirname(importer), specifier);
+  const candidates = extname(base)
+    ? [base]
+    : [
+        `${base}.ts`,
+        `${base}.tsx`,
+        `${base}.mjs`,
+        `${base}.js`,
+        resolve(base, "index.ts"),
+        resolve(base, "index.tsx"),
+        resolve(base, "index.mjs"),
+        resolve(base, "index.js"),
+      ];
+  for (const candidate of candidates) {
+    try {
+      await access(candidate);
+      return candidate;
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+  }
+  return null;
+};
 
 const main = async () => {
+  const rendererFingerprint = await staticRendererSourceFingerprint();
   const configText = await readFile(configFilePath, "utf8");
   const config = parseConfig(configText);
   const externalContentDirectory = process.env.ORG_ZHIXING_CONTENT_DIR?.trim();
@@ -62,16 +117,25 @@ const main = async () => {
   );
   const require = createRequire(import.meta.url);
   await init({ module_or_path: readFileSync(require.resolve("orgize/wasm")) });
-  await resetAttachmentThumbnailOutput(outputRoot);
+  prepareAttachmentThumbnailOutput();
 
   const sources = [];
   for (const source of config.sources) {
     const startedAt = performance.now();
-    sources.push(await projectSource(source, config));
+    sources.push(await projectSource(source, config, rendererFingerprint));
     console.log(
       `static org projection: ${source.sourceFile} ${Math.round(performance.now() - startedAt)}ms`,
     );
   }
+
+  await pruneAttachmentThumbnailOutput(
+    outputRoot,
+    sources.flatMap((source) =>
+      source.attachmentInventory.display
+        .map((record) => record.thumbnailPath)
+        .filter((path) => typeof path === "string"),
+    ),
+  );
 
   await writeSourceShards(sources);
   const attachmentGallery = projectAttachmentGalleryView(sources);
@@ -124,7 +188,7 @@ const main = async () => {
   console.log(`static org projection: wrote ${relativeOutputPath()}`);
 };
 
-const projectSource = async (source, config) => {
+const projectSource = async (source, config, rendererFingerprint) => {
   const sourceText = await readFile(resolve(config.contentDiskRoot, source.file), "utf8");
   const org = new Org(sourceText);
   try {
@@ -138,7 +202,12 @@ const projectSource = async (source, config) => {
       sourceBytes: Buffer.byteLength(sourceText),
       viewIndex,
       sectionIndex: parseJson(org.sectionIndexJson(source.sourceFile)),
-      html: await readOrRenderStaticHtml(org.html(), source.file, config.sources),
+      html: await readOrRenderStaticHtml(
+        org.html(),
+        source.file,
+        config.sources,
+        rendererFingerprint,
+      ),
       attachmentInventory,
       memory: parseJson(org.memoryJson()),
       agendaRange: agendaProjection.range,
@@ -150,14 +219,14 @@ const projectSource = async (source, config) => {
   }
 };
 
-const readOrRenderStaticHtml = async (html, currentFile, sources) => {
+const readOrRenderStaticHtml = async (html, currentFile, sources, rendererFingerprint) => {
   const sourceId = orgDocumentIdFromPath(currentFile);
   const key = sha256(
     JSON.stringify({
       currentFile,
       html,
+      rendererFingerprint,
       sources: sources.map((source) => ({ file: source.file, id: source.id ?? null })),
-      version: staticRendererVersion,
     }),
   );
   const cachePath = resolve(renderCacheRoot, `${sourceId}.json`);

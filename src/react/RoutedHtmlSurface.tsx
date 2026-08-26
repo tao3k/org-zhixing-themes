@@ -102,8 +102,10 @@ export function RoutedHtmlSurface({
   }, [onInternalNavigation]);
   useEffect(() => {
     const root = surfaceRef.current;
-    return root ? installOrgContentEnhancements(root, documentView) : undefined;
-  }, [documentView, html]);
+    return root
+      ? installOrgContentEnhancements(root, documentView, sourceFile ?? undefined)
+      : undefined;
+  }, [documentView, html, sourceFile]);
   useEffect(() => {
     if (!documentView) return;
     setWorldTreeDocument(documentView, sourceFile);

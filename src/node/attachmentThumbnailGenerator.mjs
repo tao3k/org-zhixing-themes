@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { access, mkdir, readFile, rm } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import sharp from "sharp";
 
@@ -8,12 +8,28 @@ export const attachmentThumbnailSize = Object.freeze({ width: 704, height: 440 }
 
 const inFlight = new Map();
 
-export const resetAttachmentThumbnailOutput = async (outputRoot) => {
+export const prepareAttachmentThumbnailOutput = () => {
   inFlight.clear();
-  await rm(resolve(outputRoot, attachmentThumbnailPublicDir), {
-    recursive: true,
-    force: true,
-  });
+};
+
+export const pruneAttachmentThumbnailOutput = async (outputRoot, referencedPaths) => {
+  const thumbnailRoot = resolve(outputRoot, attachmentThumbnailPublicDir);
+  let entries;
+  try {
+    entries = await readdir(thumbnailRoot, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return;
+    throw error;
+  }
+  const referenced = new Set(referencedPaths);
+  await Promise.all(
+    entries
+      .filter(
+        (entry) =>
+          entry.isFile() && !referenced.has(`${attachmentThumbnailPublicDir}/${entry.name}`),
+      )
+      .map((entry) => rm(resolve(thumbnailRoot, entry.name), { force: true })),
+  );
 };
 
 export const generateAttachmentThumbnail = async ({ sourcePath, outputRoot }) => {
