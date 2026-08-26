@@ -544,8 +544,9 @@ describe("Org source view projections", () => {
     expect(html).toContain("org-planning-chip org-planning-chip--deadline");
     expect(html).toContain("org-table-frame");
     expect(html).toContain('<th scope="col">Syntax family</th>');
-    expect(html).toContain("org-block-frame");
-    expect(html).toContain("SRC · typescript");
+    expect(html.match(/org-block-frame/g)).toHaveLength(1);
+    expect(html).toContain("org-native-block--src");
+    expect(html).not.toContain("SRC · typescript");
     expect(html).toContain("EXAMPLE");
   });
 

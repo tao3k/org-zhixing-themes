@@ -14,6 +14,24 @@ afterEach(() => {
 });
 
 describe("Org Babel syntax highlighting", () => {
+  it("reuses the Typst frame instead of nesting another source figure", () => {
+    document.body.innerHTML = `
+      <figure class="org-typst-block">
+        <figcaption>Typst</figcaption>
+        <pre class="src src-typst">= One frame</pre>
+      </figure>
+    `;
+    const originalFrame = document.querySelector<HTMLElement>("figure");
+
+    const figures = prepareOrgCodeBlocks(document);
+
+    expect(figures).toEqual([originalFrame]);
+    expect(originalFrame?.classList.contains("org-code-highlight")).toBe(true);
+    expect(originalFrame?.dataset.orgCodeHighlight).toBe("pending");
+    expect(document.querySelectorAll("figure")).toHaveLength(1);
+    expect(document.querySelectorAll("figure > figcaption")).toHaveLength(1);
+  });
+
   it("recognizes Org and ecosystem language classes without consuming Mermaid", () => {
     document.body.innerHTML = `
       <pre class="src src-typescript">const value: number = 1</pre>
@@ -123,7 +141,10 @@ describe("Org Babel syntax highlighting", () => {
       expect(codeToHtml).toHaveBeenCalledTimes(4);
       for (const [, options] of codeToHtml.mock.calls) {
         expect(options).toEqual(
-          expect.objectContaining({ lang: "scheme", themes: orgCodeHighlightThemes }),
+          expect.objectContaining({
+            lang: "scheme",
+            themes: orgCodeHighlightThemes,
+          }),
         );
       }
     } finally {

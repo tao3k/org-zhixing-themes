@@ -1,4 +1,5 @@
 import type { OrgizeDocumentView } from "./model";
+import { languageFromOrgCodeClasses } from "./orgCodeLanguage";
 import {
   headingLevel,
   matchHeadingRecord,
@@ -162,20 +163,28 @@ const enhanceOrgBlocks = (root: ParentNode): void => {
       continue;
     }
     const code = pre.querySelector("code");
-    const language = code ? codeLanguage(code) : null;
-    const kind = language ? "src" : pre.classList.contains("example") ? "example" : "block";
+    const classes = [...pre.classList, ...(code?.classList ?? [])];
+    const language = languageFromOrgCodeClasses(classes);
+    const isSource =
+      language !== null ||
+      classes.some(
+        (className) =>
+          className === "src" || className.startsWith("src-") || className.startsWith("language-"),
+      );
+    const hasSpecializedOwner =
+      pre.closest("figure.org-code-highlight, figure.org-typst-block") !== null;
+    const kind =
+      isSource || hasSpecializedOwner
+        ? "src"
+        : pre.classList.contains("example")
+          ? "example"
+          : "block";
     pre.classList.add("org-native-block", `org-native-block--${kind}`);
+    if (isSource || hasSpecializedOwner) {
+      continue;
+    }
     wrapBlock(pre, blockLabel(kind, language));
   }
-};
-
-const codeLanguage = (code: HTMLElement): string | null => {
-  for (const className of code.classList) {
-    if (className.startsWith("language-")) {
-      return className.slice("language-".length);
-    }
-  }
-  return null;
 };
 
 const blockLabel = (kind: string, language: string | null): string => {

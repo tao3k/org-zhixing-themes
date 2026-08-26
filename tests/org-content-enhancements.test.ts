@@ -4,6 +4,22 @@ import { applyOrgSemanticEnhancements } from "../src/react/orgContentEnhancement
 import { sectionRecord, sourceRange } from "./modelFixtures";
 
 describe("Org semantic content enhancements", () => {
+  it("leaves source-block frame ownership to the specialized renderer", () => {
+    const root = document.createElement("div");
+    root.innerHTML = `
+      <pre class="src src-typst">= Native Typst</pre>
+      <pre>plain example output</pre>
+    `;
+
+    applyOrgSemanticEnhancements(root, createDocumentView([], null, []));
+
+    const typst = root.querySelector<HTMLElement>("pre.src-typst");
+    expect(typst?.classList.contains("org-native-block--src")).toBe(true);
+    expect(typst?.closest(".org-block-frame")).toBeNull();
+    expect(root.querySelectorAll(".org-block-frame")).toHaveLength(1);
+    expect(root.querySelector(".org-block-frame figcaption")?.textContent).toBe("BLOCK");
+  });
+
   it("renders parser-projected TODO and priority markers without reading heading text", () => {
     const root = document.createElement("div");
     root.innerHTML = "<h2>Ship the native renderer</h2>";
@@ -55,7 +71,11 @@ describe("Org semantic content enhancements", () => {
           scheduled: null,
         },
         properties: [
-          { key: "SLUG", source: sourceRange(43), value: "syntax-atlas-purpose" },
+          {
+            key: "SLUG",
+            source: sourceRange(43),
+            value: "syntax-atlas-purpose",
+          },
           { key: "AREA", source: sourceRange(44), value: "frontend" },
           { key: "KIND", source: sourceRange(45), value: "article" },
         ],
