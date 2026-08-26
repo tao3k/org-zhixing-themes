@@ -35,9 +35,11 @@ describe("theme-owned Zen layouts", () => {
     const shell = read("src/react/ShellChrome.tsx");
     const mapStyle = read("src/styles/org-world-tree.css");
 
-    expect(shell).toContain(
-      '{readerMode === "zen" ? <OrgWorldTreePanel staticSite={shell.staticSite} /> : null}',
-    );
+    expect(shell).toContain("const OrgWorldTreePanel = lazy(() =>");
+    expect(shell).toContain('import("./OrgWorldTreePanel")');
+    expect(shell).toContain('readerMode === "zen" ? (');
+    expect(shell).toContain("<Suspense fallback={null}>");
+    expect(shell).toContain("<OrgWorldTreePanel staticSite={shell.staticSite} />");
     expect(shell).not.toContain('"zen-utility"');
     expect(shell).not.toContain('className="zen-mode-exit"');
     expect(shell).not.toContain("Exit Zen");

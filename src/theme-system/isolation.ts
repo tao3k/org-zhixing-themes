@@ -78,13 +78,21 @@ export const renderThemeRuntimeModule = (snapshot: ThemeIsolationSnapshot): stri
     (entry): entry is ThemeCatalogEntry & { transport: FederatedThemeTransport } =>
       entry.transport.kind === "federated",
   );
-  const workspaceImports = workspaceThemes.map(
-    (entry, index) =>
-      `import workspaceTheme${index} from ${JSON.stringify(entry.transport.module)};`,
-  );
-  const workspaceBindings = workspaceThemes.map(
-    (entry, index) => `[${JSON.stringify(entry.id)}, workspaceTheme${index}]`,
-  );
+  const selectedWorkspaceTheme = selected.transport.kind === "workspace" ? selected : null;
+  const workspaceImports = selectedWorkspaceTheme
+    ? [
+        `import selectedWorkspaceTheme from ${JSON.stringify(selectedWorkspaceTheme.transport.module)};`,
+      ]
+    : [];
+  const workspaceBindings = selectedWorkspaceTheme
+    ? [`[${JSON.stringify(selectedWorkspaceTheme.id)}, selectedWorkspaceTheme]`]
+    : [];
+  const workspaceLoaderBindings = workspaceThemes
+    .filter(({ id }) => id !== selected.id)
+    .map(
+      (entry) =>
+        `[${JSON.stringify(entry.id)}, () => import(${JSON.stringify(entry.transport.module)}).then((themeModule) => themeModule.default ?? themeModule)]`,
+    );
   const federationImports = federatedThemes.length
     ? [
         'import { createInstance } from "@module-federation/enhanced/runtime";',
@@ -125,6 +133,18 @@ export const renderThemeRuntimeModule = (snapshot: ThemeIsolationSnapshot): stri
       ]
     : [];
   const federatedBindings = federatedThemes.map((entry) => [entry.id, entry.transport.module]);
+  const runtimeCatalog = snapshot.catalog.map((entry) =>
+    entry.id === selected.id
+      ? entry
+      : {
+          ...entry,
+          package: null,
+          transport:
+            entry.transport.kind === "workspace"
+              ? { kind: "workspace" as const, module: `theme:${entry.id}` }
+              : entry.transport,
+        },
+  );
   return [
     ...workspaceImports,
     ...federationImports,
@@ -133,11 +153,28 @@ export const renderThemeRuntimeModule = (snapshot: ThemeIsolationSnapshot): stri
     `export const isolatedSelectedThemeId = ${JSON.stringify(snapshot.selectedThemeId)};`,
     `export const isolatedSelectedVariant = ${JSON.stringify(snapshot.selectedVariant)};`,
     `export const isolatedSelectedThemeMetadata = ${JSON.stringify(selected)};`,
-    `export const isolatedThemeCatalog = ${JSON.stringify(snapshot.catalog)};`,
+    `export const isolatedThemeCatalog = ${JSON.stringify(runtimeCatalog)};`,
     `const workspaceThemesById = new Map([${workspaceBindings.join(", ")}]);`,
+    `const workspaceThemeLoadersById = new Map([${workspaceLoaderBindings.join(", ")}]);`,
     `const federatedThemeModulesById = new Map(${JSON.stringify(federatedBindings)});`,
     "const loadedThemesById = new Map();",
     "const loadingThemesById = new Map();",
+    "const loadWorkspaceThemeById = (id, load) => {",
+    "  const loaded = loadedThemesById.get(id);",
+    "  if (loaded) return Promise.resolve(loaded);",
+    "  const pending = loadingThemesById.get(id);",
+    "  if (pending) return pending;",
+    "  const loading = load().then((theme) => {",
+    "    loadedThemesById.set(id, theme);",
+    "    loadingThemesById.delete(id);",
+    "    return theme;",
+    "  }).catch((error) => {",
+    "    loadingThemesById.delete(id);",
+    "    throw error;",
+    "  });",
+    "  loadingThemesById.set(id, loading);",
+    "  return loading;",
+    "};",
     "const loadFederatedThemeById = (id, module) => {",
     "  const loaded = loadedThemesById.get(id);",
     "  if (loaded) return Promise.resolve(loaded);",
@@ -161,6 +198,8 @@ export const renderThemeRuntimeModule = (snapshot: ThemeIsolationSnapshot): stri
     "export const loadThemeById = (id) => {",
     "  const workspaceTheme = workspaceThemesById.get(id);",
     "  if (workspaceTheme) return Promise.resolve(workspaceTheme);",
+    "  const workspaceThemeLoader = workspaceThemeLoadersById.get(id);",
+    "  if (workspaceThemeLoader) return loadWorkspaceThemeById(id, workspaceThemeLoader);",
     "  const federatedModule = federatedThemeModulesById.get(id);",
     "  if (federatedModule) return loadFederatedThemeById(id, federatedModule);",
     '  return Promise.reject(new Error(`THEME-E001 unknown theme "${id}"`));',

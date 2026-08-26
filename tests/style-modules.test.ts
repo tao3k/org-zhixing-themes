@@ -26,11 +26,17 @@ describe("style module boundaries", () => {
       '@import "./styles/agenda-program-responsive.css";',
       '@import "./styles/rendered-org.css";',
       '@import "./styles/org-typst.css";',
-      '@import "./styles/org-world-tree.css";',
       '@import "./styles/blog-rendered.css";',
       '@import "./styles/responsive.css";',
       '@import "./styles/theme-startup-failure.css";',
     ]);
+  });
+
+  it("loads the world tree styles with the lazy graph surface", () => {
+    const panel = readFileSync("src/react/OrgWorldTreePanel.tsx", "utf8");
+
+    expect(panel).toContain('import "../styles/org-world-tree.css";');
+    expect(readFileSync("src/styles.css", "utf8")).not.toContain("org-world-tree.css");
   });
 
   it("keeps product CSS modules below the monolith threshold", () => {

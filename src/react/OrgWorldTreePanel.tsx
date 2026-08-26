@@ -20,6 +20,7 @@ import {
 } from "./OrgKnowledgeGraph";
 import { loadStaticKnowledgeGraph, type StaticSiteData } from "../staticSiteData";
 import type { KnowledgeGraphRelation as MindMapRelation } from "./OrgKnowledgeGraph";
+import "../styles/org-world-tree.css";
 
 type NodeRole = "ancestor" | "context" | "current" | "distant" | "root" | "source";
 

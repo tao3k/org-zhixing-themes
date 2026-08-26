@@ -18,10 +18,12 @@ import { routedAnchorNavigationFromEvent } from "./RoutedHtmlSurface";
 import { ThemeVariantNavigation } from "./ThemeVariantNavigation";
 import { isOrgSearchShortcut, ORG_SEARCH_REQUEST_EVENT } from "./orgSearchEvents";
 import { isEditableKeyboardTarget, isZenModeShortcut } from "./readerShortcuts";
-import { OrgWorldTreePanel } from "./OrgWorldTreePanel";
 
 const MobileNavigationDrawer = lazy(() => import("./MobileNavigationDrawer"));
 const OrgSearchPalette = lazy(() => import("./OrgSearchPalette"));
+const OrgWorldTreePanel = lazy(() =>
+  import("./OrgWorldTreePanel").then(({ OrgWorldTreePanel }) => ({ default: OrgWorldTreePanel })),
+);
 
 export type ShellChromeProps = {
   activeVariantId: string;
@@ -153,7 +155,11 @@ function ShellChromeView({
       {readerMode === "library"
         ? renderReactSpaThemeSlot(theme, "runtime-state", { shell }, <RuntimeState shell={shell} />)
         : null}
-      {readerMode === "zen" ? <OrgWorldTreePanel staticSite={shell.staticSite} /> : null}
+      {readerMode === "zen" ? (
+        <Suspense fallback={null}>
+          <OrgWorldTreePanel staticSite={shell.staticSite} />
+        </Suspense>
+      ) : null}
       {searchEnabled ? (
         <Suspense fallback={null}>
           <OrgSearchPalette open={orgSearchOpen} onOpenChange={setOrgSearchOpen} shell={shell} />

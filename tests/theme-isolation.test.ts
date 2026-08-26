@@ -55,19 +55,19 @@ describe("theme isolation framework", () => {
     expect(documents).toContain('from "@org-zhixing/theme-documents"');
     expect(documents).toContain('"preview-5199"');
     expect(documents.match(/^import .+$/gmu)).toEqual([
-      'import workspaceTheme0 from "@org-zhixing/theme-documents";',
-      'import workspaceTheme1 from "@org-zhixing/theme-elegant-blog";',
-      'import workspaceTheme2 from "@org-zhixing/theme-minimal-notes";',
+      'import selectedWorkspaceTheme from "@org-zhixing/theme-documents";',
     ]);
     expect(documents).toContain("export const loadThemeById = (id) => {");
-    expect(documents).toContain('["minimal-notes", workspaceTheme2]');
+    expect(documents).toContain(
+      '["minimal-notes", () => import("@org-zhixing/theme-minimal-notes")',
+    );
+    expect(documents).toContain('"module":"theme:minimal-notes"');
     expect(blog).toContain('from "@org-zhixing/theme-elegant-blog"');
     expect(blog).toContain('"preview-5200"');
     expect(blog.match(/^import .+$/gmu)).toEqual([
-      'import workspaceTheme0 from "@org-zhixing/theme-documents";',
-      'import workspaceTheme1 from "@org-zhixing/theme-elegant-blog";',
-      'import workspaceTheme2 from "@org-zhixing/theme-minimal-notes";',
+      'import selectedWorkspaceTheme from "@org-zhixing/theme-elegant-blog";',
     ]);
+    expect(blog).toContain('["documents", () => import("@org-zhixing/theme-documents")');
   });
 
   it("fails before bundling when the selected theme is outside the instance catalog", () => {
