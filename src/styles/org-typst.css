@@ -1,4 +1,7 @@
 .org-typst-block {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow: hidden;
   margin: 18px 0;
   border: 1px solid var(--hairline-soft);
@@ -62,6 +65,8 @@
 
 .org-typst-preview-output {
   display: grid;
+  width: 100%;
+  max-width: 100%;
   min-height: 0;
   place-items: start center;
   overflow: auto;

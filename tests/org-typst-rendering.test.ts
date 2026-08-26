@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createDocumentView } from "../src/model";
+import { applyOrgSemanticEnhancements } from "../src/react/orgContentEnhancements";
 import {
   createCachedTypstRenderer,
   findOrgTypstBlocks,
@@ -11,6 +13,35 @@ afterEach(() => {
 });
 
 describe("Org Typst rendering", () => {
+  it("keeps a statically highlighted Typst block inside one width-owning frame", async () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    document.body.innerHTML = `
+      <figure class="org-code-highlight" data-org-code-highlight="ready">
+        <figcaption>typst</figcaption>
+        <template data-org-typst-static-preview="ready"><svg viewBox="0 0 10 10"></svg></template>
+        <pre class="shiki org-code-highlight-pre src src-typst">= Static frame</pre>
+      </figure>
+    `;
+    const render = vi.fn(async () => "<svg>unexpected</svg>");
+
+    applyOrgSemanticEnhancements(document.body, createDocumentView([], null, []));
+    const stop = installOrgTypstRendering(document, render);
+    await vi.waitFor(() =>
+      expect(document.querySelector<HTMLElement>(".org-typst-preview")?.dataset.orgTypstState).toBe(
+        "ready",
+      ),
+    );
+
+    const frame = document.querySelector<HTMLElement>("figure.org-typst-block");
+    expect(render).not.toHaveBeenCalled();
+    expect(frame?.classList.contains("org-code-highlight")).toBe(true);
+    expect(document.querySelectorAll("figure")).toHaveLength(1);
+    expect(document.querySelector(".org-block-frame")).toBeNull();
+    expect(frame?.querySelectorAll(":scope > figcaption")).toHaveLength(1);
+    expect(frame?.querySelector(":scope > .org-typst-preview")).not.toBeNull();
+    stop();
+  });
+
   it("recognizes Typst and typ aliases", () => {
     document.body.innerHTML = `
       <pre class="src src-typst">= Document</pre>
@@ -102,7 +133,10 @@ describe("Org Typst rendering", () => {
       <pre class="src src-typst">= First</pre>
       <pre class="src src-typst">= Second</pre>
     `;
-    vi.stubGlobal("URL", { createObjectURL: vi.fn(() => "blob:typst"), revokeObjectURL: vi.fn() });
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn(() => "blob:typst"),
+      revokeObjectURL: vi.fn(),
+    });
     const render = vi.fn(async (source: string) => `<svg>${source}</svg>`);
 
     const stop = installOrgTypstRendering(document, render);

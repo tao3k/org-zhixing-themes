@@ -73,14 +73,19 @@ export const prepareOrgCodeBlocks = (root: ParentNode): HTMLElement[] =>
   findOrgCodeBlocks(root).map((block) => {
     const language = languageFromBlock(block);
     if (!language) return block;
-    const figure = document.createElement("figure");
-    figure.className = "org-code-highlight";
+    const existingTypstFrame = block.parentElement?.classList.contains("org-typst-block")
+      ? block.parentElement
+      : null;
+    const figure = existingTypstFrame ?? document.createElement("figure");
+    figure.classList.add("org-code-highlight");
     figure.dataset.orgCodeHighlight = "pending";
     figure.setAttribute("aria-busy", "true");
-    const label = document.createElement("figcaption");
-    label.textContent = language;
-    block.before(figure);
-    figure.append(label, block);
+    if (!existingTypstFrame) {
+      const label = document.createElement("figcaption");
+      label.textContent = language;
+      block.before(figure);
+      figure.append(label, block);
+    }
     records.set(figure, {
       code: block.textContent ?? "",
       language,
