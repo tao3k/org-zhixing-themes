@@ -268,22 +268,23 @@ describe("Org Zhixing React Router app", () => {
     expect(trigger?.getAttribute("aria-expanded")).toBe("false");
     await act(async () => {
       trigger?.click();
-      await new Promise((resolve) => window.setTimeout(resolve, 50));
     });
-    expect(document.querySelector('[role="dialog"]')).toBeTruthy();
-    expect(trigger?.getAttribute("aria-expanded")).toBe("true");
+    await vi.waitFor(() => {
+      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(trigger?.getAttribute("aria-expanded")).toBe("true");
+    });
     expect(document.body.textContent).toContain("Choose a view from the life archive.");
     const notes = document.querySelector<HTMLAnchorElement>('.mobile-nav-list a[href="/notes"]');
     expect(notes).toBeTruthy();
     await act(async () => {
       notes?.click();
-      await new Promise((resolve) => window.setTimeout(resolve, 50));
     });
-
-    expect(document.body.textContent).toContain("2 indexed notes from 2 Org sources");
-    expect(window.location.pathname).toBe("/notes");
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+    await vi.waitFor(() => {
+      expect(document.body.textContent).toContain("2 indexed notes from 2 Org sources");
+      expect(window.location.pathname).toBe("/notes");
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+      expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+    });
   });
 
   it("handles static agenda program and inspector clicks through router search", async () => {
