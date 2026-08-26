@@ -59,7 +59,7 @@ describe("theme isolation framework", () => {
       'import workspaceTheme1 from "@org-zhixing/theme-elegant-blog";',
       'import workspaceTheme2 from "@org-zhixing/theme-minimal-notes";',
     ]);
-    expect(documents).toContain('export const loadThemeById = (id) => {');
+    expect(documents).toContain("export const loadThemeById = (id) => {");
     expect(documents).toContain('["minimal-notes", workspaceTheme2]');
     expect(blog).toContain('from "@org-zhixing/theme-elegant-blog"');
     expect(blog).toContain('"preview-5200"');

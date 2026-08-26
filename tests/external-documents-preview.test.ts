@@ -51,7 +51,9 @@ $ integral_0^1 x dif x $
       expect(shard).toContain('class=\\"org-code-highlight\\" data-org-code-highlight=\\"ready\\"');
       expect(shard).toContain("<figcaption>latex</figcaption>");
       expect(shard).toContain("<figcaption>typst</figcaption>");
-      expect(shard).toContain('class=\\"shiki shiki-themes github-light github-dark org-code-highlight-pre\\"');
+      expect(shard).toContain(
+        'class=\\"shiki shiki-themes github-light github-dark org-code-highlight-pre\\"',
+      );
       expect(shard).toContain("\\\\(E = mc^2\\\\)");
     } finally {
       rmSync(root, { force: true, recursive: true });

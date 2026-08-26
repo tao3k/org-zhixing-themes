@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { normalizeOrgZhixingBasePath } from "../src/react/deploymentBasePath";
+import {
+  assetBasePathFromUrls,
+  normalizeOrgZhixingBasePath,
+} from "../src/react/deploymentBasePath";
 import { routePathForView } from "../src/react/routeViewHelpers";
 
 describe("React Router boundary", () => {
@@ -20,6 +23,13 @@ describe("React Router boundary", () => {
     expect(normalizeOrgZhixingBasePath("/")).toBe("/");
     expect(normalizeOrgZhixingBasePath("org-zhixing-themes")).toBe("/org-zhixing-themes");
     expect(normalizeOrgZhixingBasePath("/org-zhixing-themes/")).toBe("/org-zhixing-themes");
+  });
+
+  it("derives a nested deployment base from Rsbuild asset URLs", () => {
+    expect(
+      assetBasePathFromUrls(["http://127.0.0.1:5173/org-zhixing-themes/assets/app.12345678.js"]),
+    ).toBe("/org-zhixing-themes");
+    expect(assetBasePathFromUrls(["http://127.0.0.1:5173/assets/app.12345678.js"])).toBe(null);
   });
 
   it("routes registered theme previews before the document catch-all", () => {

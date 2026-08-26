@@ -1,1 +1,5 @@
-export { normalizeOrgZhixingBasePath, orgZhixingBasePath } from "../deploymentBasePath";
+export {
+  assetBasePathFromUrls,
+  normalizeOrgZhixingBasePath,
+  orgZhixingBasePath,
+} from "../deploymentBasePath";

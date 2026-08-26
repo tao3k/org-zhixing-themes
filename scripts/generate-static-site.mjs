@@ -14,6 +14,7 @@ import {
 } from "../src/node/attachmentThumbnailGenerator.mjs";
 import { orgFiles } from "../src/node/orgSources.ts";
 import { orgDocumentIdFromPath } from "../src/orgIdLinks.ts";
+import { globalHeadingNodesForSource, globalOrgLinkRelations } from "../src/react/orgWorldTree.ts";
 import { renderOrgStaticHtml } from "../src/node/orgStaticRendering.ts";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,6 +22,7 @@ const publicRoot = resolve(projectRoot, "public");
 const outputRoot = resolve(projectRoot, process.env.ORG_ZHIXING_CACHE_ROOT ?? ".cache/org-zhixing");
 const outputPath = resolve(outputRoot, "static-site.json");
 const galleryOutputPath = resolve(outputRoot, "org-zhixing.gallery.json");
+const knowledgeGraphOutputPath = resolve(outputRoot, "org-zhixing.knowledge-graph.json");
 const sourceShardPublicDir = "org-zhixing.sources";
 const sourceShardRoot = resolve(outputRoot, sourceShardPublicDir);
 const sourceMemoryShardPublicDir = "org-zhixing.memory";
@@ -78,6 +80,17 @@ const main = async () => {
     `${JSON.stringify({ schemaVersion: 1, ...attachmentGallery })}\n`,
     "utf8",
   );
+  const knowledgeGraph = {
+    schemaVersion: 1,
+    nodes: sources.flatMap((source) =>
+      globalHeadingNodesForSource(source, source.sectionIndex.records),
+    ),
+    relations: globalOrgLinkRelations(
+      sources,
+      sources.map((source) => source.sectionIndex.records),
+    ),
+  };
+  await writeFile(knowledgeGraphOutputPath, `${JSON.stringify(knowledgeGraph)}\n`, "utf8");
   const manifest = {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
@@ -95,6 +108,11 @@ const main = async () => {
       label: attachmentGallery.label,
       siteWide: attachmentGallery.siteWide,
       firstThumbnailPath: attachmentGallery.records[0]?.record?.thumbnailPath ?? null,
+    },
+    knowledgeGraph: {
+      shardPath: "org-zhixing.knowledge-graph.json",
+      nodeCount: knowledgeGraph.nodes.length,
+      relationCount: knowledgeGraph.relations.length,
     },
     blog: projectBlogIndex(sources),
     travel: projectTravelView(sources),

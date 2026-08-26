@@ -175,9 +175,7 @@ export const createOrgZhixingRouter = (
 export const router = createOrgZhixingRouter();
 
 function RootLayout(): ReactNode {
-  return (
-    <RootContent shell={rootRoute.useLoaderData()} />
-  );
+  return <RootContent shell={rootRoute.useLoaderData()} />;
 }
 
 function RootContent({ shell }: { shell: ContentShellData }): ReactNode {
@@ -213,9 +211,21 @@ function ThemeDocumentPage(): ReactNode {
     return data.routes.renderDocument(data.data);
   }
   if (data.kind === "layout") {
-    return <RoutedHtmlSurface documentView={data.document.document} html={data.html} />;
+    return (
+      <RoutedHtmlSurface
+        documentView={data.document.document}
+        html={data.html}
+        sourceFile={data.document.source.sourceFile}
+      />
+    );
   }
-  return <RoutedHtmlSurface documentView={data.document.document} html={data.document.html} />;
+  return (
+    <RoutedHtmlSurface
+      documentView={data.document.document}
+      html={data.document.html}
+      sourceFile={data.document.source.sourceFile}
+    />
+  );
 }
 
 function ThemePreviewPage(): ReactNode {
@@ -239,11 +249,16 @@ function ThemePreviewDocumentPage(): ReactNode {
       {document.kind === "contentRoutes" ? (
         document.routes.renderDocument(document.data)
       ) : document.kind === "layout" ? (
-        <RoutedHtmlSurface documentView={document.document.document} html={document.html} />
+        <RoutedHtmlSurface
+          documentView={document.document.document}
+          html={document.html}
+          sourceFile={document.document.source.sourceFile}
+        />
       ) : (
         <RoutedHtmlSurface
           documentView={document.document.document}
           html={document.document.html}
+          sourceFile={document.document.source.sourceFile}
         />
       )}
     </ThemePreviewRuntimeLayout>
@@ -425,6 +440,9 @@ function BlogArticlePage(): ReactNode {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented) {
+        return;
+      }
       if (isEditableTarget(event.target)) {
         return;
       }
@@ -463,7 +481,13 @@ function BlogArticlePage(): ReactNode {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [article, navigate, shell.staticSite?.blog]);
 
-  return <HtmlSurface html={html} />;
+  return (
+    <RoutedHtmlSurface
+      documentView={article.document}
+      html={html}
+      sourceFile={article.source.sourceFile}
+    />
+  );
 }
 
 function TravelPage(): ReactNode {

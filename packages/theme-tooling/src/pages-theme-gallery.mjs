@@ -17,10 +17,8 @@ export const parsePagesThemeGalleryArgs = (args, workspaceRoot = process.cwd()) 
   configPath: resolve(workspaceRoot, requiredArgument(args, "--config")),
   outputDir: resolve(workspaceRoot, requiredArgument(args, "--out")),
   basePath: (() => {
-    const pathname = new URL(
-      requiredArgument(args, "--base"),
-      "https://org-zhixing.invalid",
-    ).pathname;
+    const pathname = new URL(requiredArgument(args, "--base"), "https://org-zhixing.invalid")
+      .pathname;
     return pathname.endsWith("/") ? pathname : `${pathname}/`;
   })(),
 });

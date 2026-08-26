@@ -77,10 +77,7 @@ export async function loadThemeDocumentQuery(context: OrgZhixingRouterContext, d
   return loadThemeDocumentForTheme(context, shell, docId, context.selectedTheme, `/${docId}`);
 }
 
-export const loadThemePreviewQuery = async (
-  context: OrgZhixingRouterContext,
-  themeId: string,
-) => {
+export const loadThemePreviewQuery = async (context: OrgZhixingRouterContext, themeId: string) => {
   if (!isolatedThemeCatalog.some(({ id }) => id === themeId)) {
     throw notFound();
   }

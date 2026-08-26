@@ -1,0 +1,387 @@
+.org-world-tree {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  pointer-events: none;
+}
+
+.org-world-tree-trigger {
+  position: fixed;
+  z-index: 3;
+  top: 50%;
+  bottom: auto;
+  left: max(14px, calc((100vw - var(--reader-wide-width, 780px)) / 2 - 74px));
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 1px solid color-mix(in srgb, var(--face-salient) 62%, var(--hairline));
+  border-radius: 50%;
+  padding: 0;
+  color: var(--face-salient);
+  background: color-mix(in srgb, var(--surface-paper) 92%, var(--surface-canvas));
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--surface-canvas) 76%, transparent),
+    0 14px 38px color-mix(in srgb, var(--surface-canvas) 42%, transparent);
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translateY(-50%);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 240ms ease;
+}
+
+.org-world-tree-trigger::before,
+.org-world-tree-trigger::after {
+  position: absolute;
+  inset: -7px;
+  border: 1px solid color-mix(in srgb, var(--face-salient) 28%, transparent);
+  border-radius: inherit;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+}
+
+.org-world-tree-trigger::after {
+  inset: -14px;
+  border-color: color-mix(in srgb, var(--face-salient) 16%, transparent);
+}
+
+.org-world-tree-trigger:hover,
+.org-world-tree-trigger:focus-visible,
+.org-world-tree--open .org-world-tree-trigger {
+  border-color: var(--face-salient);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--surface-canvas) 75%, transparent),
+    0 0 0 12px color-mix(in srgb, var(--face-salient) 13%, transparent),
+    0 18px 44px color-mix(in srgb, var(--surface-canvas) 48%, transparent);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.org-world-tree-trigger:hover::before,
+.org-world-tree-trigger:focus-visible::before,
+.org-world-tree--open .org-world-tree-trigger::before {
+  animation: org-world-tree-ring 1.9s ease-out infinite;
+}
+
+.org-world-tree-trigger:hover::after,
+.org-world-tree-trigger:focus-visible::after,
+.org-world-tree--open .org-world-tree-trigger::after {
+  animation: org-world-tree-ring 1.9s 0.62s ease-out infinite;
+}
+
+.org-world-tree-trigger-core {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid color-mix(in srgb, var(--face-salient) 55%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface-paper) 72%, transparent);
+}
+
+.org-world-tree-trigger-core svg {
+  width: 25px;
+  height: 25px;
+}
+
+.org-world-tree-trigger-line {
+  position: absolute;
+  right: 10px;
+  bottom: 11px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--face-salient);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--surface-canvas) 72%, transparent);
+}
+
+.org-world-tree-backdrop {
+  position: fixed;
+  z-index: 1;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: color-mix(in srgb, var(--surface-canvas) 54%, transparent);
+  backdrop-filter: blur(9px) saturate(0.9);
+  cursor: default;
+  pointer-events: auto;
+}
+
+.org-world-tree-map {
+  --org-graph-space: color-mix(in srgb, var(--surface-canvas) 82%, var(--face-normal));
+  --org-graph-space-raised: color-mix(in srgb, var(--surface-paper) 90%, var(--face-normal));
+  --org-graph-grid: color-mix(in srgb, var(--face-normal) 14%, transparent);
+  position: fixed;
+  z-index: 2;
+  top: 6vh;
+  right: 10vw;
+  bottom: 6vh;
+  left: 10vw;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--face-normal) 26%, var(--hairline));
+  border-radius: 10px;
+  color: var(--face-normal);
+  background: var(--org-graph-space);
+  box-shadow: 0 28px 100px color-mix(in srgb, var(--surface-canvas) 54%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(18px) scale(0.975);
+  transition:
+    opacity 240ms ease,
+    transform 380ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s linear 380ms;
+  visibility: hidden;
+}
+
+.org-world-tree--open .org-world-tree-map {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition-delay: 0s;
+  visibility: visible;
+}
+
+.org-world-tree-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 74px;
+  border-bottom: 1px solid var(--hairline-soft);
+  padding: 14px 18px 13px 22px;
+  background: color-mix(in srgb, var(--org-graph-space-raised) 92%, transparent);
+  backdrop-filter: blur(16px) saturate(0.92);
+}
+
+.org-world-tree-heading > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.org-world-tree-scenarios {
+  display: inline-grid;
+  grid-template-columns: repeat(2, 34px);
+  gap: 2px;
+  border: 1px solid color-mix(in srgb, var(--face-normal) 18%, var(--hairline));
+  border-radius: 6px;
+  padding: 2px;
+  background: color-mix(in srgb, var(--org-graph-space) 82%, var(--surface-paper));
+}
+
+.org-world-tree-scenarios button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 30px;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+  color: var(--face-faded);
+  background: transparent;
+  cursor: pointer;
+}
+
+.org-world-tree-scenarios button:hover,
+.org-world-tree-scenarios button:focus-visible {
+  color: var(--face-salient);
+  background: color-mix(in srgb, var(--face-salient) 8%, transparent);
+}
+
+.org-world-tree-scenarios button[aria-pressed="true"] {
+  color: var(--face-salient);
+  background: color-mix(in srgb, var(--face-salient) 13%, var(--surface-paper));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--face-salient) 28%, transparent);
+}
+
+.org-world-tree-scenarios svg {
+  width: 17px;
+  height: 17px;
+}
+
+.org-world-tree-heading span {
+  color: var(--face-faded);
+  font: 0.65rem var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.org-world-tree-heading strong {
+  overflow: hidden;
+  color: var(--face-strong);
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-world-tree-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  color: var(--face-normal);
+  background: var(--surface-paper);
+  cursor: pointer;
+}
+
+.org-world-tree-close:hover,
+.org-world-tree-close:focus-visible {
+  border-color: var(--face-salient);
+  color: var(--face-salient);
+}
+
+.org-world-tree-close svg {
+  width: 17px;
+  height: 17px;
+}
+
+.org-world-tree-canvas {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--org-graph-space);
+}
+
+.org-world-tree-knowledge-graph {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--org-graph-space);
+  cursor: grab;
+}
+
+.org-world-tree-knowledge-graph::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--face-normal) 9%, transparent);
+  content: "";
+  pointer-events: none;
+}
+
+.org-world-tree-knowledge-graph:active {
+  cursor: grabbing;
+}
+
+.org-world-tree-knowledge-graph canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.org-world-tree-knowledge-graph > canvas {
+  z-index: 2;
+}
+
+.org-world-tree-knowledge-graph > .org-world-tree-community-layer,
+.org-world-tree-knowledge-graph > .org-world-tree-network-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 90ms ease;
+  will-change: opacity;
+}
+
+.org-world-tree-knowledge-graph[data-camera-moving="true"]
+  > :is(.org-world-tree-community-layer, .org-world-tree-network-layer) {
+  opacity: 0;
+}
+
+.org-world-tree-knowledge-graph > .org-world-tree-network-layer {
+  z-index: 0;
+}
+
+.org-world-tree-knowledge-graph > .org-world-tree-community-layer {
+  z-index: 1;
+}
+
+@keyframes org-world-tree-ring {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.78);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+.org-world-tree-scope {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  border-top: 1px solid var(--hairline-soft);
+  padding: 10px;
+  background: color-mix(in srgb, var(--org-graph-space-raised) 92%, transparent);
+  backdrop-filter: blur(16px) saturate(0.92);
+}
+
+.org-world-tree-scope i {
+  width: 20px;
+  height: 2px;
+  background: color-mix(in srgb, var(--face-faded) 40%, transparent);
+}
+
+.org-world-tree-scope i.is-active {
+  background: var(--face-salient);
+}
+
+@media (max-width: 760px) {
+  .org-world-tree-trigger {
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: 18px;
+    width: 56px;
+    height: 56px;
+    transform: translateY(-50%);
+  }
+
+  .org-world-tree-trigger:hover,
+  .org-world-tree-trigger:focus-visible,
+  .org-world-tree--open .org-world-tree-trigger {
+    transform: translateY(-50%) scale(1.05);
+  }
+
+  .org-world-tree-trigger-line {
+    right: 9px;
+    bottom: 9px;
+    width: 5px;
+    height: 5px;
+  }
+
+  .org-world-tree-map {
+    top: 3vh;
+    right: 4vw;
+    bottom: 3vh;
+    left: 4vw;
+  }
+
+  .org-world-tree-heading {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    padding-inline: 14px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-world-tree-trigger,
+  .org-world-tree-map {
+    transition: none;
+  }
+
+  .org-world-tree-trigger::before,
+  .org-world-tree-trigger::after {
+    animation: none;
+  }
+}

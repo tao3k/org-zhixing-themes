@@ -42,6 +42,7 @@ const attachmentSourceRoot =
 const attachmentOutputRoot = publicMediaPath(attachmentLogicalRoot);
 const staticManifestPath = resolve(cacheRoot, "static-site.json");
 const staticGalleryPath = resolve(cacheRoot, "org-zhixing.gallery.json");
+const staticKnowledgeGraphPath = resolve(cacheRoot, "org-zhixing.knowledge-graph.json");
 const staticSourceShardRoot = resolve(cacheRoot, "org-zhixing.sources");
 const staticMemoryShardRoot = resolve(cacheRoot, "org-zhixing.memory");
 const staticSectionShardRoot = resolve(cacheRoot, "org-zhixing.sections");
@@ -151,6 +152,9 @@ export default defineConfig({
         : []),
       ...(existsSync(staticGalleryPath)
         ? [{ from: staticGalleryPath, to: "org-zhixing.gallery.json" }]
+        : []),
+      ...(existsSync(staticKnowledgeGraphPath)
+        ? [{ from: staticKnowledgeGraphPath, to: "org-zhixing.knowledge-graph.json" }]
         : []),
       ...(existsSync(staticSourceShardRoot)
         ? [

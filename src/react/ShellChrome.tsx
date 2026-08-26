@@ -18,6 +18,7 @@ import { routedAnchorNavigationFromEvent } from "./RoutedHtmlSurface";
 import { ThemeVariantNavigation } from "./ThemeVariantNavigation";
 import { isOrgSearchShortcut, ORG_SEARCH_REQUEST_EVENT } from "./orgSearchEvents";
 import { isEditableKeyboardTarget, isZenModeShortcut } from "./readerShortcuts";
+import { OrgWorldTreePanel } from "./OrgWorldTreePanel";
 
 const MobileNavigationDrawer = lazy(() => import("./MobileNavigationDrawer"));
 const OrgSearchPalette = lazy(() => import("./OrgSearchPalette"));
@@ -78,6 +79,7 @@ function ShellChromeView({
   useEffect(() => {
     const openSearch = (): void => setOrgSearchOpen(true);
     const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented) return;
       if (isZenModeShortcut(event) && !isEditableKeyboardTarget(event.target)) {
         event.preventDefault();
         onToggleZen();
@@ -151,16 +153,7 @@ function ShellChromeView({
       {readerMode === "library"
         ? renderReactSpaThemeSlot(theme, "runtime-state", { shell }, <RuntimeState shell={shell} />)
         : null}
-      {onExitZen ? (
-        <button
-          type="button"
-          className="zen-mode-exit"
-          onClick={onExitZen}
-          aria-label="Exit Zen mode"
-        >
-          Exit Zen
-        </button>
-      ) : null}
+      {readerMode === "zen" ? <OrgWorldTreePanel staticSite={shell.staticSite} /> : null}
       {searchEnabled ? (
         <Suspense fallback={null}>
           <OrgSearchPalette open={orgSearchOpen} onOpenChange={setOrgSearchOpen} shell={shell} />

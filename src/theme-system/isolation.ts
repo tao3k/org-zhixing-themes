@@ -92,7 +92,9 @@ export const renderThemeRuntimeModule = (snapshot: ThemeIsolationSnapshot): stri
         'import * as orgZhixingReactDom from "react-dom";',
       ]
     : [];
-  const remotes = [...new Map(federatedThemes.map((entry) => [entry.transport.remoteName, entry])).values()];
+  const remotes = [
+    ...new Map(federatedThemes.map((entry) => [entry.transport.remoteName, entry])).values(),
+  ];
   const federationBinding = federatedThemes.length
     ? [
         "const orgZhixingThemeFederation = createInstance({",
@@ -122,10 +124,7 @@ export const renderThemeRuntimeModule = (snapshot: ThemeIsolationSnapshot): stri
         "});",
       ]
     : [];
-  const federatedBindings = federatedThemes.map((entry) => [
-    entry.id,
-    entry.transport.module,
-  ]);
+  const federatedBindings = federatedThemes.map((entry) => [entry.id, entry.transport.module]);
   return [
     ...workspaceImports,
     ...federationImports,

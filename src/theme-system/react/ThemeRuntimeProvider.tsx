@@ -27,17 +27,12 @@ const createThemeRuntime = async (
   const selectedTheme = await loadTheme();
   const registry = createThemeRegistry([selectedTheme]);
   const manifest = themePackageManifestFor(selectedTheme);
-  if (
-    selection.id !== selectedTheme.name
-  ) {
+  if (selection.id !== selectedTheme.name) {
     throw new Error(
       `THEME-E032 theme module contract mismatch: expected "${selection.id}", received "${selectedTheme.name}"`,
     );
   }
-  if (
-    !manifest.variants.includes(variant) ||
-    !selection.variants.includes(variant)
-  ) {
+  if (!manifest.variants.includes(variant) || !selection.variants.includes(variant)) {
     throw new Error(
       `THEME-E032 theme module "${selection.id}" does not provide variant "${variant}"`,
     );
@@ -76,10 +71,12 @@ export const loadThemeRuntimeById = (themeId: string): Promise<ThemeRuntime> => 
   }
   let runtime = themeRuntimePromises.get(themeId);
   if (!runtime) {
-    runtime = createThemeRuntime(selection, () => loadThemeById(themeId)).catch((error: unknown) => {
-      themeRuntimePromises.delete(themeId);
-      throw error;
-    });
+    runtime = createThemeRuntime(selection, () => loadThemeById(themeId)).catch(
+      (error: unknown) => {
+        themeRuntimePromises.delete(themeId);
+        throw error;
+      },
+    );
     themeRuntimePromises.set(themeId, runtime);
   }
   return runtime;

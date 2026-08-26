@@ -11,6 +11,7 @@ describe("style module boundaries", () => {
 
     expect(entry).toEqual([
       '@import "photoswipe/style.css";',
+      '@import "@xyflow/react/dist/style.css";',
       '@import "./styles/theme.css";',
       '@import "@org-zhixing-cache/tailwind.css";',
       '@import "./styles/foundation.css";',
@@ -25,6 +26,7 @@ describe("style module boundaries", () => {
       '@import "./styles/agenda-program-responsive.css";',
       '@import "./styles/rendered-org.css";',
       '@import "./styles/org-typst.css";',
+      '@import "./styles/org-world-tree.css";',
       '@import "./styles/blog-rendered.css";',
       '@import "./styles/responsive.css";',
       '@import "./styles/theme-startup-failure.css";',

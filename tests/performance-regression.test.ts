@@ -126,6 +126,12 @@ describe("Org Zhixing performance regression gates", () => {
       'const sourceAttachmentShardPublicDir = "org-zhixing.attachments";',
     );
     expect(generator).toContain('const sourceAgendaShardPublicDir = "org-zhixing.agenda";');
+    expect(generator).toContain(
+      'const knowledgeGraphOutputPath = resolve(outputRoot, "org-zhixing.knowledge-graph.json");',
+    );
+    expect(generator).toContain("globalHeadingNodesForSource(source, source.sectionIndex.records)");
+    expect(generator).toContain("relations: globalOrgLinkRelations(");
+    expect(generator).toContain("sources.map((source) => source.sectionIndex.records)");
     expect(generator).toContain("sourceProjectionShard(source)");
     for (const field of [
       "agendaRange",
@@ -145,6 +151,7 @@ describe("Org Zhixing performance regression gates", () => {
     expect(staticSiteData).toContain("loadStaticAttachmentInventoryForSource");
     expect(staticSiteData).toContain("loadStaticMemoryForSource");
     expect(staticSiteData).toContain("loadStaticSectionIndexForSource");
+    expect(staticSiteData).toContain("loadStaticKnowledgeGraph");
     expect(staticSiteData).toContain("loadCachedStaticAgendaShard");
     expect(staticSiteData).toContain("loadCachedStaticAttachmentShard");
     expect(staticSiteData).toContain("loadCachedStaticMemoryShard");
@@ -163,10 +170,12 @@ describe("Org Zhixing performance regression gates", () => {
     expect(rsbuildConfig).toContain("staticAttachmentShardRoot");
     expect(rsbuildConfig).toContain("staticMemoryShardRoot");
     expect(rsbuildConfig).toContain("staticSectionShardRoot");
+    expect(rsbuildConfig).toContain("staticKnowledgeGraphPath");
     expect(rsbuildConfig).toContain("org-zhixing.agenda/[name][ext]");
     expect(rsbuildConfig).toContain("org-zhixing.attachments/[name][ext]");
     expect(rsbuildConfig).toContain("org-zhixing.memory/[name][ext]");
     expect(rsbuildConfig).toContain("org-zhixing.sections/[name][ext]");
+    expect(rsbuildConfig).toContain('to: "org-zhixing.knowledge-graph.json"');
     expect(perfScript).toContain("agendaShardBytes");
     expect(perfScript).toContain("attachmentShardBytes");
     expect(perfScript).toContain("eagerTanStackQueryCore: false");

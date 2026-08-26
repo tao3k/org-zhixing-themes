@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import type { ContentShellData, StaticDocumentData } from "../../../src/services/contentServices";
 import { loadStaticDocumentData } from "../../../src/services/contentServices";
-import { defineReactSpaContentRoutes, ThemeScopedDocumentLink } from "../../../src/react/themeBinding";
+import {
+  defineReactSpaContentRoutes,
+  ThemeScopedDocumentLink,
+} from "../../../src/react/themeBinding";
 import { DocumentsReader, type DocumentsDocumentData } from "./DocumentsReader";
 
 const loadDocument = async (

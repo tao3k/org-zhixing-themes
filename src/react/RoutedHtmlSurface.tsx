@@ -11,6 +11,7 @@ import type { OrgizeDocumentView } from "../model";
 import { orgZhixingBasePath } from "./deploymentBasePath";
 import { HtmlSurface } from "./HtmlSurface";
 import { installOrgContentEnhancements } from "./orgContentEnhancements";
+import { clearWorldTreeDocument, setWorldTreeDocument } from "./orgWorldTree";
 
 export type RawRoutedHtmlClickEvent = {
   activation: "primary" | "modified" | "non-primary";
@@ -86,10 +87,12 @@ export function RoutedHtmlSurface({
   documentView,
   html,
   onInternalNavigation,
+  sourceFile,
 }: {
   documentView?: OrgizeDocumentView;
   html: string;
   onInternalNavigation?: (navigation: RoutedHtmlInternalNavigation) => boolean;
+  sourceFile?: string | null;
 }): ReactNode {
   const navigate = useNavigate();
   const surfaceRef = useRef<HTMLDivElement>(null);
@@ -101,6 +104,11 @@ export function RoutedHtmlSurface({
     const root = surfaceRef.current;
     return root ? installOrgContentEnhancements(root, documentView) : undefined;
   }, [documentView, html]);
+  useEffect(() => {
+    if (!documentView) return;
+    setWorldTreeDocument(documentView, sourceFile);
+    return () => clearWorldTreeDocument(documentView);
+  }, [documentView, sourceFile]);
   const onClick = useCallback<MouseEventHandler<HTMLDivElement>>(
     (event) => {
       const navigation = routedAnchorNavigationFromEvent(

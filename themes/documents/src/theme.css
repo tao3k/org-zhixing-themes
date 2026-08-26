@@ -1326,29 +1326,6 @@
   display: none;
 }
 
-:root[data-theme="documents"] .zen-mode-exit {
-  position: fixed;
-  z-index: 80;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 1px solid var(--docs-border);
-  border-radius: 8px;
-  padding: 9px 12px;
-  color: var(--docs-subtext);
-  background: color-mix(in srgb, var(--surface-canvas) 90%, transparent);
-  box-shadow: 0 12px 34px color-mix(in srgb, var(--docs-crust) 40%, transparent);
-  backdrop-filter: blur(18px);
-  opacity: 0.38;
-  cursor: pointer;
-  transition: opacity 140ms ease;
-}
-
-:root[data-theme="documents"] .zen-mode-exit:hover,
-:root[data-theme="documents"] .zen-mode-exit:focus-visible {
-  opacity: 1;
-}
-
 @media (max-width: 1180px) {
   :root[data-theme="documents"] {
     --docs-nav-width: 260px;

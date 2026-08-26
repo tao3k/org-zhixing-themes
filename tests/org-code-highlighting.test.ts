@@ -201,7 +201,7 @@ describe("Org Babel syntax highlighting", () => {
     expect(css).toContain("background: transparent !important");
     expect(css).toContain("background: var(--docs-crust) !important");
     expect(css).toContain("--docs-code-surface: #1e1e2e");
-    expect(css).toContain("[data-theme-variant=\"latte\"]");
+    expect(css).toContain('[data-theme-variant="latte"]');
     expect(css).toContain("--shiki-dark-bg");
     expect(css).toContain(':not([data-theme-variant="latte"])');
     expect(css).toContain("background: var(--docs-code-surface) !important");

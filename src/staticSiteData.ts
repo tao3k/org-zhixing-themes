@@ -85,6 +85,22 @@ export type StaticGallerySummary = {
 
 export type StaticGalleryData = AttachmentGalleryView & { schemaVersion: 1 };
 
+export type StaticKnowledgeGraphData = {
+  schemaVersion: 1;
+  nodes: Array<{
+    id: string;
+    kind?: "section" | "source";
+    label: string;
+    level: number;
+    parentId: string;
+    rangeStart: number | null;
+    sourceFile?: string;
+    tags: string[];
+    todo: string | null;
+  }>;
+  relations: Array<{ id: string; sourceId: string; targetId: string }>;
+};
+
 export type StaticSiteData = {
   schemaVersion: 1;
   generatedAt: string;
@@ -94,6 +110,7 @@ export type StaticSiteData = {
     gitHash: string;
   };
   attachmentGallery?: StaticGallerySummary;
+  knowledgeGraph?: { shardPath: string; nodeCount: number; relationCount: number };
   blog?: StaticBlogIndex;
   travel?: TravelView;
   sources: StaticSource[];
@@ -140,6 +157,30 @@ export const loadStaticGalleryData = async (): Promise<StaticGalleryData | null>
   } catch {
     return null;
   }
+};
+
+const staticKnowledgeGraphRequests = new Map<string, Promise<StaticKnowledgeGraphData | null>>();
+
+export const loadStaticKnowledgeGraph = (
+  staticSite: StaticSiteData | null,
+): Promise<StaticKnowledgeGraphData | null> => {
+  const shardPath = staticSite?.knowledgeGraph?.shardPath;
+  if (!shardPath) return Promise.resolve(null);
+  const existing = staticKnowledgeGraphRequests.get(shardPath);
+  if (existing) return existing;
+  const request = fetch(publicAssetUrl(shardPath))
+    .then(async (response) => {
+      if (!response.ok) return null;
+      const value = (await response.json()) as Partial<StaticKnowledgeGraphData>;
+      return value.schemaVersion === 1 &&
+        Array.isArray(value.nodes) &&
+        Array.isArray(value.relations)
+        ? (value as StaticKnowledgeGraphData)
+        : null;
+    })
+    .catch(() => null);
+  staticKnowledgeGraphRequests.set(shardPath, request);
+  return request;
 };
 
 export const loadStaticSourceFor = async (

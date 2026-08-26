@@ -83,14 +83,12 @@ export function DocumentsReader({ document: data, shell }: DocumentsDocumentData
               documentView={data.document}
               html={data.html}
               onInternalNavigation={linkedNotes.openLinkedNote}
+              sourceFile={data.source.sourceFile}
             />
           </div>
           <nav className="documents-pagination" aria-label="Adjacent documentation">
             {previous ? (
-              <ThemeScopedDocumentLink
-                className="documents-page-previous"
-                documentId={previous.id}
-              >
+              <ThemeScopedDocumentLink className="documents-page-previous" documentId={previous.id}>
                 <small>Previous</small>
                 <strong>← {previous.orgTitle ?? previous.name}</strong>
               </ThemeScopedDocumentLink>
