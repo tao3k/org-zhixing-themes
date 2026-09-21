@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { Window } from "happy-dom";
 
 import { findMermaidSourceBlocks } from "../react/mermaidDiagrams";
 
@@ -49,6 +50,7 @@ const mermaidPalette: Readonly<Record<StaticMermaidVariant, Record<string, strin
 };
 
 let diagramSequence = 0;
+const svgParserWindow = new Window();
 type MermaidRenderRequest = {
   id: string;
   source: string;
@@ -123,7 +125,12 @@ const appendPreview = (
 ): void => {
   const template = document.createElement("template");
   template.dataset.orgMermaidStaticPreview = variant;
-  template.innerHTML = svg;
+  const parsed = new svgParserWindow.DOMParser().parseFromString(svg, "image/svg+xml");
+  const root = parsed.documentElement;
+  if (root.localName !== "svg" || !root.querySelector("g,path,rect,text,foreignObject")) {
+    throw new Error("Static Mermaid renderer emitted an empty SVG");
+  }
+  template.content.append(template.ownerDocument.importNode(root as unknown as Node, true));
   block.before(template);
 };
 
