@@ -5,7 +5,8 @@ import { renderOrgStaticHtml } from "../src/node/orgStaticRendering";
 describe("static Org rendering pipeline", () => {
   it("enhances one document without serializing DOM nodes through escaped HTML", async () => {
     const renderMermaid = vi.fn(
-      async (_source: string, variant: string) => `<svg data-preview="${variant}" />`,
+      async (_source: string, variant: string) =>
+        `<svg data-preview="${variant}"><g><path d="M0 0L1 1" /></g></svg>`,
     );
 
     const html = await renderOrgStaticHtml(
@@ -23,6 +24,7 @@ describe("static Org rendering pipeline", () => {
     expect(html).toContain('figure class="org-code-highlight"');
     expect(html).not.toContain("&lt;figure");
     expect(html).toContain('template data-org-mermaid-static-preview="mocha"');
+    expect(html).toContain('<path d="M0 0L1 1"');
     expect(renderMermaid).toHaveBeenCalledTimes(4);
   });
 });

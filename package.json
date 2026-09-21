@@ -36,6 +36,7 @@
     "test:docs": "node --import tsx scripts/check-org-docs.mjs",
     "test:contracts": "node --import tsx scripts/check-org-contracts.mjs",
     "test:typst": "node --import tsx scripts/check-org-typst.mjs",
+    "check:render": "node --import tsx scripts/check-org-static-render.mjs",
     "harness": "typescript-project-harness .",
     "harness:json": "typescript-project-harness --json .",
     "harness:agent-snapshot": "typescript-project-harness --agent-snapshot .",

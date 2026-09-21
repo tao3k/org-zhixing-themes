@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   npm-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -35,7 +35,7 @@ jobs:
 
   docs-contracts:
     name: Docs and contracts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -46,7 +46,7 @@ jobs:
       - run: npm run verify:docs
 
   scenario-mobile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -80,11 +80,8 @@ jobs:
         run: npm run scenario:documents
 
   pages-artifact:
-    needs:
-      - npm-test
-      - docs-contracts
-      - scenario-mobile
-    runs-on: ubuntu-latest
+    name: Render check and Pages artifact
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pages: write
@@ -145,7 +142,10 @@ jobs:
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs:
       - pages-artifact
-    runs-on: ubuntu-latest
+      - npm-test
+      - docs-contracts
+      - scenario-mobile
+    runs-on: ubuntu-24.04
     permissions:
       pages: write
       id-token: write

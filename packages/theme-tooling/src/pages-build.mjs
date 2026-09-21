@@ -93,6 +93,7 @@ export const runPagesBuild = async (options) => {
     );
     buildStarted = true;
     await runNpm(["run", "build"], validated.workspaceRoot, buildEnv);
+    await runNpm(["run", "check:render", "--", internalDist], validated.workspaceRoot, buildEnv);
     const routeShells = await materializePagesRouteShells(internalDist);
     if (validated.outputDir !== internalDist) {
       await rm(validated.outputDir, { force: true, recursive: true });

@@ -27,6 +27,8 @@ describe("GitHub Pages workflow", () => {
     expect(workflow).toContain("actions/deploy-pages@v5");
     expect(workflow).toContain("workflow_dispatch:");
     expect(pagesArtifact).not.toMatch(/^    if:/m);
+    expect(pagesArtifact).not.toMatch(/^    needs:/m);
+    expect(pagesArtifact).toContain("name: Render check and Pages artifact");
     expect(pagesArtifact).toContain("name: Install static rendering browser");
     expect(pagesArtifact).toContain("npx playwright install --with-deps chromium");
     expect(
@@ -38,9 +40,11 @@ describe("GitHub Pages workflow", () => {
       /deploy-pages:[\s\S]*github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/,
     );
     expect(workflow).toMatch(
-      /pages-artifact:[\s\S]*needs:\s*\n\s*- npm-test\s*\n\s*- docs-contracts\s*\n\s*- scenario-mobile/,
+      /deploy-pages:[\s\S]*needs:\s*\n\s*- pages-artifact\s*\n\s*- npm-test\s*\n\s*- docs-contracts\s*\n\s*- scenario-mobile/,
     );
-    expect(workflow).toMatch(/deploy-pages:[\s\S]*needs:\s*\n\s*- pages-artifact/);
+    expect(
+      readFileSync(resolve(repositoryRoot, "packages/theme-tooling/src/pages-build.mjs"), "utf8"),
+    ).toContain('["run", "check:render", "--", internalDist]');
     expect(workflow).toMatch(
       /npm run pages:themes --[ \t]*\\\r?\n[ \t]*--config public\/org-zhixing\.toml[ \t]*\\\r?\n[ \t]*--out dist[ \t]*\\\r?\n[ \t]*--base \/org-zhixing-themes\/\r?\n[ \t]*npm run pages:route-shells -- --dist dist/,
     );
