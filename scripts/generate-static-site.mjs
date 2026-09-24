@@ -36,7 +36,9 @@ const sourceAttachmentShardPublicDir = "org-zhixing.attachments";
 const sourceAttachmentShardRoot = resolve(outputRoot, sourceAttachmentShardPublicDir);
 const sourceAgendaShardPublicDir = "org-zhixing.agenda";
 const sourceAgendaShardRoot = resolve(outputRoot, sourceAgendaShardPublicDir);
-const renderCacheRoot = resolve(outputRoot, "org-zhixing.render-cache");
+const renderCacheRoot = process.env.ORG_ZHIXING_RENDER_CACHE_ROOT
+  ? resolve(process.env.ORG_ZHIXING_RENDER_CACHE_ROOT)
+  : resolve(outputRoot, "org-zhixing.render-cache");
 const renderWorkerPath = resolve(projectRoot, "scripts/render-static-html.mjs");
 const renderWorkerDocumentLimit = 128;
 const renderWorkerUnitLimit = 128;
@@ -130,7 +132,7 @@ const main = async () => {
   );
   const require = createRequire(import.meta.url);
   await init({ module_or_path: readFileSync(require.resolve("orgize/wasm")) });
-  prepareAttachmentThumbnailOutput();
+  await prepareAttachmentThumbnailOutput(outputRoot);
 
   const sources = [];
   const blogArticles = [];

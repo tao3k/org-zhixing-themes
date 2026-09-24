@@ -63,20 +63,26 @@ export const validatePagesBuildConfig = async (options) => {
   return { ...options, contentDir, basePath: requestedBasePath ?? configuredBasePath };
 };
 
-export const pagesBuildEnvironment = (environment, options, cacheRoot) => ({
+export const pagesBuildEnvironment = (environment, options, cacheRoot, renderCacheRoot) => ({
   ...environment,
   ORG_ZHIXING_BASE_PATH: options.basePath,
   ORG_ZHIXING_CACHE_ROOT: cacheRoot,
+  ORG_ZHIXING_RENDER_CACHE_ROOT: renderCacheRoot,
   ORG_ZHIXING_CONFIG: options.configPath,
   ORG_ZHIXING_CONTENT_DIR: options.contentDir,
 });
 
+export const pagesRenderCacheRoot = (workspaceRoot) =>
+  resolve(workspaceRoot, ".cache", "org-zhixing-pages-render");
+
 export const runPagesBuild = async (options) => {
   const validated = await validatePagesBuildConfig(options);
   const cacheRoot = await mkdtemp(join(tmpdir(), "org-zhixing-pages-"));
+  const renderCacheRoot = pagesRenderCacheRoot(validated.workspaceRoot);
   const internalDist = resolve(cacheRoot, "dist");
+  await mkdir(renderCacheRoot, { recursive: true });
   const buildEnv = {
-    ...pagesBuildEnvironment(process.env, validated, cacheRoot),
+    ...pagesBuildEnvironment(process.env, validated, cacheRoot, renderCacheRoot),
     ORG_ZHIXING_DIST_ROOT: internalDist,
   };
   let buildStarted = false;
