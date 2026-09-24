@@ -8,8 +8,9 @@ export const attachmentThumbnailSize = Object.freeze({ width: 704, height: 440 }
 
 const inFlight = new Map();
 
-export const prepareAttachmentThumbnailOutput = () => {
+export const prepareAttachmentThumbnailOutput = async (outputRoot) => {
   inFlight.clear();
+  await mkdir(resolve(outputRoot, attachmentThumbnailPublicDir), { recursive: true });
 };
 
 export const pruneAttachmentThumbnailOutput = async (outputRoot, referencedPaths) => {

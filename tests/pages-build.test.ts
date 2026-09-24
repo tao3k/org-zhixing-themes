@@ -14,6 +14,7 @@ import {
   materializePagesRouteShells,
   materializeStaticRouteShells,
   pagesBuildEnvironment,
+  pagesRenderCacheRoot,
   parsePagesBuildArgs,
   validatePagesBuildConfig,
 } from "../packages/theme-tooling/src/pages-build.mjs";
@@ -70,6 +71,12 @@ afterEach(() => {
 });
 
 describe("Pages build tooling", () => {
+  it("keeps content-addressed rendering artifacts in the builder cache", () => {
+    expect(pagesRenderCacheRoot("/workspace/builder")).toBe(
+      "/workspace/builder/.cache/org-zhixing-pages-render",
+    );
+  });
+
   it("parses the complete downstream contract", () => {
     const options = parsePagesBuildArgs(
       ["--config", "site.toml", "--content", "docs", "--base", "/project/", "--out", "../pages"],
@@ -135,11 +142,13 @@ describe("Pages build tooling", () => {
           contentDir: "/workspace/docs",
         },
         "/tmp/cache",
+        "/workspace/.cache/pages-render",
       ),
     ).toMatchObject({
       KEEP: "yes",
       ORG_ZHIXING_BASE_PATH: "/project",
       ORG_ZHIXING_CACHE_ROOT: "/tmp/cache",
+      ORG_ZHIXING_RENDER_CACHE_ROOT: "/workspace/.cache/pages-render",
       ORG_ZHIXING_CONFIG: "/workspace/site.toml",
       ORG_ZHIXING_CONTENT_DIR: "/workspace/docs",
     });

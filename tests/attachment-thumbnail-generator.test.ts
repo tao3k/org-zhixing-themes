@@ -1,4 +1,4 @@
-import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -12,6 +12,13 @@ import {
 } from "../src/node/attachmentThumbnailGenerator.mjs";
 
 describe("attachment thumbnail generator", () => {
+  it("materializes an empty output directory for copy patterns", async () => {
+    const root = await mkdtemp(resolve(tmpdir(), "org-zhixing-thumbnail-"));
+    await prepareAttachmentThumbnailOutput(root);
+
+    expect((await stat(resolve(root, attachmentThumbnailPublicDir))).isDirectory()).toBe(true);
+  });
+
   it("writes a cache-stable 2x card WebP with cover dimensions", async () => {
     const root = await mkdtemp(resolve(tmpdir(), "org-zhixing-thumbnail-"));
     const sourcePath = resolve(root, "source.png");
@@ -53,7 +60,7 @@ describe("attachment thumbnail generator", () => {
     await writeFile(resolve(root, referenced), "referenced", "utf8");
     await writeFile(resolve(thumbnailRoot, "stale.webp"), "stale", "utf8");
 
-    prepareAttachmentThumbnailOutput();
+    await prepareAttachmentThumbnailOutput(root);
     await pruneAttachmentThumbnailOutput(root, [referenced]);
 
     await expect(access(resolve(root, referenced))).resolves.toBeUndefined();

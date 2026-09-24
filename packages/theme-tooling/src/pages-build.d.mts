@@ -21,7 +21,10 @@ export const pagesBuildEnvironment: (
   environment: NodeJS.ProcessEnv,
   options: Pick<ValidatedPagesBuildOptions, "basePath" | "configPath" | "contentDir">,
   cacheRoot: string,
+  renderCacheRoot: string,
 ) => NodeJS.ProcessEnv;
+
+export const pagesRenderCacheRoot: (workspaceRoot: string) => string;
 
 export const runPagesBuild: (options: PagesBuildOptions) => Promise<void>;
 

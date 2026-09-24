@@ -190,6 +190,7 @@ export default defineConfig({
         ? [
             {
               from: resolve(staticThumbnailRoot, "*.webp"),
+              noErrorOnMissing: true,
               to: "org-zhixing.thumbnails/[name][ext]",
             },
           ]
