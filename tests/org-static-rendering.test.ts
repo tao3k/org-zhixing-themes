@@ -27,4 +27,17 @@ describe("static Org rendering pipeline", () => {
     expect(html).toContain('<path d="M0 0L1 1"');
     expect(renderMermaid).toHaveBeenCalledTimes(4);
   });
+
+  it("preserves Mermaid HTML inside foreignObject", async () => {
+    const html = await renderOrgStaticHtml('<pre class="src src-mermaid">flowchart TD</pre>', {
+      currentFile: "notes.org",
+      mermaidRenderer: async () =>
+        '<svg><foreignObject><div xmlns="http://www.w3.org/1999/xhtml">one<br>two</div></foreignObject></svg>',
+      sources: [{ file: "notes.org", id: "notes" }],
+    });
+
+    expect(html).toContain("<foreignObject>");
+    expect(html).toContain("<br>");
+    expect(html).not.toContain("parsererror");
+  });
 });

@@ -20,6 +20,9 @@ const typstBlockPattern =
   /^[\t ]*#\+begin_src[\t ]+(?:typst|typ)\b[^\n]*\r?\n([\s\S]*?)^[\t ]*#\+end_src\b/gim;
 const compiler = NodeCompiler.create();
 
+export const hasRenderableTypstSvg = (svg: string): boolean =>
+  /<(?:path|use|image|text|foreignObject|rect|circle|line|polyline|polygon|ellipse)\b/u.test(svg);
+
 export const formatTypstDiagnostic = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
@@ -68,10 +71,16 @@ export const validateOrgTypst = async (roots: string[]): Promise<OrgTypstValidat
 
   for (const block of blocks) {
     try {
-      compiler.svg({ mainFileContent: prepareTypstPreviewSource(block.source) });
-      compiler.evictCache(10);
+      const svg = compiler.svg({ mainFileContent: prepareTypstPreviewSource(block.source) });
+      if (!hasRenderableTypstSvg(svg)) {
+        throw new Error(
+          "Typst source produced no visible output; label declaration-only source as text",
+        );
+      }
     } catch (error) {
       failures.push(`${block.filePath}:${block.line}: ${formatTypstDiagnostic(error)}`);
+    } finally {
+      compiler.evictCache(10);
     }
   }
 
