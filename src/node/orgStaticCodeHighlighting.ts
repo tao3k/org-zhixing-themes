@@ -106,7 +106,11 @@ export const highlightOrgStaticDocument = async (document: Document): Promise<vo
 
 export const highlightOrgStaticHtml = async (html: string): Promise<string> => {
   const window = new Window();
-  window.document.body.innerHTML = html;
-  await highlightOrgStaticDocument(window.document as unknown as Document);
-  return window.document.body.innerHTML;
+  try {
+    window.document.body.innerHTML = html;
+    await highlightOrgStaticDocument(window.document as unknown as Document);
+    return window.document.body.innerHTML;
+  } finally {
+    window.close();
+  }
 };

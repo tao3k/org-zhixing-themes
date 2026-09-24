@@ -2,10 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   renderOrgStaticMermaidDocument,
+  staticMermaidRenderId,
   staticMermaidVariants,
 } from "../src/node/orgStaticMermaidRendering";
 
 describe("static Org Mermaid rendering", () => {
+  it("uses stable content-derived render identifiers", () => {
+    const first = staticMermaidRenderId("flowchart TD; A --> B", 0, "latte");
+
+    expect(staticMermaidRenderId("flowchart TD; A --> B", 0, "latte")).toBe(first);
+    expect(staticMermaidRenderId("flowchart TD; A --> B", 1, "latte")).not.toBe(first);
+    expect(staticMermaidRenderId("flowchart TD; A --> B", 0, "mocha")).not.toBe(first);
+  });
+
   it("emits one precompiled template per built-in theme", async () => {
     document.body.innerHTML = '<pre class="src src-mermaid">flowchart TD; A --&gt; B</pre>';
     const render = vi.fn(

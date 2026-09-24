@@ -1,4 +1,3 @@
-import { NodeCompiler } from "@myriaddreamin/typst-ts-node-compiler";
 import { Window } from "happy-dom";
 
 import { prepareTypstPreviewSource } from "../core/typstSource";
@@ -7,10 +6,33 @@ import { languageFromOrgCodeClasses } from "../orgCodeLanguage";
 
 export type StaticTypstRenderer = (source: string) => Promise<string>;
 
-const compiler = NodeCompiler.create();
-const svgParserWindow = new Window();
+type TypstCompiler = {
+  evictCache: (capacity: number) => void;
+  svg: (options: { mainFileContent: string }) => string;
+};
+
+let compilerPromise: Promise<TypstCompiler> | null = null;
+let svgParserWindow: Window | null = null;
+
+const activeCompiler = (): Promise<TypstCompiler> => {
+  compilerPromise ??= import("@myriaddreamin/typst-ts-node-compiler").then(({ NodeCompiler }) =>
+    NodeCompiler.create(),
+  );
+  return compilerPromise;
+};
+
+const activeSvgParserWindow = (): Window => {
+  svgParserWindow ??= new Window();
+  return svgParserWindow;
+};
+
+export const closeOrgStaticTypstRenderer = async (): Promise<void> => {
+  svgParserWindow?.close();
+  svgParserWindow = null;
+};
 
 const renderTypst: StaticTypstRenderer = async (source) => {
+  const compiler = await activeCompiler();
   try {
     return compiler.svg({ mainFileContent: prepareTypstPreviewSource(source) });
   } finally {
@@ -34,10 +56,11 @@ const isStaticTypstBlock = (block: HTMLElement): boolean => {
 };
 
 const appendStaticTypstSvg = (template: HTMLTemplateElement, svg: string): void => {
-  const parsed = new svgParserWindow.DOMParser().parseFromString(svg, "image/svg+xml");
+  const parserWindow = activeSvgParserWindow();
+  const parsed = new parserWindow.DOMParser().parseFromString(svg, "image/svg+xml");
   const root = parsed.documentElement;
   const renderable = root.querySelector(
-    "path,use,g,image,text,foreignObject,rect,circle,line,polyline,polygon,ellipse",
+    "path,use,image,text,foreignObject,rect,circle,line,polyline,polygon,ellipse",
   );
   if (root.localName !== "svg" || !renderable) {
     throw new Error("Static Typst renderer emitted an empty SVG");
@@ -77,7 +100,11 @@ export const renderOrgStaticTypstHtml = async (
   render: StaticTypstRenderer = renderTypst,
 ): Promise<string> => {
   const window = new Window();
-  window.document.body.innerHTML = html;
-  await renderOrgStaticTypstDocument(window.document as unknown as Document, render);
-  return window.document.body.innerHTML;
+  try {
+    window.document.body.innerHTML = html;
+    await renderOrgStaticTypstDocument(window.document as unknown as Document, render);
+    return window.document.body.innerHTML;
+  } finally {
+    window.close();
+  }
 };

@@ -36,6 +36,15 @@ describe("static Org Typst rendering", () => {
     ).rejects.toThrow("Static Typst renderer emitted an empty SVG");
   });
 
+  it("rejects definition-only output containing empty SVG groups", async () => {
+    await expect(
+      renderOrgStaticTypstHtml(
+        '<figure class="org-code-highlight"><figcaption>typst</figcaption><pre><code>#let value = 1</code></pre></figure>',
+        async () => '<svg><defs></defs><g class="typst-page"><g></g></g></svg>',
+      ),
+    ).rejects.toThrow("Static Typst renderer emitted an empty SVG");
+  });
+
   it("leaves non-Typst source blocks untouched", async () => {
     const render = vi.fn(async () => "<svg />");
     const html = await renderOrgStaticTypstHtml(

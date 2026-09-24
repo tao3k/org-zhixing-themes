@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { Window } from "happy-dom";
 
@@ -49,13 +50,36 @@ const mermaidPalette: Readonly<Record<StaticMermaidVariant, Record<string, strin
   },
 };
 
-let diagramSequence = 0;
+const htmlVoidElementPattern =
+  /<(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)(\b[^<>]*?)(\/?)>/gi;
+
+const xmlSafeMermaidSvg = (svg: string): string =>
+  svg.replace(htmlVoidElementPattern, (element, tag, attributes, slash) =>
+    slash ? element : `<${tag}${attributes}/>`,
+  );
+
+export const staticMermaidRenderId = (
+  source: string,
+  blockIndex: number,
+  variant: StaticMermaidVariant,
+): string => {
+  const sourceHash = createHash("sha256").update(source).digest("hex").slice(0, 16);
+  return `org-zhixing-static-${sourceHash}-${blockIndex}-${variant}`;
+};
+
 const svgParserWindow = new Window();
 type MermaidRenderRequest = {
   id: string;
   source: string;
   variant: StaticMermaidVariant;
 };
+
+type MermaidBrowserSession = {
+  browser: import("@playwright/test").Browser;
+  page: import("@playwright/test").Page;
+};
+
+let browserSession: Promise<MermaidBrowserSession> | null = null;
 
 const mermaidConfig = (variant: StaticMermaidVariant) => {
   const palette = mermaidPalette[variant];
@@ -80,17 +104,38 @@ const mermaidConfig = (variant: StaticMermaidVariant) => {
   } as const;
 };
 
-const renderMermaidBatch = async (requests: readonly MermaidRenderRequest[]): Promise<string[]> => {
-  if (requests.length === 0) return [];
+const createBrowserSession = async (): Promise<MermaidBrowserSession> => {
   const { chromium } = await import("@playwright/test");
   const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  await page.setContent("<!doctype html><html><body></body></html>");
+  const mermaidEntry = import.meta.resolve("mermaid");
+  await page.addScriptTag({
+    path: fileURLToPath(new URL("./mermaid.min.js", mermaidEntry)),
+  });
+  return { browser, page };
+};
+
+const activeBrowserSession = async (): Promise<MermaidBrowserSession> => {
+  browserSession ??= createBrowserSession();
+  return browserSession;
+};
+
+export const closeOrgStaticMermaidRenderer = async (): Promise<void> => {
+  const pending = browserSession;
+  browserSession = null;
+  if (pending) {
+    const { browser } = await pending;
+    await browser.close();
+  }
+  svgParserWindow.close();
+};
+
+const renderMermaidBatch = async (requests: readonly MermaidRenderRequest[]): Promise<string[]> => {
+  if (requests.length === 0) return [];
   try {
-    const page = await browser.newPage();
-    await page.setContent("<!doctype html><html><body></body></html>");
-    const mermaidEntry = import.meta.resolve("mermaid");
-    await page.addScriptTag({
-      path: fileURLToPath(new URL("./mermaid.min.js", mermaidEntry)),
-    });
+    const { page } = await activeBrowserSession();
+    await page.evaluate(() => document.body.replaceChildren());
     const rendered: string[] = [];
     for (const request of requests) {
       rendered.push(
@@ -112,8 +157,9 @@ const renderMermaidBatch = async (requests: readonly MermaidRenderRequest[]): Pr
       );
     }
     return rendered;
-  } finally {
-    await browser.close();
+  } catch (error) {
+    await closeOrgStaticMermaidRenderer();
+    throw error;
   }
 };
 
@@ -125,7 +171,13 @@ const appendPreview = (
 ): void => {
   const template = document.createElement("template");
   template.dataset.orgMermaidStaticPreview = variant;
-  const parsed = new svgParserWindow.DOMParser().parseFromString(svg, "image/svg+xml");
+  // Mermaid may embed HTML void elements such as `<br>` inside foreignObject.
+  // Normalize those elements before strict SVG parsing so namespaces and tag
+  // case remain intact without producing parsererror nodes.
+  const parsed = new svgParserWindow.DOMParser().parseFromString(
+    xmlSafeMermaidSvg(svg),
+    "image/svg+xml",
+  );
   const root = parsed.documentElement;
   if (root.localName !== "svg" || !root.querySelector("g,path,rect,text,foreignObject")) {
     throw new Error("Static Mermaid renderer emitted an empty SVG");
@@ -151,13 +203,14 @@ const renderWithBrowser = async (
   document: Document,
   blocks: readonly HTMLPreElement[],
 ): Promise<void> => {
-  const requests = blocks.flatMap((block) =>
-    staticMermaidVariants.map((variant) => ({
-      id: `org-zhixing-static-${++diagramSequence}`,
-      source: block.textContent ?? "",
+  const requests = blocks.flatMap((block, blockIndex) => {
+    const source = block.textContent ?? "";
+    return staticMermaidVariants.map((variant) => ({
+      id: staticMermaidRenderId(source, blockIndex, variant),
+      source,
       variant,
-    })),
-  );
+    }));
+  });
   const rendered = await renderMermaidBatch(requests);
   requests.forEach((request, index) => {
     const block = blocks[Math.floor(index / staticMermaidVariants.length)];

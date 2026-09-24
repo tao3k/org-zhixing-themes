@@ -275,7 +275,9 @@ describe("Org Zhixing performance regression gates", () => {
   it("keeps static Blog generation on one article per discovered Org file", () => {
     const generator = readFileSync("scripts/generate-static-site.mjs", "utf8");
 
-    expect(generator).toContain("sources.map(blogArticleFromSource)");
+    expect(generator).toContain("const blogArticles = [];");
+    expect(generator).toContain("blogArticles.push(blogArticle)");
+    expect(generator).toContain("projectBlogIndexFromArticles(blogArticles, sources.length)");
     expect(generator).toContain("org.metadataJson()");
     expect(generator).toContain("const title = blogArticleTitle(source);");
     expect(generator).not.toContain("title: source.name");

@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
+import { fork } from "node:child_process";
 import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { basename, dirname, extname, relative, resolve } from "node:path";
+import { availableParallelism } from "node:os";
 import { fileURLToPath } from "node:url";
 import * as Effect from "effect/Effect";
 import { init as initModuleLexer, parse as parseModuleImports } from "es-module-lexer";
@@ -17,7 +19,6 @@ import {
 import { orgFiles } from "../src/node/orgSources.ts";
 import { orgDocumentIdFromPath } from "../src/orgIdLinks.ts";
 import { globalHeadingNodesForSource, globalOrgLinkRelations } from "../src/react/orgWorldTree.ts";
-import { renderOrgStaticHtml } from "../src/node/orgStaticRendering.ts";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const publicRoot = resolve(projectRoot, "public");
@@ -36,6 +37,18 @@ const sourceAttachmentShardRoot = resolve(outputRoot, sourceAttachmentShardPubli
 const sourceAgendaShardPublicDir = "org-zhixing.agenda";
 const sourceAgendaShardRoot = resolve(outputRoot, sourceAgendaShardPublicDir);
 const renderCacheRoot = resolve(outputRoot, "org-zhixing.render-cache");
+const renderWorkerPath = resolve(projectRoot, "scripts/render-static-html.mjs");
+const renderWorkerDocumentLimit = 128;
+const renderWorkerUnitLimit = 128;
+const renderWorkerRssLimitBytes = 1024 * 1024 * 1024;
+const renderWorkerPoolSize = Math.min(2, availableParallelism());
+const renderWorkers = Array.from({ length: renderWorkerPoolSize }, () => ({
+  documents: 0,
+  process: null,
+  units: 0,
+}));
+let renderWorkerCursor = 0;
+let renderRequestSequence = 0;
 const configFilePath = process.env.ORG_ZHIXING_CONFIG
   ? resolve(projectRoot, process.env.ORG_ZHIXING_CONFIG)
   : resolve(publicRoot, "org-zhixing.toml");
@@ -120,12 +133,30 @@ const main = async () => {
   prepareAttachmentThumbnailOutput();
 
   const sources = [];
-  for (const source of config.sources) {
-    const startedAt = performance.now();
-    sources.push(await projectSource(source, config, rendererFingerprint));
-    console.log(
-      `static org projection: ${source.sourceFile} ${Math.round(performance.now() - startedAt)}ms`,
-    );
+  const blogArticles = [];
+  const travelPlaces = [];
+  await prepareSourceShardOutput();
+  try {
+    for (let offset = 0; offset < config.sources.length; offset += renderWorkerPoolSize) {
+      const batch = config.sources.slice(offset, offset + renderWorkerPoolSize);
+      const projectedBatch = await Promise.all(
+        batch.map(async (source) => {
+          const startedAt = performance.now();
+          const projected = await projectSource(source, config, rendererFingerprint);
+          return { elapsedMs: performance.now() - startedAt, projected, source };
+        }),
+      );
+      for (const { elapsedMs, projected, source } of projectedBatch) {
+        await writeSourceShard(projected);
+        const blogArticle = blogArticleFromSource(projected);
+        if (blogArticle) blogArticles.push(blogArticle);
+        travelPlaces.push(...projectTravelSource(projected));
+        sources.push(globalIndexSource(projected));
+        console.log(`static org projection: ${source.sourceFile} ${Math.round(elapsedMs)}ms`);
+      }
+    }
+  } finally {
+    await Promise.all(renderWorkers.map(closeRenderWorker));
   }
 
   await pruneAttachmentThumbnailOutput(
@@ -137,7 +168,6 @@ const main = async () => {
     ),
   );
 
-  await writeSourceShards(sources);
   const attachmentGallery = projectAttachmentGalleryView(sources);
   await writeFile(
     galleryOutputPath,
@@ -178,8 +208,8 @@ const main = async () => {
       nodeCount: knowledgeGraph.nodes.length,
       relationCount: knowledgeGraph.relations.length,
     },
-    blog: projectBlogIndex(sources),
-    travel: projectTravelView(sources),
+    blog: projectBlogIndexFromArticles(blogArticles, sources.length),
+    travel: projectTravelViewFromPlaces(travelPlaces, sources.length),
     sources: sources.map(sourceSummary),
   };
 
@@ -237,13 +267,102 @@ const readOrRenderStaticHtml = async (html, currentFile, sources, rendererFinger
     if (error?.code !== "ENOENT") throw error;
   }
 
-  const rendered = await renderOrgStaticHtml(html, { currentFile, sources });
+  const rendered = await renderStaticHtmlIsolated(html, currentFile, sources);
   await mkdir(renderCacheRoot, { recursive: true });
   await writeFile(cachePath, `${JSON.stringify({ key, html: rendered })}\n`, "utf8");
   return rendered;
 };
 
-const writeSourceShards = async (sources) => {
+const renderStaticHtmlIsolated = async (html, currentFile, sources) => {
+  const slot = renderWorkers[renderWorkerCursor++ % renderWorkers.length];
+  if (!slot.process) startRenderWorker(slot);
+  const worker = slot.process;
+  const id = ++renderRequestSequence;
+  try {
+    const response = await requestRender(worker, { id, html, currentFile, sources });
+    slot.documents += 1;
+    slot.units += response.renderUnits;
+    if (
+      slot.documents >= renderWorkerDocumentLimit ||
+      slot.units >= renderWorkerUnitLimit ||
+      response.rssBytes >= renderWorkerRssLimitBytes
+    ) {
+      await closeRenderWorker(slot);
+    }
+    return response.html;
+  } catch (error) {
+    await closeRenderWorker(slot);
+    throw error;
+  }
+};
+
+const startRenderWorker = (slot) => {
+  slot.process = fork(renderWorkerPath, [], {
+    cwd: projectRoot,
+    execArgv: ["--import", "tsx"],
+    stdio: ["ignore", "ignore", "inherit", "ipc"],
+  });
+  slot.documents = 0;
+  slot.units = 0;
+};
+
+const requestRender = (worker, request) =>
+  new Promise((resolveRequest, rejectRequest) => {
+    const cleanup = () => {
+      worker.off("message", onMessage);
+      worker.off("error", onError);
+      worker.off("exit", onExit);
+    };
+    const reject = (error) => {
+      cleanup();
+      rejectRequest(error);
+    };
+    const onError = (error) => reject(error);
+    const onExit = (code, signal) =>
+      reject(new Error(`static render worker exited code=${code} signal=${signal}`));
+    const onMessage = (response) => {
+      if (response?.id !== request.id) return;
+      cleanup();
+      if (typeof response.error === "string") rejectRequest(new Error(response.error));
+      else if (typeof response.html === "string") {
+        resolveRequest({
+          html: response.html,
+          renderUnits: Number.isFinite(response.renderUnits)
+            ? response.renderUnits
+            : Number.POSITIVE_INFINITY,
+          rssBytes: Number.isFinite(response.rssBytes)
+            ? response.rssBytes
+            : Number.POSITIVE_INFINITY,
+        });
+      } else rejectRequest(new Error("static render worker returned an invalid response"));
+    };
+    worker.on("message", onMessage);
+    worker.once("error", onError);
+    worker.once("exit", onExit);
+    worker.send(request, (error) => {
+      if (error) reject(error);
+    });
+  });
+
+const closeRenderWorker = async (slot) => {
+  const worker = slot.process;
+  slot.process = null;
+  slot.documents = 0;
+  slot.units = 0;
+  if (!worker || worker.exitCode !== null) return;
+  await new Promise((resolveClose) => {
+    const force = setTimeout(() => worker.kill(), 2000);
+    worker.once("exit", () => {
+      clearTimeout(force);
+      resolveClose();
+    });
+    worker.send({ shutdown: true }, (error) => {
+      if (error) worker.kill();
+    });
+  });
+};
+
+const prepareSourceShardOutput = async () => {
   await rm(sourceShardRoot, { recursive: true, force: true });
   await rm(sourceMemoryShardRoot, { recursive: true, force: true });
   await rm(sourceSectionShardRoot, { recursive: true, force: true });
@@ -254,47 +373,36 @@ const writeSourceShards = async (sources) => {
   await mkdir(sourceSectionShardRoot, { recursive: true });
   await mkdir(sourceAttachmentShardRoot, { recursive: true });
   await mkdir(sourceAgendaShardRoot, { recursive: true });
-  await writeWithConcurrency(sources, 16, async (source) => {
-    await writeFile(
+};
+
+const writeSourceShard = async (source) =>
+  Promise.all([
+    writeFile(
       sourceShardPath(source),
       `${JSON.stringify(sourceProjectionShard(source))}\n`,
       "utf8",
-    );
-    await writeFile(
+    ),
+    writeFile(
       sourceMemoryShardPath(source),
       `${JSON.stringify(sourceMemoryShard(source))}\n`,
       "utf8",
-    );
-    await writeFile(
+    ),
+    writeFile(
       sourceSectionShardPath(source),
       `${JSON.stringify(sourceSectionShard(source))}\n`,
       "utf8",
-    );
-    await writeFile(
+    ),
+    writeFile(
       sourceAttachmentShardPath(source),
       `${JSON.stringify(sourceAttachmentShard(source))}\n`,
       "utf8",
-    );
-    await writeFile(
+    ),
+    writeFile(
       sourceAgendaShardPath(source),
       `${JSON.stringify(sourceAgendaShard(source))}\n`,
       "utf8",
-    );
-  });
-};
-
-const writeWithConcurrency = async (items, maximumConcurrency, write) => {
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const item = items[next++];
-      await write(item);
-    }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(maximumConcurrency, items.length) }, () => worker()),
-  );
-};
+    ),
+  ]);
 
 const sourceSummary = (source) => ({
   id: source.id,
@@ -376,6 +484,31 @@ const sourceAgendaShard = (source) => ({
   agendaView: source.agendaView,
 });
 
+const globalIndexSource = (source) => ({
+  id: source.id,
+  name: source.name,
+  orgTitle: source.orgTitle,
+  file: source.file,
+  sourceFile: source.sourceFile,
+  sourceBytes: source.sourceBytes,
+  attachmentInventory: source.attachmentInventory,
+  sectionIndex: {
+    records: compactKnowledgeRecords(source.sectionIndex.records),
+  },
+});
+
+const compactKnowledgeRecords = (records) =>
+  records.map((record) => ({
+    title: record.title,
+    titleText: record.titleText,
+    level: record.level,
+    source: { rangeStart: record.source.rangeStart },
+    effectiveTags: record.effectiveTags,
+    todo: record.todo,
+    properties: record.properties,
+    links: record.links,
+  }));
+
 const safeShardId = (value) =>
   String(value)
     .normalize("NFKD")
@@ -427,15 +560,14 @@ const requestAgendaView = (org, range) =>
     ),
   );
 
-const projectBlogIndex = (sources) => {
-  const articles = sources.map(blogArticleFromSource).filter(Boolean);
+const projectBlogIndexFromArticles = (articles, sourceCount) => {
   const sortedArticles = articles.sort(compareArticleRecency);
   return {
     articleCount: sortedArticles.length,
     articles: sortedArticles,
     dateRange: blogDateRange(sortedArticles),
     siteWide: true,
-    sourceCount: sources.length,
+    sourceCount,
     tagFacets: blogTagFacets(sortedArticles),
   };
 };
@@ -655,14 +787,13 @@ const attachmentPublicPath = (record, sourceFile) => {
     : joinPath(publicDirname(sourceFile), joined);
 };
 
-const projectTravelView = (sources) => {
-  const places = sources.flatMap((source) => projectTravelSource(source));
+const projectTravelViewFromPlaces = (places, scannedSourceCount) => {
   const regions = [...new Set(places.map((place) => place.region).filter(Boolean))];
   const sourceCount = new Set(places.map((place) => place.sourceFile ?? place.sourceName)).size;
   return {
     places,
     regions,
-    scannedSourceCount: sources.length,
+    scannedSourceCount,
     sourceCount: places.length > 0 ? sourceCount : 0,
     locatedCount: places.filter((place) => place.coordinates).length,
     enrichCandidateCount: places.filter((place) => place.needsEnrichment).length,

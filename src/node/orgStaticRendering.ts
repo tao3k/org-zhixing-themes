@@ -35,13 +35,17 @@ export const renderOrgStaticHtml = async (
   { currentFile, sources, mermaidRenderer, typstRenderer }: OrgStaticRenderOptions,
 ): Promise<string> => {
   const window = new Window();
-  const document = window.document as unknown as Document;
-  document.body.innerHTML = html;
+  try {
+    const document = window.document as unknown as Document;
+    document.body.innerHTML = html;
 
-  projectDocumentLinks(document, currentFile, sources);
-  await highlightOrgStaticDocument(document);
-  await renderOrgStaticTypstDocument(document, typstRenderer);
-  await renderOrgStaticMermaidDocument(document, mermaidRenderer);
+    projectDocumentLinks(document, currentFile, sources);
+    await highlightOrgStaticDocument(document);
+    await renderOrgStaticTypstDocument(document, typstRenderer);
+    await renderOrgStaticMermaidDocument(document, mermaidRenderer);
 
-  return document.body.innerHTML;
+    return document.body.innerHTML;
+  } finally {
+    window.close();
+  }
 };
